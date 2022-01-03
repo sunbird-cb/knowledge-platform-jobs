@@ -24,6 +24,11 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
         val awsStorageKey = config.getString("aws_storage_key", "")
         val awsStorageSecret = config.getString("aws_storage_secret", "")
         storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, awsStorageKey, awsStorageSecret))
+      } else if(StringUtils.equalsIgnoreCase(cloudStorageType, "cephs3")) {
+        val cephs3StorageKey = config.getString("cephs3_storage_key", "")
+        val cephs3StorageSecret = config.getString("cephs3_storage_secret", "")
+        val cephs3StorageEndPoint = config.getString("cephs3_storage_endpoint", "")
+        storageService = StorageServiceFactory.getStorageService(new StorageConfig(cloudStorageType, cephs3StorageKey, cephs3StorageSecret, Option.apply(cephs3StorageEndPoint)));
       } else throw new Exception("Error while initialising cloud storage: " + cloudStorageType)
     }
     storageService
