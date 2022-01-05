@@ -43,7 +43,10 @@ object ExtractableMimeTypeHelper {
     if (!isExtractedSnapshotExist(obj)) throw new InvalidInputException("Error! Snapshot Type Extraction doesn't Exists.")
     val sourcePrefix = getExtractionPath(obj, contentConfig, "snapshot")
     val destinationPrefix = getExtractionPath(obj, contentConfig, extractionType)
+    logger.info("sourcePrefix:::" + sourcePrefix)
+    logger.info("destinationPrefix:::" + destinationPrefix)    
     cloudStorageUtil.copyObjectsByPrefix(sourcePrefix, destinationPrefix, isFolder = true)
+    logger.info("Copy objects successful")
   }
 
   private def isExtractedSnapshotExist(obj: ObjectData): Boolean = {
