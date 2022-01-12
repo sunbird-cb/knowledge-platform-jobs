@@ -28,7 +28,6 @@ object ExtractableMimeTypeHelper {
     logger.info("Inside getCloudStoreURL object mimeType "+obj.mimeType)
     logger.info("Inside getCloudStoreURL extractableMimeTypes "+config.extractableMimeTypes)
     cloudStorageUtil.getURI(path, Option.apply(config.extractableMimeTypes.contains(obj.mimeType)))
-    logger.info("Inside getCloudStoreURL success")
   }
 
   private def getExtractionPath(obj: ObjectData, config: ContentPublishConfig, suffix: String): String = {
