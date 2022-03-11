@@ -87,14 +87,14 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
         logger.info("processElement :::  obj hierarchy post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.hierarchy.get))
         // Generate ECAR
         val objWithEcar = generateECAR(enrichedObj, pkgTypes)(ec, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil)
-        val finalObj = objWithEcar
+        var finalObj = objWithEcar
         try {
           // Generate PDF URL
           logger.info("Generating PDF URL for : " + data.identifier)
           finalObj = generatePreviewUrl(finalObj, qList)(httpUtil, cloudStorageUtil)
           logger.info("PDF URL Successfully generated for : " + data.identifier)
         } catch {
-           case _: logger.info("Got Exception while generating PDF URL for : " + data.identifier)
+           case ex: Throwable => logger.info("Got Exception while generating PDF URL for : " + data.identifier + ", Exception : " + ex)
         }
         saveOnSuccess(finalObj)(neo4JUtil, cassandraUtil, readerConfig, definitionCache, definitionConfig)
         logger.info("QuestionSet publishing completed successfully for : " + data.identifier)
