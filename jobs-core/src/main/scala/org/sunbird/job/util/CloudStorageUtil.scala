@@ -38,6 +38,7 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
     cloudStorageType match {
       case "azure" => config.getString("azure_storage_container", "")
       case "aws" => config.getString("aws_storage_container", "")
+      case "cephs3" => config.getString("cephs3_storage_container", "")
       case _ => throw new Exception("Container name not configured.")
     }
   }
