@@ -22,13 +22,8 @@ object ExtractableMimeTypeHelper {
   private val extractablePackageExtensions = List(".zip", ".h5p", ".epub")
 
   def getCloudStoreURL(obj: ObjectData, cloudStorageUtil: CloudStorageUtil, config: ContentPublishConfig): String = {
-    logger.info("Inside getCloudStoreURL")
     val path = getExtractionPath(obj, config, "latest")
-    logger.info("Inside getCloudStoreURL extraction path "+path)
-    logger.info("Inside getCloudStoreURL object mimeType "+obj.mimeType)
-    logger.info("Inside getCloudStoreURL extractableMimeTypes "+config.extractableMimeTypes)
     cloudStorageUtil.getURI(path, Option.apply(config.extractableMimeTypes.contains(obj.mimeType)))
-    logger.info("Inside getCloudStoreURL success")
   }
 
   private def getExtractionPath(obj: ObjectData, config: ContentPublishConfig, suffix: String): String = {
