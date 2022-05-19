@@ -59,14 +59,16 @@ class RelationCacheUpdater(config: RelationCacheUpdaterConfig)
             val rootId = event.identifier
             logger.info("Processing - identifier: " + rootId)
             val hierarchy = getHierarchy(rootId)(metrics)
-            if (MapUtils.isNotEmpty(hierarchy)) {
-                val leafNodesMap = getLeafNodes(rootId, hierarchy)
+            if (StringUtils.isNotBlank(hierarchy)) {
+                storeHierarchyData(rootId, hierarchy, dataCache) (metrics)
+                val hierarchyMap = mapper.readValue(hierarchy, classOf[java.util.Map[String, AnyRef]])
+                val leafNodesMap = getLeafNodes(rootId, hierarchyMap)
                 logger.info("Leaf-nodes cache updating for: " + leafNodesMap.size)
                 storeDataInCache(rootId, "leafnodes", leafNodesMap, dataCache)(metrics)
-                val ancestorsMap = getAncestors(rootId, hierarchy)
+                val ancestorsMap = getAncestors(rootId, hierarchyMap)
                 logger.info("Ancestors cache updating for: "+ ancestorsMap.size)
                 storeDataInCache(rootId, "ancestors", ancestorsMap, dataCache)(metrics)
-                val unitsMap = getUnitMaps(hierarchy)
+                val unitsMap = getUnitMaps(hierarchyMap)
                 logger.info("Units cache updating for: "+ unitsMap.size)
                 storeDataInCache("", "", unitsMap, collectionCache)(metrics)
                 metrics.incCounter(config.successEventCount)
@@ -84,12 +86,12 @@ class RelationCacheUpdater(config: RelationCacheUpdaterConfig)
         List(config.successEventCount, config.failedEventCount, config.skippedEventCount, config.totalEventsCount, config.dbReadCount, config.cacheWrite)
     }
 
-    private def getHierarchy(identifier: String)(implicit metrics: Metrics): java.util.Map[String, AnyRef] = {
+    private def getHierarchy(identifier: String)(implicit metrics: Metrics): String = {
         val hierarchy = readHierarchyFromDb(identifier)
         metrics.incCounter(config.dbReadCount)
         if (StringUtils.isNotBlank(hierarchy))
-            mapper.readValue(hierarchy, classOf[java.util.Map[String, AnyRef]])
-        else new java.util.HashMap[String, AnyRef]()
+            hierarchy
+        else ""
     }
 
     private def getLeafNodes(identifier: String, hierarchy: java.util.Map[String, AnyRef]): Map[String, List[String]] = {
@@ -166,6 +168,24 @@ class RelationCacheUpdater(config: RelationCacheUpdaterConfig)
             case e: Throwable => {
                 metrics.incCounter(config.failedEventCount)
                 logger.info("Failed to write data for " + suffix + ": " + rootId + " with map: " + dataMap)
+                throw e
+            }
+        }
+    }
+
+    private def storeHierarchyData(rootId: String, data: String, cache: DataCache)(implicit metrics: Metrics) = {
+        try {
+            if (StringUtils.isNotBlank(rootId)) {
+                val cacheKey = "hierarchy" + "_" + rootId;
+                cache.createWithRetry(cacheKey, data)
+                metrics.incCounter(config.cacheWrite)
+            } else {
+                metrics.incCounter(config.failedEventCount)
+            }
+        } catch {
+            case e: Throwable => {
+                metrics.incCounter(config.failedEventCount)
+                logger.info("Failed to write data for " + "hierarchy_" + rootId + " with value: " + data)
                 throw e
             }
         }
