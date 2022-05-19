@@ -126,6 +126,24 @@ class DataCache(val config: BaseJobConfig, val redisConnect: RedisConnect, val d
     }
   }
 
+  def createWithRetry(key: String, value: String): Unit = {
+    try {
+      logger.info("Updating hierarchy data: "+ key)
+      redisConnection.del(key)
+      redisConnection.sadd(key, value)
+    } catch {
+      // Write testcase for catch block
+      // $COVERAGE-OFF$ Disabling scoverage
+      case ex: JedisException => {
+        logger.error("Exception when inserting data to redis cache", ex)
+        this.redisConnection.close()
+        this.redisConnection = redisConnect.getConnection(dbIndex)
+        redisConnection.del(key)
+        redisConnection.sadd(key, value)
+      }
+    }
+  }
+
   /**
    * The cache will add the given members if already exists otherwise, it will create cache with the given members.
    * @param key

@@ -87,8 +87,10 @@ class RelationCacheUpdater(config: RelationCacheUpdaterConfig)
     private def getHierarchy(identifier: String)(implicit metrics: Metrics): java.util.Map[String, AnyRef] = {
         val hierarchy = readHierarchyFromDb(identifier)
         metrics.incCounter(config.dbReadCount)
-        if (StringUtils.isNotBlank(hierarchy))
+        if (StringUtils.isNotBlank(hierarchy)) {
+            storeHierarchyData(identifier, hierarchy, dataCache) (metrics)
             mapper.readValue(hierarchy, classOf[java.util.Map[String, AnyRef]])
+        }
         else new java.util.HashMap[String, AnyRef]()
     }
 
@@ -166,6 +168,24 @@ class RelationCacheUpdater(config: RelationCacheUpdaterConfig)
             case e: Throwable => {
                 metrics.incCounter(config.failedEventCount)
                 logger.info("Failed to write data for " + suffix + ": " + rootId + " with map: " + dataMap)
+                throw e
+            }
+        }
+    }
+
+    private def storeHierarchyData(rootId: String, data: String, cache: DataCache)(implicit metrics: Metrics) = {
+        try {
+            if (StringUtils.isNotBlank(rootId)) {
+                val cacheKey = "hierarchy_" + rootId;
+                cache.createWithRetry(cacheKey, data)
+                metrics.incCounter(config.cacheWrite)
+            } else {
+                metrics.incCounter(config.failedEventCount)
+            }
+        } catch {
+            case e: Throwable => {
+                metrics.incCounter(config.failedEventCount)
+                logger.info("Failed to write data for " + "hierarchy_" + rootId + " with value: " + data)
                 throw e
             }
         }
