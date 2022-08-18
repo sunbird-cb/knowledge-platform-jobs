@@ -18,6 +18,7 @@ class StorageService(storageParams: StorageParams) extends Serializable {
   @throws[Exception]
   def getService: BaseStorageService = {
     if (null == storageService) {
+      println("storageType=="+storageType)
       if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AZURE)) {
         val storageKey = storageParams.azureStorageKey
         val storageSecret = storageParams.azureStorageSecret
@@ -50,6 +51,7 @@ class StorageService(storageParams: StorageParams) extends Serializable {
   def uploadFile(path: String, file: File): String = {
     val objectKey = path + file.getName
     val containerName = getContainerName
+    println("containerName=="+containerName)
     val url = getService.upload(containerName, file.getAbsolutePath, objectKey, Option.apply(false), Option.apply(1), Option.apply(5), Option.empty)
     UrlManager.getSharableUrl(url, containerName)
   }
