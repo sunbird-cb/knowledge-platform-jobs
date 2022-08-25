@@ -18,19 +18,13 @@ class StorageService(storageParams: StorageParams) extends Serializable {
   @throws[Exception]
   def getService: BaseStorageService = {
     if (null == storageService) {
-      println("storageType=="+storageType)
-      println("storageParams=="+storageParams)
-      println("storageKey=="+Some(storageParams.storageKey))
-      println("storageSecret=="+Some(storageParams.storageSecret))
-      println("storageEndPoint=="+Some(storageParams.storageEndPoint))
-
+      
       val storageKey = storageParams.storageKey
       val storageSecret = storageParams.storageSecret
       if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AZURE) || StringUtils.equalsIgnoreCase(storageType, JsonKeys.AWS)) {
         storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret))
       } else if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.CEPHS3)) {
         val storageEndPoint = storageParams.storageEndPoint.getOrElse("")
-        println("storageEndPoint=="+Some(storageEndPoint))
         storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret,Option(storageEndPoint)))
       } else throw new ServerException("ERR_INVALID_CLOUD_STORAGE", "Error while initialising cloud storage")
     }
@@ -44,7 +38,6 @@ class StorageService(storageParams: StorageParams) extends Serializable {
   def uploadFile(path: String, file: File): String = {
     val objectKey = path + file.getName
     val containerName = getContainerName
-    println("containerName=="+containerName)
     val url = getService.upload(containerName, file.getAbsolutePath, objectKey, Option.apply(false), Option.apply(1), Option.apply(5), Option.empty)
     UrlManager.getSharableUrl(url, containerName)
   }
