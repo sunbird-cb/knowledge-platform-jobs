@@ -22,13 +22,19 @@ class CloudStorageUtil(config: AssetEnrichmentConfig) extends Serializable {
       val awsStorageKey = config.getString("aws_storage_key", "")
       val awsStorageSecret = config.getString("aws_storage_secret", "")
       StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, awsStorageKey, awsStorageSecret))
-    } else throw new Exception("Error while initialising cloud storage")
+    } else if (StringUtils.equalsIgnoreCase(cloudStorageType, "cephs3")) {
+				val storageKey = config.getString("cephs3_storage_key", "");
+				val storageSecret = config.getString("cephs3_storage_secret", "");
+				val endPoint = config.getString("cephs3_storage_endpoint", "");
+				StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, storageKey, storageSecret, Option(endPoint)))
+			} else throw new Exception("Error while initialising cloud storage")
   }
 
   def getContainerName: String = {
     cloudStorageType match {
       case "azure" => config.getString("azure_storage_container", "")
       case "aws" => config.getString("aws_storage_container", "")
+      case "cephs3" => config.getString("cephs3_storage_container", "")
       case _ => throw new Exception("Container name not configured.")
     }
   }

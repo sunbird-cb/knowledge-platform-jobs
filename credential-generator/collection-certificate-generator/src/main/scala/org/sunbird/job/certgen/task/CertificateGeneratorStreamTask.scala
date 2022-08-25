@@ -14,6 +14,7 @@ import org.sunbird.job.certgen.domain.Event
 import org.sunbird.job.certgen.functions.{CertificateGeneratorFunction, CreateUserFeedFunction, NotificationMetaData, NotifierFunction, UserFeedMetaData}
 import org.sunbird.job.connector.FlinkKafkaConnector
 import org.sunbird.job.util.{FlinkUtil, HttpUtil}
+import org.sunbird.incredible.pojos.exceptions.ServerException
 
 class CertificateGeneratorStreamTask(config: CertificateGeneratorConfig, kafkaConnector: FlinkKafkaConnector, httpUtil: HttpUtil, storageService: StorageService) {
 
@@ -71,7 +72,17 @@ object CertificateGeneratorStreamTask {
     val ccgConfig = new CertificateGeneratorConfig(config)
     val kafkaUtil = new FlinkKafkaConnector(ccgConfig)
     val httpUtil = new HttpUtil
-    val storageParams: StorageParams = StorageParams(ccgConfig.storageType, ccgConfig.azureStorageKey, ccgConfig.azureStorageSecret, ccgConfig.containerName)
+    var storageParams: StorageParams = null
+    
+    if (ccgConfig.storageType.equalsIgnoreCase(ccgConfig.AZURE)) {
+      storageParams = StorageParams(ccgConfig.storageType, ccgConfig.azureStorageKey, ccgConfig.azureStorageSecret, ccgConfig.containerName)
+    } else if (ccgConfig.storageType.equalsIgnoreCase(ccgConfig.AWS)) {
+      storageParams = StorageParams(ccgConfig.storageType, ccgConfig.awsStorageKey, ccgConfig.awsStorageSecret, ccgConfig.containerName)
+    } else if (ccgConfig.storageType.equalsIgnoreCase(ccgConfig.CEPHS3)) {
+      storageParams = StorageParams(ccgConfig.storageType, ccgConfig.cephs3StorageKey, ccgConfig.cephs3StorageSecret, ccgConfig.containerName, Some(ccgConfig.cephs3StorageEndPoint))
+    } else throw new ServerException("ERR_INVALID_CLOUD_STORAGE", "Error while initialising cloud storage")
+    
+    //val storageParams: StorageParams = StorageParams(ccgConfig.storageType, ccgConfig.azureStorageKey, ccgConfig.azureStorageSecret, ccgConfig.containerName)
     val storageService: StorageService = new StorageService(storageParams)
     val task = new CertificateGeneratorStreamTask(ccgConfig, kafkaUtil, httpUtil, storageService)
     task.process()
