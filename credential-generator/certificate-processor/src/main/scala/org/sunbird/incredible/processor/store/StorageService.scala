@@ -24,13 +24,13 @@ class StorageService(storageParams: StorageParams) extends Serializable {
         val storageSecret = storageParams.azureStorageSecret
         storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret))
       } else if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AWS)) {
-        val storageKey = storageParams.awsStorageKey.get
-        val storageSecret = storageParams.awsStorageSecret.get
+        val storageKey = storageParams.awsStorageKey.getOrElse("")
+        val storageSecret = storageParams.awsStorageSecret.getOrElse("")
         storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret))
       } else if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.CEPHS3)) {
-        val storageKey = storageParams.cephs3StorageKey.get
-        val storageSecret = storageParams.cephs3StorageSecret.get
-        val cephs3StorageEndPoint = storageParams.cephs3StorageEndPoint.get
+        val storageKey = storageParams.cephs3StorageKey.getOrElse("")
+        val storageSecret = storageParams.cephs3StorageSecret.getOrElse("")
+        val cephs3StorageEndPoint = storageParams.cephs3StorageEndPoint.getOrElse("")
         println("storageKey=="+storageKey)
         println("storageSecret=="+storageSecret)
         println("cephs3StorageEndPoint=="+cephs3StorageEndPoint)
