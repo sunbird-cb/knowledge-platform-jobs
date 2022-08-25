@@ -87,13 +87,13 @@ object CertificateGeneratorStreamTask {
       println("aws storageType=="+ccgConfig.storageType)
       println("aws storageParams=="+storageParams)
     } else if (ccgConfig.storageType.equalsIgnoreCase(ccgConfig.CEPHS3)) {
-      storageParams = StorageParams(ccgConfig.storageType, ccgConfig.cephs3StorageKey, ccgConfig.cephs3StorageSecret, ccgConfig.containerName, Option(ccgConfig.cephs3StorageEndPoint))
-      storageParams1 = StorageParams(ccgConfig.storageType, ccgConfig.cephs3StorageKey, ccgConfig.cephs3StorageSecret, ccgConfig.containerName, Some(ccgConfig.cephs3StorageEndPoint))
-      storageParams2 = StorageParams(ccgConfig.storageType, ccgConfig.cephs3StorageKey, ccgConfig.cephs3StorageSecret, ccgConfig.containerName, ccgConfig.cephs3StorageEndPoint)
+      //storageParams = StorageParams(ccgConfig.storageType, ccgConfig.cephs3StorageKey, ccgConfig.cephs3StorageSecret, ccgConfig.containerName, Option(ccgConfig.cephs3StorageEndPoint))
+      storageParams = StorageParams(ccgConfig.storageType, ccgConfig.cephs3StorageKey, ccgConfig.cephs3StorageSecret, ccgConfig.containerName, Some(ccgConfig.cephs3StorageEndPoint))
+      //storageParams2 = StorageParams(ccgConfig.storageType, ccgConfig.cephs3StorageKey, ccgConfig.cephs3StorageSecret, ccgConfig.containerName, ccgConfig.cephs3StorageEndPoint)
       println("storageType=="+ccgConfig.storageType)
+      //println("storageParams=="+storageParams)
       println("storageParams=="+storageParams)
-      println("storageParams1=="+storageParams1)
-      println("storageParams2=="+storageParams2)
+      //println("storageParams2=="+storageParams2)
     } else throw new ServerException("ERR_INVALID_CLOUD_STORAGE", "Error while initialising cloud storage")
     
     //val storageParams: StorageParams = StorageParams(ccgConfig.storageType, ccgConfig.azureStorageKey, ccgConfig.azureStorageSecret, ccgConfig.containerName)
