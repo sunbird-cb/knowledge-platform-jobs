@@ -19,6 +19,10 @@ class StorageService(storageParams: StorageParams) extends Serializable {
   def getService: BaseStorageService = {
     if (null == storageService) {
       println("storageType=="+storageType)
+      println("storageParams=="+storageParams)
+      println("storageKey=="+Some(storageParams.cephs3StorageKey))
+      println("storageSecret=="+Some(storageParams.cephs3StorageSecret))
+      println("cephs3StorageEndPoint=="+Some(storageParams.cephs3StorageEndPoint))
       if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AZURE)) {
         val storageKey = storageParams.azureStorageKey
         val storageSecret = storageParams.azureStorageSecret
@@ -34,7 +38,7 @@ class StorageService(storageParams: StorageParams) extends Serializable {
         println("storageKey=="+Some(storageKey))
         println("storageSecret=="+Some(storageSecret))
         println("cephs3StorageEndPoint=="+Some(cephs3StorageEndPoint))
-        storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, Some(storageKey), Some(storageSecret),Some(cephs3StorageEndPoint)))
+        storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret,Option(cephs3StorageEndPoint)))
       } else throw new ServerException("ERR_INVALID_CLOUD_STORAGE", "Error while initialising cloud storage")
     }
     storageService
