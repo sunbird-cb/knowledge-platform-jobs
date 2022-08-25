@@ -72,7 +72,10 @@ object CertificateGeneratorStreamTask {
     val ccgConfig = new CertificateGeneratorConfig(config)
     val kafkaUtil = new FlinkKafkaConnector(ccgConfig)
     val httpUtil = new HttpUtil
-    var storageParams: StorageParams= null
+    var storageParams: StorageParams = null
+    var storageParams1: StorageParams = null
+    var storageParams2: StorageParams = null
+
     println("CertificateGeneratorStreamTask storageType=="+ccgConfig.storageType)
     println("ccgConfig=="+ccgConfig)
     if (ccgConfig.storageType.equalsIgnoreCase(ccgConfig.AZURE)) {
@@ -85,8 +88,12 @@ object CertificateGeneratorStreamTask {
       println("aws storageParams=="+storageParams)
     } else if (ccgConfig.storageType.equalsIgnoreCase(ccgConfig.CEPHS3)) {
       storageParams = StorageParams(ccgConfig.storageType, ccgConfig.cephs3StorageKey, ccgConfig.cephs3StorageSecret, ccgConfig.containerName, Option(ccgConfig.cephs3StorageEndPoint))
+      storageParams1 = StorageParams(ccgConfig.storageType, ccgConfig.cephs3StorageKey, ccgConfig.cephs3StorageSecret, ccgConfig.containerName, Some(ccgConfig.cephs3StorageEndPoint))
+      storageParams2 = StorageParams(ccgConfig.storageType, ccgConfig.cephs3StorageKey, ccgConfig.cephs3StorageSecret, ccgConfig.containerName, ccgConfig.cephs3StorageEndPoint)
       println("storageType=="+ccgConfig.storageType)
       println("storageParams=="+storageParams)
+      println("storageParams1=="+storageParams1)
+      println("storageParams2=="+storageParams2)
     } else throw new ServerException("ERR_INVALID_CLOUD_STORAGE", "Error while initialising cloud storage")
     
     //val storageParams: StorageParams = StorageParams(ccgConfig.storageType, ccgConfig.azureStorageKey, ccgConfig.azureStorageSecret, ccgConfig.containerName)
