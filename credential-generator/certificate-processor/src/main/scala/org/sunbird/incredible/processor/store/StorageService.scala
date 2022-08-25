@@ -20,39 +20,25 @@ class StorageService(storageParams: StorageParams) extends Serializable {
     if (null == storageService) {
       println("storageType=="+storageType)
       println("storageParams=="+storageParams)
-      println("storageKey=="+Some(storageParams.cephs3StorageKey))
-      println("storageSecret=="+Some(storageParams.cephs3StorageSecret))
-      println("cephs3StorageEndPoint=="+Some(storageParams.cephs3StorageEndPoint))
-      if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AZURE)) {
-        val storageKey = storageParams.azureStorageKey
-        val storageSecret = storageParams.azureStorageSecret
-        storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret))
-      } else if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AWS)) {
-        val storageKey = storageParams.awsStorageKey.getOrElse("")
-        val storageSecret = storageParams.awsStorageSecret.getOrElse("")
+      println("storageKey=="+Some(storageParams.storageKey))
+      println("storageSecret=="+Some(storageParams.storageSecret))
+      println("storageEndPoint=="+Some(storageParams.storageEndPoint))
+
+      val storageKey = storageParams.storageKey
+      val storageSecret = storageParams.storageSecret
+      if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AZURE) || StringUtils.equalsIgnoreCase(storageType, JsonKeys.AWS)) {
         storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret))
       } else if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.CEPHS3)) {
-        val storageKey = storageParams.cephs3StorageKey.getOrElse("")
-        val storageSecret = storageParams.cephs3StorageSecret.getOrElse("")
-        val cephs3StorageEndPoint = storageParams.cephs3StorageEndPoint.getOrElse("")
-        println("storageKey=="+Some(storageKey))
-        println("storageSecret=="+Some(storageSecret))
-        println("cephs3StorageEndPoint=="+Some(cephs3StorageEndPoint))
-        storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret,Option(cephs3StorageEndPoint)))
+        val storageEndPoint = storageParams.storageEndPoint.getOrElse("")
+        println("storageEndPoint=="+Some(storageEndPoint))
+        storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret,Option(storageEndPoint)))
       } else throw new ServerException("ERR_INVALID_CLOUD_STORAGE", "Error while initialising cloud storage")
     }
     storageService
   }
 
   def getContainerName: String = {
-    if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AZURE))
-      storageParams.azureContainerName
-    else if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AWS))
-      storageParams.awsContainerName.getOrElse("")
-    else if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.CEPHS3))
-      storageParams.cephs3ContainerName.getOrElse("")
-    else
-      throw new ServerException("ERR_INVALID_CLOUD_STORAGE", "Container name not configured.")
+     storageParams.containerName
   }
 
   def uploadFile(path: String, file: File): String = {
