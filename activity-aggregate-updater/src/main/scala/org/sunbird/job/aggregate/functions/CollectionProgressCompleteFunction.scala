@@ -68,6 +68,8 @@ class CollectionProgressCompleteFunction(config: ActivityAggregateUpdaterConfig)
       context = EventContext(cdata = Array(Map("type" -> config.courseBatch, "id" -> data.batchId).asJava, Map("type" -> "Course", "id" -> data.courseId).asJava)),
       `object` = EventObject(id = data.userId, `type` = "User", rollup = Map[String, String]("l1" -> data.courseId).asJava)
     )
+    logger.info("auditEvent: " + auditEvent)
+    logger.info("gson.toJson: " + (gson.toJson(auditEvent)))
     context.output(config.auditEventOutputTag, gson.toJson(auditEvent))
 
   }
