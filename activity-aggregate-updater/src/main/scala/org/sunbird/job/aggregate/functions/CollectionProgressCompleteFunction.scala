@@ -68,8 +68,6 @@ class CollectionProgressCompleteFunction(config: ActivityAggregateUpdaterConfig)
       context = EventContext(cdata = Array(Map("type" -> config.courseBatch, "id" -> data.batchId).asJava, Map("type" -> "Course", "id" -> data.courseId).asJava)),
       `object` = EventObject(id = data.userId, `type` = "User", rollup = Map[String, String]("l1" -> data.courseId).asJava)
     )
-    logger.info("auditEvent: " + auditEvent)
-    logger.info("gson.toJson: " + (gson.toJson(auditEvent)))
     context.output(config.auditEventOutputTag, gson.toJson(auditEvent))
 
   }
@@ -127,12 +125,6 @@ class CollectionProgressCompleteFunction(config: ActivityAggregateUpdaterConfig)
   def createIssueCertEvent(enrolment: CollectionProgress, context: ProcessFunction[List[CollectionProgress], String]#Context)(implicit metrics: Metrics): Unit = {
     val ets = System.currentTimeMillis
     val mid = s"""LP.${ets}.${UUID.randomUUID}"""
-
-    logger.info("createIssueCertEvent: " + ets)
-    logger.info("mid: " + mid)
-    logger.info("batch id: " + enrolment.batchId)
-    logger.info("course id: " + enrolment.courseId)
-    logger.info("user id: " + enrolment.userId)
     
     val event = s"""{"eid": "BE_JOB_REQUEST","ets": ${ets},"mid": "${mid}","actor": {"id": "Course Certificate Generator","type": "System"},"context": {"pdata": {"ver": "1.0","id": "org.sunbird.platform"}},"object": {"id": "${enrolment.batchId}_${enrolment.courseId}","type": "CourseCertificateGeneration"},"edata": {"userIds": ["${enrolment.userId}"],"action": "issue-certificate","iteration": 1, "trigger": "auto-issue","batchId": "${enrolment.batchId}","reIssue": false,"courseId": "${enrolment.courseId}"}}"""
     logger.info("Event for Certificate Issue: " + event)
