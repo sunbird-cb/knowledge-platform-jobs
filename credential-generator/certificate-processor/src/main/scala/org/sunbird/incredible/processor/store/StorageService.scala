@@ -18,26 +18,20 @@ class StorageService(storageParams: StorageParams) extends Serializable {
   @throws[Exception]
   def getService: BaseStorageService = {
     if (null == storageService) {
-      if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AZURE)) {
-        val storageKey = storageParams.azureStorageKey
-        val storageSecret = storageParams.azureStorageSecret
+      val storageKey = storageParams.storageKey
+      val storageSecret = storageParams.storageSecret
+      if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AZURE) || StringUtils.equalsIgnoreCase(storageType, JsonKeys.AWS)) {
         storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret))
-      } else if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AWS)) {
-        val storageKey = storageParams.awsStorageKey.get
-        val storageSecret = storageParams.awsStorageSecret.get
-        storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret))
+      } else if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.CEPHS3)) {
+        val storageEndPoint = storageParams.storageEndPoint.getOrElse("")
+        storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret,Option(storageEndPoint)))
       } else throw new ServerException("ERR_INVALID_CLOUD_STORAGE", "Error while initialising cloud storage")
     }
     storageService
   }
 
   def getContainerName: String = {
-    if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AZURE))
-      storageParams.azureContainerName
-    else if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AWS))
-      storageParams.awsContainerName.get
-    else
-      throw new ServerException("ERR_INVALID_CLOUD_STORAGE", "Container name not configured.")
+    storageParams.containerName
   }
 
   def uploadFile(path: String, file: File): String = {
