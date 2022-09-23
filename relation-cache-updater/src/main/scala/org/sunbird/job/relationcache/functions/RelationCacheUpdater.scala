@@ -151,14 +151,17 @@ class RelationCacheUpdater(config: RelationCacheUpdaterConfig)
     }
 
     private def storeDataInCache(rootId: String, suffix: String, dataMap: Map[String, AnyRef], cache: DataCache)(implicit metrics: Metrics) = {
+        logger.info("====storeDataInCache method called====")
         val finalSuffix = if (StringUtils.isNotBlank(suffix)) ":" + suffix else ""
         val finalPrefix = if (StringUtils.isNoneBlank(rootId)) rootId + ":" else ""
         try {
             dataMap.foreach(each => each._2 match {
                 case value: List[String] =>
+                    logger.info("storeDataInCache 1==>>"+(finalPrefix + each._1 + finalSuffix))
                     cache.createListWithRetry(finalPrefix + each._1 + finalSuffix, each._2.asInstanceOf[List[String]])
                     metrics.incCounter(config.cacheWrite)
                 case _ =>
+                    logger.info("storeDataInCache 2==>>"+(finalPrefix + each._1 + finalSuffix))
                     cache.setWithRetry(finalPrefix + each._1 + finalSuffix, each._2.asInstanceOf[String])
                     metrics.incCounter(config.cacheWrite)
             })
