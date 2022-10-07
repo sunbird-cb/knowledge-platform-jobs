@@ -78,5 +78,6 @@ class CollectionCertPreProcessorConfig(override val config: Config) extends Base
     val certBasePath: String = config.getString("cert_domain_url") + "/certs"
     val assessmentContentTypes = if(config.hasPath("assessment.metrics.supported.contenttype")) config.getStringList("assessment.metrics.supported.contenttype") else util.Arrays.asList("SelfAssess")
     val userAccBlockedErrCode = "UOS_USRRED0006"
+    val organisation: String = "organisation"
 
 }

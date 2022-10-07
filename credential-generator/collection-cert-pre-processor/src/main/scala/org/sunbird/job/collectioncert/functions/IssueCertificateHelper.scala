@@ -185,6 +185,19 @@ trait IssueCertificateHelper {
         }
     }
 
+    def getCourseOrganisation(courseId: String)(metrics:Metrics, config:CollectionCertPreProcessorConfig, cache:DataCache, httpUtil: HttpUtil): String = {
+        val courseMetadata = cache.getWithRetry(courseId)
+        if(null == courseMetadata || courseMetadata.isEmpty) {
+            val url = config.contentBasePath + config.contentReadApi + "/" + courseId
+            val response = getAPICall(url, "content")(config, httpUtil, metrics)
+            //StringContext.processEscapes(response.getOrElse(config.organisation, "").asInstanceOf[String]).filter(_ >= ' ')
+            response.getOrElse("organisation", None).asInstanceOf[Array[String]](0)
+        } else {
+            //StringContext.processEscapes(courseMetadata.getOrElse(config.organisation, "").asInstanceOf[String]).filter(_ >= ' ')
+            courseMetadata.getOrElse("organisation", None).asInstanceOf[Array[String]](0)
+        }
+    }
+
     def generateCertificateEvent(event: Event, template: Map[String, String], userDetails: Map[String, AnyRef], enrolledUser: EnrolledUser, assessedUser: AssessedUser, additionalProps: Map[String, List[String]], certName: String)(metrics:Metrics, config:CollectionCertPreProcessorConfig, cache:DataCache, httpUtil: HttpUtil) = {
         val firstName = Option(userDetails.getOrElse("firstName", "").asInstanceOf[String]).getOrElse("")
         val lastName = Option(userDetails.getOrElse("lastName", "").asInstanceOf[String]).getOrElse("")
@@ -193,6 +206,8 @@ trait IssueCertificateHelper {
         val courseName = getCourseName(event.courseId)(metrics, config, cache, httpUtil)
         val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
         val related = getRelatedData(event, enrolledUser, assessedUser, userDetails, additionalProps, certName, courseName)(config)
+        val providerName = getCourseOrganisation(event.courseId)(metrics, config, cache, httpUtil)
+        println("providerName==>>"+providerName)
         val eData = Map[String, AnyRef] (
             "issuedDate" -> dateFormatter.format(enrolledUser.issuedOn),
             "data" -> List(Map[String, AnyRef]("recipientName" -> recipientName, "recipientId" -> event.userId)),
@@ -208,6 +223,7 @@ trait IssueCertificateHelper {
             "basePath" -> config.certBasePath,
             "related" ->  related,
             "name" -> certName,
+            "providerName" -> providerName,
             "tag" -> event.batchId
         )
 
