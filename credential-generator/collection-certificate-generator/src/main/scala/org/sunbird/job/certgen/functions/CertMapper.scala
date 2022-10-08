@@ -37,7 +37,7 @@ class CertMapper(certConfig: CertificateConfig) {
         keyId = certReq.keys.getOrElse(JsonKeys.ID, ""),
         tag = certReq.tag,
         expiry = Option.apply(expiryDate),
-        providerName = Option.apply(data.getOrElse(JsonKeys.PROVIDER_NAME, null).asInstanceOf[String])
+        providerName = certReq.providerName
       )
       certModel
     }).toList

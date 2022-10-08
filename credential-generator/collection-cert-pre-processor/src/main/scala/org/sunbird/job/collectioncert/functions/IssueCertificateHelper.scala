@@ -10,8 +10,10 @@ import org.sunbird.job.cache.DataCache
 import org.sunbird.job.collectioncert.domain.{AssessedUser, AssessmentUserAttempt, BEJobRequestEvent, EnrolledUser, Event, EventObject}
 import org.sunbird.job.collectioncert.task.CollectionCertPreProcessorConfig
 import org.sunbird.job.util.{CassandraUtil, HttpUtil, ScalaJsonUtil}
+import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper, ObjectWriter}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.Future.apply
 
 trait IssueCertificateHelper {
     private[this] val logger = LoggerFactory.getLogger(classOf[CollectionCertPreProcessorFn])
@@ -187,15 +189,43 @@ trait IssueCertificateHelper {
 
     def getCourseOrganisation(courseId: String)(metrics:Metrics, config:CollectionCertPreProcessorConfig, cache:DataCache, httpUtil: HttpUtil): String = {
         val courseMetadata = cache.getWithRetry(courseId)
+        var data: String = ""
         if(null == courseMetadata || courseMetadata.isEmpty) {
             val url = config.contentBasePath + config.contentReadApi + "/" + courseId
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
-            //StringContext.processEscapes(response.getOrElse(config.organisation, "").asInstanceOf[String]).filter(_ >= ' ')
-            response.getOrElse("organisation", None).asInstanceOf[Array[String]](0)
+            //ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+            val jsonMapper = new ObjectMapper()
+
+            //String json1 = ow.writeValueAsString(response)
+            val json1 = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response)
+            println("json1==>>"+json1)
+            if(null != json1 || !json1.isEmpty){
+                val mapper = new ObjectMapper()
+                val actualObj: JsonNode = mapper.readTree(json1.toString)
+                val orgData = actualObj.get("result").get("content").get("organisation").asScala.toList
+                //StringContext.processEscapes(org1(0).getOrElse("").asInstanceOf[String]).filter(_ >= ' ')
+                data = orgData(0).textValue()
+                println("data==>>" + data)
+
+            }
+            
         } else {
-            //StringContext.processEscapes(courseMetadata.getOrElse(config.organisation, "").asInstanceOf[String]).filter(_ >= ' ')
-            courseMetadata.getOrElse("organisation", None).asInstanceOf[Array[String]](0)
+            //ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+            //String json = ow.writeValueAsString(courseMetadata);
+            val jsonMapper = new ObjectMapper()
+
+            val json = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(courseMetadata)
+            if(null != json || !json.isEmpty){
+                val mapper1 = new ObjectMapper()
+                val actualObj1:JsonNode = mapper1.readTree(json)
+                val orgData1 = actualObj1.get("result").get("content").get("organisation").asScala.toList
+                //StringContext.processEscapes(org1(0).getOrElse("").asInstanceOf[String]).filter(_ >= ' ')
+                data = orgData1(0).textValue()
+                println("data==>>"+data)
+
+            }
         }
+        data
     }
 
     def generateCertificateEvent(event: Event, template: Map[String, String], userDetails: Map[String, AnyRef], enrolledUser: EnrolledUser, assessedUser: AssessedUser, additionalProps: Map[String, List[String]], certName: String)(metrics:Metrics, config:CollectionCertPreProcessorConfig, cache:DataCache, httpUtil: HttpUtil) = {

@@ -124,5 +124,5 @@ object JsonKeys {
   val EXPIRY_DATE: String = "expiryDate"
   val ISSUER_NAME: String = "issuerName"
   val EDATA = "edata"
-  val PROVIDER_NAME: String = "providerName"
+  
 }
