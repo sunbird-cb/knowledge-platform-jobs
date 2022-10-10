@@ -167,7 +167,8 @@ trait IssueCertificateHelper {
     def getCourseOrganisation(courseId: String)(metrics: Metrics, config: CollectionCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): String = {
         val courseMetadata = cache.getWithRetry(courseId)
         var data: String = ""
-        if(null == courseMetadata || courseMetadata.isEmpty) {
+        println("courseMetadata==>>" + courseMetadata)
+        if(null == courseMetadata || courseMetadata.isEmpty || courseMetadata.getOrElse("empty", false).asInstanceOf[Boolean] == false) {
             val url = config.contentBasePath + config.contentReadApi + "/" + courseId
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
             val orgData: List[String] = response.get("organisation").asInstanceOf[List[String]]
