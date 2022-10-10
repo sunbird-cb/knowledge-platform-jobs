@@ -105,6 +105,9 @@ trait DialHelper {
     logger.info("Process Dialcode Link for content: " + identifier)
     val metadata = neo4JUtil.getNodeProperties(identifier)
 
+    val isDialCodeRequired = metaData.getOrDefault("dialcodeRequired", "")
+    logger.info("is DialCode Required for this Content ? " + isDialCodeRequired)
+
     if (validatePrimaryCategory(metadata)(config)) {
       logger.info(s"Primary Category match found. Starting the process for Dial Code Generation.")
       Map[String, AnyRef]("identifier" -> identifier,
