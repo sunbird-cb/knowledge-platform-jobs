@@ -13,6 +13,7 @@ import org.sunbird.job.util.{CassandraUtil, HttpUtil, ScalaJsonUtil}
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper, ObjectWriter}
 
 import scala.collection.JavaConverters._
+import java.{util => ju}
 
 trait IssueCertificateHelper {
     private[this] val logger = LoggerFactory.getLogger(classOf[CollectionCertPreProcessorFn])
@@ -168,16 +169,19 @@ trait IssueCertificateHelper {
         val courseMetadata = cache.getWithRetry(courseId)
         var data: String = ""
         println("courseMetadata==>>" + courseMetadata)
-        if(null == courseMetadata || courseMetadata.isEmpty || courseMetadata.getOrElse("empty", false).asInstanceOf[Boolean] == false) {
+        if(null == courseMetadata || courseMetadata.isEmpty) {
             val url = config.contentBasePath + config.contentReadApi + "/" + courseId
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
             println("response==>>" + response)
-            val orgData: List[String] = response.get("organisation").asInstanceOf[List[String]]
-            data = orgData(0)
+            //val orgData: List[String] = response.get("organisation").asInstanceOf[List[String]].asScala.toList
+            val orgData = response.get("organisation").toList
+            data = orgData(0).asInstanceOf[String]
             println("data==>>" + data)
         } else {
-            val orgData: List[String] = courseMetadata.get("organisation").asInstanceOf[List[String]]
-            data = orgData(0)
+            //val orgData: List[String] = courseMetadata.get("organisation").asInstanceOf[List[String]].asScala.toList
+            //data = courseMetadata.get("organisation").asInstanceOf[List[String]](0)
+            val orgData = courseMetadata.get("organisation").toList
+            data = orgData(0).asInstanceOf[String]
             println("data==>>" + data)
         }
         data
