@@ -167,9 +167,10 @@ trait IssueCertificateHelper {
     def getCourseOrganisation(courseId: String)(metrics: Metrics, config: CollectionCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): String = {
         val courseMetadata = cache.getWithRetry(courseId)
         var data: String = ""
-        if (null == courseMetadata || courseMetadata.isEmpty) {
+        if (null == courseMetadata || courseMetadata.isEmpty || courseMetadata.getOrElse("empty", false).asInstanceOf[Boolean] == false) {
             val url = config.contentBasePath + config.contentReadApi + "/" + courseId
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
+            println("response==>>" + response)
             //ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
             val jsonMapper = new ObjectMapper()
 
@@ -188,6 +189,7 @@ trait IssueCertificateHelper {
             }
 
         } else {
+            println("courseMetadata==>>" + courseMetadata)
             //ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
             //String json = ow.writeValueAsString(courseMetadata);
             val jsonMapper = new ObjectMapper()
