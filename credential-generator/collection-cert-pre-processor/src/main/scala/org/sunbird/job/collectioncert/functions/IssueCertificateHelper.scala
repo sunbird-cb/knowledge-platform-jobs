@@ -171,6 +171,7 @@ trait IssueCertificateHelper {
         if(null == courseMetadata || courseMetadata.isEmpty || courseMetadata.getOrElse("empty", false).asInstanceOf[Boolean] == false) {
             val url = config.contentBasePath + config.contentReadApi + "/" + courseId
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
+            println("response==>>" + response)
             val orgData: List[String] = response.get("organisation").asInstanceOf[List[String]]
             data = orgData(0)
             println("data==>>" + data)
