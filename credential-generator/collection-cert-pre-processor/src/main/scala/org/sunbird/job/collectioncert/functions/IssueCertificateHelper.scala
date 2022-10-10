@@ -179,6 +179,7 @@ trait IssueCertificateHelper {
             if (null != json1 || !json1.isEmpty) {
                 val mapper = new ObjectMapper()
                 val actualObj: JsonNode = mapper.readTree(json1.toString)
+                println("actualObj==>>" + actualObj)
                 val orgData = actualObj.get("result").get("content").get("organisation").asScala.toList
                 //StringContext.processEscapes(org1(0).getOrElse("").asInstanceOf[String]).filter(_ >= ' ')
                 data = orgData(0).textValue()
@@ -192,9 +193,11 @@ trait IssueCertificateHelper {
             val jsonMapper = new ObjectMapper()
 
             val json = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(courseMetadata)
+            println("json==>>" + json)
             if (null != json || !json.isEmpty) {
                 val mapper1 = new ObjectMapper()
                 val actualObj1: JsonNode = mapper1.readTree(json)
+                println("actualObj1==>>" + actualObj1)
                 val orgData1 = actualObj1.get("result").get("content").get("organisation").asScala.toList
                 //StringContext.processEscapes(org1(0).getOrElse("").asInstanceOf[String]).filter(_ >= ' ')
                 data = orgData1(0).textValue()
