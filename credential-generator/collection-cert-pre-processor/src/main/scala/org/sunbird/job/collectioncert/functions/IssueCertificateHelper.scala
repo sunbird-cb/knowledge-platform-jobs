@@ -167,45 +167,16 @@ trait IssueCertificateHelper {
     def getCourseOrganisation(courseId: String)(metrics: Metrics, config: CollectionCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): String = {
         val courseMetadata = cache.getWithRetry(courseId)
         var data: String = ""
-        if (null == courseMetadata || courseMetadata.isEmpty || courseMetadata.getOrElse("empty", false).asInstanceOf[Boolean] == false) {
+        if(null == courseMetadata || courseMetadata.isEmpty) {
             val url = config.contentBasePath + config.contentReadApi + "/" + courseId
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
-            println("response==>>" + response)
-            //ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-            val jsonMapper = new ObjectMapper()
-
-            //String json1 = ow.writeValueAsString(response)
-            val json1 = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response)
-            println("json1==>>" + json1)
-            if (null != json1 || !json1.isEmpty) {
-                val mapper = new ObjectMapper()
-                val actualObj: JsonNode = mapper.readTree(json1.toString)
-                println("actualObj==>>" + actualObj)
-                val orgData = actualObj.get("result").get("content").get("organisation").asScala.toList
-                //StringContext.processEscapes(org1(0).getOrElse("").asInstanceOf[String]).filter(_ >= ' ')
-                data = orgData(0).textValue()
-                println("data==>>" + data)
-
-            }
-
+            val orgData: List[String] = response.get("organisation").asInstanceOf[List[String]]
+            data = orgData(0)
+            println("data==>>" + data)
         } else {
-            println("courseMetadata==>>" + courseMetadata)
-            //ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-            //String json = ow.writeValueAsString(courseMetadata);
-            val jsonMapper = new ObjectMapper()
-
-            val json = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(courseMetadata)
-            println("json==>>" + json)
-            if (null != json || !json.isEmpty) {
-                val mapper1 = new ObjectMapper()
-                val actualObj1: JsonNode = mapper1.readTree(json)
-                println("actualObj1==>>" + actualObj1)
-                val orgData1 = actualObj1.get("result").get("content").get("organisation").asScala.toList
-                //StringContext.processEscapes(org1(0).getOrElse("").asInstanceOf[String]).filter(_ >= ' ')
-                data = orgData1(0).textValue()
-                println("data==>>" + data)
-
-            }
+            val orgData: List[String] = courseMetadata.get("organisation").asInstanceOf[List[String]]
+            data = orgData(0)
+            println("data==>>" + data)
         }
         data
     }
