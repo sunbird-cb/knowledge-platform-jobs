@@ -174,23 +174,33 @@ trait IssueCertificateHelper {
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
             println("response==>>" + response)
             //val orgData: List[String] = response.get("organisation").asInstanceOf[List[String]].asScala.toList
-            val orgData = response.get("organisation").toList
+            println("name==>>" + (response.getOrElse("name","").asInstanceOf[String]))
+            println("downloadurl==>>" + (response.getOrElse("downloadurl","").asInstanceOf[String]))
+            println("sefwids==>>" + (response.get("sefwids")))
+            println("identifier==>>" + (response.getOrElse("identifier","").asInstanceOf[String]))
+            println("creatorids==>>" + (response.get("creatorids")))
+            val orgData = response.get("organisation").toArray
             println("orgData==>>" + orgData)
-            val orgData1: List[String] = response.get("organisation").asInstanceOf[List[String]]
-            println("orgData1==>>" + orgData1)
-            data = orgData(0).asInstanceOf[String]
+            //val orgData1: List[String] = response.get("organisation").asInstanceOf[List[String]]
+            //println("orgData1==>>" + orgData1)
+            data = orgData(0).toString
             println("data==>>" + data)
         } else {
             //val orgData: List[String] = courseMetadata.get("organisation").asInstanceOf[List[String]].asScala.toList
             //data = courseMetadata.get("organisation").asInstanceOf[List[String]](0)
-            val orgData = courseMetadata.get("organisation").toList
+            println("name==>>" + (courseMetadata.getOrElse("name","").asInstanceOf[String]))
+            println("downloadurl==>>" + (courseMetadata.getOrElse("downloadurl","").asInstanceOf[String]))
+            println("sefwids==>>" + (courseMetadata.get("sefwids")))
+            println("identifier==>>" + (courseMetadata.getOrElse("identifier","").asInstanceOf[String]))
+            println("creatorids==>>" + (courseMetadata.get("creatorids")))
+            val orgData = courseMetadata.get("organisation").toArray
             println("orgData==>>" + orgData)
-            val orgData1: List[String] = courseMetadata.get("organisation").asInstanceOf[List[String]]
-            println("orgData1==>>" + orgData1)
-            data = orgData(0).asInstanceOf[String]
+            //val orgData1: List[String] = courseMetadata.get("organisation").asInstanceOf[List[String]]
+            //println("orgData1==>>" + orgData1)
+            data = orgData(0).toString
             println("data==>>" + data)
         }
-        data
+        data        
     }
 
     def generateCertificateEvent(event: Event, template: Map[String, String], userDetails: Map[String, AnyRef], enrolledUser: EnrolledUser, certName: String)(metrics:Metrics, config:CollectionCertPreProcessorConfig, cache:DataCache, httpUtil: HttpUtil) = {
