@@ -168,37 +168,16 @@ trait IssueCertificateHelper {
     def getCourseOrganisation(courseId: String)(metrics: Metrics, config: CollectionCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): String = {
         val courseMetadata = cache.getWithRetry(courseId)
         var data: String = ""
-        println("courseMetadata==>>" + courseMetadata)
         if(null == courseMetadata || courseMetadata.isEmpty) {
             val url = config.contentBasePath + config.contentReadApi + "/" + courseId
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
-            println("response==>>" + response)
-            //val orgData: List[String] = response.get("organisation").asInstanceOf[List[String]].asScala.toList
-            println("name==>>" + (response.getOrElse("name","").asInstanceOf[String]))
-            println("downloadurl==>>" + (response.getOrElse("downloadurl","").asInstanceOf[String]))
-            println("sefwids==>>" + (response.get("sefwids")))
-            println("identifier==>>" + (response.getOrElse("identifier","").asInstanceOf[String]))
-            println("creatorids==>>" + (response.get("creatorids")))
             val orgData = response.get("organisation").toArray
-            println("orgData==>>" + orgData)
-            //val orgData1: List[String] = response.get("organisation").asInstanceOf[List[String]]
-            //println("orgData1==>>" + orgData1)
-            data = orgData(0).toString
-            println("data==>>" + data)
+            val pm = orgData(0).toString
+            data = pm.substring(1, pm.length-1)
         } else {
-            //val orgData: List[String] = courseMetadata.get("organisation").asInstanceOf[List[String]].asScala.toList
-            //data = courseMetadata.get("organisation").asInstanceOf[List[String]](0)
-            println("name==>>" + (courseMetadata.getOrElse("name","").asInstanceOf[String]))
-            println("downloadurl==>>" + (courseMetadata.getOrElse("downloadurl","").asInstanceOf[String]))
-            println("sefwids==>>" + (courseMetadata.get("sefwids")))
-            println("identifier==>>" + (courseMetadata.getOrElse("identifier","").asInstanceOf[String]))
-            println("creatorids==>>" + (courseMetadata.get("creatorids")))
             val orgData = courseMetadata.get("organisation").toArray
-            println("orgData==>>" + orgData)
-            //val orgData1: List[String] = courseMetadata.get("organisation").asInstanceOf[List[String]]
-            //println("orgData1==>>" + orgData1)
-            data = orgData(0).toString
-            println("data==>>" + data)
+            val pm = orgData(0).toString
+            data = pm.substring(1, pm.length-1)
         }
         data        
     }
