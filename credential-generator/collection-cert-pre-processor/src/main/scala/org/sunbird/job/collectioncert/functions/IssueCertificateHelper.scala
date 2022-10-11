@@ -190,7 +190,7 @@ trait IssueCertificateHelper {
         val courseName = getCourseName(event.courseId)(metrics, config, cache, httpUtil)
         val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
         val providerName = getCourseOrganisation(event.courseId)(metrics, config, cache, httpUtil)
-        println("providerName==>>" + providerName)
+        logger.info("providerName==>>" + providerName)
         val eData = Map[String, AnyRef] (
             "issuedDate" -> dateFormatter.format(enrolledUser.issuedOn),
             "data" -> List(Map[String, AnyRef]("recipientName" -> recipientName, "recipientId" -> event.userId)),

@@ -48,7 +48,8 @@ object CertificateFactory {
       issuedOn = certModel.issuedDate,
       expires = certModel.expiry.orNull,
       validFrom = certModel.validFrom.orNull,
-      signatory = certModel.signatoryList)
+      signatory = certModel.signatoryList,
+      providerName = certModel.providerName)
     if (StringUtils.isNotEmpty(certModel.courseName)) {
       val trainingEvidence: TrainingEvidence = TrainingEvidence(certificateConfig.contextUrl,
         id = certificateConfig.evidenceUrl,
@@ -67,6 +68,7 @@ object CertificateFactory {
       val signature: Signature = Signature(created = Instant.now.toString, creator = basePath.concat("/").concat(certModel.keyId).concat(JsonKeys.PUBLIC_KEY_URL), signatureValue = signatureValue)
       certificateExtension.signature = Option.apply(signature)
     }
+
     certificateExtension
   }
 

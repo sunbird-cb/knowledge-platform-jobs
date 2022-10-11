@@ -67,6 +67,8 @@ class VarResolver(certificateExtension: CertificateExtension) {
 
   def getIssuerName: String = certificateExtension.badge.issuer.name
 
+  def getProviderName: String = certificateExtension.providerName
+
   @throws[UnsupportedEncodingException]
   def getCertMetaData: java.util.Map[String, String] = {
 
@@ -84,6 +86,7 @@ class VarResolver(certificateExtension: CertificateExtension) {
         put(JsonKeys.SIGNATORY_1_DESIGNATION, urlEncode(getSignatory1Designation))
         put(JsonKeys.EXPIRY_DATE, urlEncode(getExpiryDate))
         put(JsonKeys.ISSUER_NAME, urlEncode(getIssuerName))
+        put(JsonKeys.PROVIDER_NAME, urlEncode(getProviderName))
       }
     }
     metaData
