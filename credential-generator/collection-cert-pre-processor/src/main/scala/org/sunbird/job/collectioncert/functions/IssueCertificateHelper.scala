@@ -175,12 +175,18 @@ trait IssueCertificateHelper {
             println("response==>>" + response)
             //val orgData: List[String] = response.get("organisation").asInstanceOf[List[String]].asScala.toList
             val orgData = response.get("organisation").toList
+            println("orgData==>>" + orgData)
+            val orgData1: List[String] = response.get("organisation").asInstanceOf[List[String]]
+            println("orgData1==>>" + orgData1)
             data = orgData(0).asInstanceOf[String]
             println("data==>>" + data)
         } else {
             //val orgData: List[String] = courseMetadata.get("organisation").asInstanceOf[List[String]].asScala.toList
             //data = courseMetadata.get("organisation").asInstanceOf[List[String]](0)
             val orgData = courseMetadata.get("organisation").toList
+            println("orgData==>>" + orgData)
+            val orgData1: List[String] = courseMetadata.get("organisation").asInstanceOf[List[String]]
+            println("orgData1==>>" + orgData1)
             data = orgData(0).asInstanceOf[String]
             println("data==>>" + data)
         }
