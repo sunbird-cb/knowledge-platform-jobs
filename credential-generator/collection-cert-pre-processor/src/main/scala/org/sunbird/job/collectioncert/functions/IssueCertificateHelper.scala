@@ -187,45 +187,21 @@ trait IssueCertificateHelper {
         }
     }
 
-    def getCourseOrganisation(courseId: String)(metrics:Metrics, config:CollectionCertPreProcessorConfig, cache:DataCache, httpUtil: HttpUtil): String = {
+    def getCourseOrganisation(courseId: String)(metrics: Metrics, config: CollectionCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): String = {
         val courseMetadata = cache.getWithRetry(courseId)
         var data: String = ""
         if(null == courseMetadata || courseMetadata.isEmpty) {
             val url = config.contentBasePath + config.contentReadApi + "/" + courseId
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
-            //ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-            val jsonMapper = new ObjectMapper()
-
-            //String json1 = ow.writeValueAsString(response)
-            val json1 = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response)
-            println("json1==>>"+json1)
-            if(null != json1 || !json1.isEmpty){
-                val mapper = new ObjectMapper()
-                val actualObj: JsonNode = mapper.readTree(json1.toString)
-                val orgData = actualObj.get("result").get("content").get("organisation").asScala.toList
-                //StringContext.processEscapes(org1(0).getOrElse("").asInstanceOf[String]).filter(_ >= ' ')
-                data = orgData(0).textValue()
-                println("data==>>" + data)
-
-            }
-            
+            val orgData = response.get("organisation").toArray
+            val pm = orgData(0).toString
+            data = pm.substring(1, pm.length-1)
         } else {
-            //ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-            //String json = ow.writeValueAsString(courseMetadata);
-            val jsonMapper = new ObjectMapper()
-
-            val json = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(courseMetadata)
-            if(null != json || !json.isEmpty){
-                val mapper1 = new ObjectMapper()
-                val actualObj1:JsonNode = mapper1.readTree(json)
-                val orgData1 = actualObj1.get("result").get("content").get("organisation").asScala.toList
-                //StringContext.processEscapes(org1(0).getOrElse("").asInstanceOf[String]).filter(_ >= ' ')
-                data = orgData1(0).textValue()
-                println("data==>>"+data)
-
-            }
+            val orgData = courseMetadata.get("organisation").toArray
+            val pm = orgData(0).toString
+            data = pm.substring(1, pm.length-1)
         }
-        data
+        data        
     }
 
     def generateCertificateEvent(event: Event, template: Map[String, String], userDetails: Map[String, AnyRef], enrolledUser: EnrolledUser, assessedUser: AssessedUser, additionalProps: Map[String, List[String]], certName: String)(metrics:Metrics, config:CollectionCertPreProcessorConfig, cache:DataCache, httpUtil: HttpUtil) = {
@@ -237,7 +213,7 @@ trait IssueCertificateHelper {
         val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
         val related = getRelatedData(event, enrolledUser, assessedUser, userDetails, additionalProps, certName, courseName)(config)
         val providerName = getCourseOrganisation(event.courseId)(metrics, config, cache, httpUtil)
-        println("providerName==>>"+providerName)
+        logger.info("providerName==>>"+providerName)
         val eData = Map[String, AnyRef] (
             "issuedDate" -> dateFormatter.format(enrolledUser.issuedOn),
             "data" -> List(Map[String, AnyRef]("recipientName" -> recipientName, "recipientId" -> event.userId)),
@@ -253,8 +229,8 @@ trait IssueCertificateHelper {
             "basePath" -> config.certBasePath,
             "related" ->  related,
             "name" -> certName,
-            "providerName" -> providerName,
-            "tag" -> event.batchId
+            "tag" -> event.batchId,
+            "providerName" -> providerName
         )
 
         ScalaJsonUtil.serialize(BEJobRequestEvent(edata = eData, `object` = EventObject(id= event.userId)))
