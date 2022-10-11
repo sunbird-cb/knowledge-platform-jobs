@@ -24,6 +24,7 @@ object SvgGenerator {
   @throws[FileNotFoundException]
   def generate(certificateExtension: CertificateExtension, encodedQrCode: String, svgTemplateUrl: String): String = {
     var cachedTemplate = svgTemplatesCache.get(svgTemplateUrl).getOrElse("")
+    logger.info("cachedTemplate==>>" +cachedTemplate)
     if (StringUtils.isEmpty(cachedTemplate)) {
       logger.info("{} svg not cached , downloading", svgTemplateUrl)
       cachedTemplate = download(svgTemplateUrl)
