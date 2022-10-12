@@ -123,5 +123,4 @@ class CollectionCertPreProcessFnTestSpec extends BaseTestSpec {
         val certUserData = certEdata.getOrDefault("data", new util.LinkedList[util.LinkedHashMap[String, Any]]()).asInstanceOf[util.ArrayList[LinkedTreeMap[String, Any]]]
         certUserData.get(0).get("recipientName").asInstanceOf[String]
     }
-
 }

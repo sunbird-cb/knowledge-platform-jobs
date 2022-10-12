@@ -58,4 +58,6 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
   
   def userId: String = readOrDefault[String]("edata.userId", "")
 
+  def providerName: String = readOrDefault[String]("edata.providerName", "")
+
 }

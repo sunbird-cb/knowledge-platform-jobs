@@ -206,7 +206,7 @@ case class CertificateExtension(@JsonProperty("@context") context: String, relat
                                 , var evidence: Option[TrainingEvidence] = None, expires: String, verification: Option[VerificationObject] = None, narrative: Option[String] = None
                                 , revoked: Boolean = false, revocationReason: Option[String] = None, `type`: Array[String] = Array("Assertion", "Extension", "extensions:CertificateExtension"),
                                 value: Option[Float] = None, awardedThrough: Option[String] = None, signatory: Array[SignatoryExtension],
-                                var printUri: Option[String] = None, validFrom: String, var signature: Option[Signature] = None)
+                                var printUri: Option[String] = None, validFrom: String, var signature: Option[Signature] = None, providerName: String)
 
 /**
   *

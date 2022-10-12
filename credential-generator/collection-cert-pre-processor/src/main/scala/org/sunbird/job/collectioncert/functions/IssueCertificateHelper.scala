@@ -10,8 +10,10 @@ import org.sunbird.job.cache.DataCache
 import org.sunbird.job.collectioncert.domain.{AssessmentUserAttempt, BEJobRequestEvent, EnrolledUser, Event, EventObject}
 import org.sunbird.job.collectioncert.task.CollectionCertPreProcessorConfig
 import org.sunbird.job.util.{CassandraUtil, HttpUtil, ScalaJsonUtil}
+import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper, ObjectWriter}
 
 import scala.collection.JavaConverters._
+import java.{util => ju}
 
 trait IssueCertificateHelper {
     private[this] val logger = LoggerFactory.getLogger(classOf[CollectionCertPreProcessorFn])
@@ -163,6 +165,23 @@ trait IssueCertificateHelper {
         }
     }
 
+    def getCourseOrganisation(courseId: String)(metrics: Metrics, config: CollectionCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): String = {
+        val courseMetadata = cache.getWithRetry(courseId)
+        var data: String = ""
+        if(null == courseMetadata || courseMetadata.isEmpty) {
+            val url = config.contentBasePath + config.contentReadApi + "/" + courseId
+            val response = getAPICall(url, "content")(config, httpUtil, metrics)
+            val orgData = response.get("organisation").toArray
+            val pm = orgData(0).toString
+            data = pm.substring(1, pm.length-1)
+        } else {
+            val orgData = courseMetadata.get("organisation").toArray
+            val pm = orgData(0).toString
+            data = pm.substring(1, pm.length-1)
+        }
+        data        
+    }
+
     def generateCertificateEvent(event: Event, template: Map[String, String], userDetails: Map[String, AnyRef], enrolledUser: EnrolledUser, certName: String)(metrics:Metrics, config:CollectionCertPreProcessorConfig, cache:DataCache, httpUtil: HttpUtil) = {
         val firstName = Option(userDetails.getOrElse("firstName", "").asInstanceOf[String]).getOrElse("")
         val lastName = Option(userDetails.getOrElse("lastName", "").asInstanceOf[String]).getOrElse("")
@@ -170,6 +189,8 @@ trait IssueCertificateHelper {
         val recipientName = nullStringCheck(firstName).concat(" ").concat(nullStringCheck(lastName)).trim
         val courseName = getCourseName(event.courseId)(metrics, config, cache, httpUtil)
         val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
+        val providerName = getCourseOrganisation(event.courseId)(metrics, config, cache, httpUtil)
+        logger.info("providerName==>>" + providerName)
         val eData = Map[String, AnyRef] (
             "issuedDate" -> dateFormatter.format(enrolledUser.issuedOn),
             "data" -> List(Map[String, AnyRef]("recipientName" -> recipientName, "recipientId" -> event.userId)),
@@ -185,6 +206,7 @@ trait IssueCertificateHelper {
             "basePath" -> config.certBasePath,
             "related" ->  Map[String, AnyRef]("batchId" -> event.batchId, "courseId" -> event.courseId, "type" -> certName),
             "name" -> certName,
+            "providerName" -> providerName,
             "tag" -> event.batchId
         )
 
