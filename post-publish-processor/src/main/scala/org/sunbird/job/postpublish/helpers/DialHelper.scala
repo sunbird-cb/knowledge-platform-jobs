@@ -108,10 +108,9 @@ trait DialHelper {
     val isDialCodeRequired = metadata.getOrDefault("dialcodeRequired", "").asInstanceOf[String]
     logger.info("is DialCode Required for this Content ? " + isDialCodeRequired)
 
-    //if ("No".equalsIgnoreCase(isDialCodeRequired)) {
-    //  new util.HashMap[String, AnyRef]()
-    //} else 
-    if (validatePrimaryCategory(metadata)(config)) {
+    if ("No".equalsIgnoreCase(isDialCodeRequired)) {
+      new util.HashMap[String, AnyRef]()
+    } else if (validatePrimaryCategory(metadata)(config)) {
       logger.info(s"Primary Category match found. Starting the process for Dial Code Generation.")
       Map[String, AnyRef]("identifier" -> identifier,
         "primaryCategory" -> metadata.getOrDefault("primaryCategory", ""),
