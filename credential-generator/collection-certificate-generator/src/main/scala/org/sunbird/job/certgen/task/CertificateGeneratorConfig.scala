@@ -76,7 +76,7 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val encServiceUrl: String = config.getString("service.enc.basePath")
   val certRegistryBaseUrl: String = config.getString("service.certreg.basePath")
   val learnerServiceBaseUrl: String = config.getString("service.learner.basePath")
-  val basePath: String = domainUrl.concat("/").concat("certs")
+  val basePath: String = domainUrl.concat("/").concat("public/certs")
   val awsStorageSecret: String = if (config.hasPath("cert_aws_storage_secret")) config.getString("cert_aws_storage_secret") else ""
   val awsStorageKey: String = if (config.hasPath("cert_aws_storage_key")) config.getString("cert_aws_storage_key") else ""
   val addCertRegApi = "/certs/v2/registry/add"
