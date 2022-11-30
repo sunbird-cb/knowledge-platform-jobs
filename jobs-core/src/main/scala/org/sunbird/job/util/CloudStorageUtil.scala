@@ -12,6 +12,7 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
   val cloudStorageType: String = config.getString("cloud_storage_type", "azure")
   var storageService: BaseStorageService = null
   val container: String = getContainerName
+  val cephs3StorageContainer: String = config.getString("cephs3_storage_container", "")
 
   @throws[Exception]
   def getService: BaseStorageService = {
@@ -24,7 +25,12 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
         val awsStorageKey = config.getString("aws_storage_key", "")
         val awsStorageSecret = config.getString("aws_storage_secret", "")
         storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, awsStorageKey, awsStorageSecret))
-      } else throw new Exception("Error while initialising cloud storage: " + cloudStorageType)
+      } else if (StringUtils.equalsIgnoreCase(cloudStorageType, "cephs3")) {
+        val storageKey = config.getString("cephs3_storage_key", "");
+        val storageSecret = config.getString("cephs3_storage_secret", "");
+        val endPoint = config.getString("cephs3_storage_endpoint", "");
+        storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, storageKey, storageSecret, Option(endPoint)))
+      }else throw new Exception("Error while initialising cloud storage: " + cloudStorageType)
     }
     storageService
   }
@@ -33,6 +39,7 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
     cloudStorageType match {
       case "azure" => config.getString("azure_storage_container", "")
       case "aws" => config.getString("aws_storage_container", "")
+      case "cephs3" => cephs3StorageContainer
       case _ => throw new Exception("Container name not configured.")
     }
   }
