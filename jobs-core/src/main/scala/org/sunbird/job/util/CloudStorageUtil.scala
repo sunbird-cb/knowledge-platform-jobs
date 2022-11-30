@@ -29,8 +29,8 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
         val storageKey = config.getString("cephs3_storage_key", "");
         val storageSecret = config.getString("cephs3_storage_secret", "");
         val endPoint = config.getString("cephs3_storage_endpoint", "");
-        storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, storageKey, storageSecret, Option(endPoint)))
-      }else throw new Exception("Error while initialising cloud storage: " + cloudStorageType)
+        storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, storageKey, storageSecret, Option(endPoint)));
+      } else throw new Exception("Error while initialising cloud storage: " + cloudStorageType)
     }
     storageService
   }
