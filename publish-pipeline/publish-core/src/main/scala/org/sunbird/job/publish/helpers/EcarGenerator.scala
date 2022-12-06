@@ -33,6 +33,9 @@ trait EcarGenerator extends ObjectBundle {
 			case Some(file: File) => {
 				logger.info("bundle file path ::: "+file.getAbsolutePath)
 				val folder = objectType.toLowerCase + File.separator + identifier
+				logger.info("Added folder path ::: "+folder)
+				logger.info("Added cloudStorageUtil ::: "+cloudStorageUtil)
+				logger.info("Added objectType ::: "+objectType)
 				val urlArray: Array[String] = cloudStorageUtil.uploadFile(folder, file, Some(false))
 				logger.info(s"EcarGenerator ::: uploadFile ::: ecar url for $identifier is : ${urlArray(1)}")
 				Some(urlArray(1))

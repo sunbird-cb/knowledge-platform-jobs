@@ -16,6 +16,7 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
 
   @throws[Exception]
   def getService: BaseStorageService = {
+    println("Added cloudStorageType::"+cloudStorageType)
     if (null == storageService) {
       if (StringUtils.equalsIgnoreCase(cloudStorageType, "azure")) {
         val azureStorageKey = config.getString("azure_storage_key", "")
@@ -29,6 +30,9 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
         val storageKey = config.getString("cephs3_storage_key", "");
         val storageSecret = config.getString("cephs3_storage_secret", "");
         val endPoint = config.getString("cephs3_storage_endpoint", "");
+        println("Added storageKey::"+storageKey)
+        println("Added storageSecret::"+storageSecret)
+        println("Added endPoint::"+endPoint)
         storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, storageKey, storageSecret, Option(endPoint)));
       } else throw new Exception("Error while initialising cloud storage: " + cloudStorageType)
     }
@@ -45,6 +49,7 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
   }
 
   def uploadFile(folderName: String, file: File, slug: Option[Boolean] = Option(true), container: String = container): Array[String] = {
+    println("Added container::"+container)
     val slugFile = if (slug.getOrElse(true)) Slug.createSlugFile(file) else file
     val objectKey = folderName + "/" + slugFile.getName
     val url = getService.upload(container, slugFile.getAbsolutePath, objectKey, Option.apply(false), Option.apply(1), Option.apply(5), Option.empty)
