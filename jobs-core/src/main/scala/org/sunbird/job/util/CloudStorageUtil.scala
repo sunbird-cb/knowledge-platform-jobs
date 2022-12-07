@@ -12,11 +12,10 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
   val cloudStorageType: String = config.getString("cloud_storage_type", "azure")
   var storageService: BaseStorageService = null
   val container: String = getContainerName
-  val cephs3StorageContainer: String = config.getString("cephs3_storage_container", "")
-
+  
   @throws[Exception]
   def getService: BaseStorageService = {
-    println("Added cloudStorageType::"+cloudStorageType)
+    println("CloudStorageUtil cloudStorageType ::"+cloudStorageType)
     if (null == storageService) {
       if (StringUtils.equalsIgnoreCase(cloudStorageType, "azure")) {
         val azureStorageKey = config.getString("azure_storage_key", "")
@@ -30,12 +29,10 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
         val storageKey = config.getString("cephs3_storage_key", "");
         val storageSecret = config.getString("cephs3_storage_secret", "");
         val endPoint = config.getString("cephs3_storage_endpoint", "");
-        println("Added storageKey::"+storageKey)
-        println("Added storageSecret::"+storageSecret)
-        println("Added endPoint::"+endPoint)
         storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, storageKey, storageSecret, Option(endPoint)));
       } else throw new Exception("Error while initialising cloud storage: " + cloudStorageType)
     }
+    println("CloudStorageUtil storageService ::"+storageService)
     storageService
   }
 
@@ -43,13 +40,13 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
     cloudStorageType match {
       case "azure" => config.getString("azure_storage_container", "")
       case "aws" => config.getString("aws_storage_container", "")
-      case "cephs3" => cephs3StorageContainer
+      case "cephs3" => config.getString("cephs3_storage_container", "")
       case _ => throw new Exception("Container name not configured.")
     }
   }
 
   def uploadFile(folderName: String, file: File, slug: Option[Boolean] = Option(true), container: String = container): Array[String] = {
-    println("Added container::"+container)
+    println("CloudStorageUtil uploadFile container ::"+container)
     val slugFile = if (slug.getOrElse(true)) Slug.createSlugFile(file) else file
     val objectKey = folderName + "/" + slugFile.getName
     val url = getService.upload(container, slugFile.getAbsolutePath, objectKey, Option.apply(false), Option.apply(1), Option.apply(5), Option.empty)

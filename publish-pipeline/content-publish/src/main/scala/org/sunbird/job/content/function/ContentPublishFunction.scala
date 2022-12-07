@@ -65,6 +65,7 @@ class ContentPublishFunction(config: ContentPublishConfig, httpUtil: HttpUtil,
 
   override def processElement(data: Event, context: ProcessFunction[Event, String]#Context, metrics: Metrics): Unit = {
     logger.info("Content publishing started for : " + data.identifier)
+    logger.info("cloudStorageUtil : " + cloudStorageUtil)
     metrics.incCounter(config.contentPublishEventCount)
     val obj: ObjectData = getObject(data.identifier, data.pkgVersion, data.mimeType, data.publishType, readerConfig)(neo4JUtil, cassandraUtil)
     try {
