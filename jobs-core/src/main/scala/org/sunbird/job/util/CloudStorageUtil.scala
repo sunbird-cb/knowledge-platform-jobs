@@ -12,8 +12,7 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
   val cloudStorageType: String = config.getString("cloud_storage_type", "azure")
   var storageService: BaseStorageService = null
   val container: String = getContainerName
-  val cephs3StorageContainer: String = config.getString("cephs3_storage_container", "")
-
+  
   @throws[Exception]
   def getService: BaseStorageService = {
     if (null == storageService) {
@@ -39,7 +38,7 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
     cloudStorageType match {
       case "azure" => config.getString("azure_storage_container", "")
       case "aws" => config.getString("aws_storage_container", "")
-      case "cephs3" => cephs3StorageContainer
+      case "cephs3" => config.getString("cephs3_storage_container", "")
       case _ => throw new Exception("Container name not configured.")
     }
   }
