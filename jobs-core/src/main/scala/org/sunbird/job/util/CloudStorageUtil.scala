@@ -15,7 +15,6 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
   
   @throws[Exception]
   def getService: BaseStorageService = {
-    println("CloudStorageUtil cloudStorageType ::"+cloudStorageType)
     if (null == storageService) {
       if (StringUtils.equalsIgnoreCase(cloudStorageType, "azure")) {
         val azureStorageKey = config.getString("azure_storage_key", "")
@@ -32,7 +31,6 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
         storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, storageKey, storageSecret, Option(endPoint)));
       } else throw new Exception("Error while initialising cloud storage: " + cloudStorageType)
     }
-    println("CloudStorageUtil storageService ::"+storageService)
     storageService
   }
 
@@ -46,7 +44,6 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
   }
 
   def uploadFile(folderName: String, file: File, slug: Option[Boolean] = Option(true), container: String = container): Array[String] = {
-    println("CloudStorageUtil uploadFile container ::"+container)
     val slugFile = if (slug.getOrElse(true)) Slug.createSlugFile(file) else file
     val objectKey = folderName + "/" + slugFile.getName
     val url = getService.upload(container, slugFile.getAbsolutePath, objectKey, Option.apply(false), Option.apply(1), Option.apply(5), Option.empty)
