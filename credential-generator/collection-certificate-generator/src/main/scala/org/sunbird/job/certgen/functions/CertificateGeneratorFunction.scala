@@ -131,12 +131,11 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
           callCertificateRc(config.rcDeleteApi, event.oldId, null)
         } catch {
           case ex: ServerException =>
-            logger.error("Rc deletion failed | old id is not present :: identifier" + event.oldId + " :: " + ex.getMessage)
+            logger.error("Rc deletion failed | old id is not present :: identifier " + event.oldId + " :: " + ex.getMessage)
             //when record not present for oldId in rc registry, calls old registry deletion
             deleteOldRegistry(event.oldId)
           case e: UnirestException =>
-            logger.error("Rc deletion failed due to connection :: identifier" + event.oldId + " :: " + e.getMessage)
-            throw ServerException("ERR_CONNECTION_ERROR", "Rc deletion failed | error msg: " + e.getMessage)
+            logger.error("Rc deletion failed due to connection :: identifier " + event.oldId + " :: " + e.getMessage)
         }
       }
       val related = event.related
@@ -157,8 +156,7 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
       deleteEsRecord(id)
     } catch {
       case ex: Exception =>
-        logger.error("Old registry deletion failed | old id is not present :: identifier" + id+ " :: " + ex.getMessage)
-        throw ServerException("ERR_DELETION_OLD_REG", "Old registry deletion failed | error msg: " + ex.getMessage)
+        logger.error("Old registry deletion failed | old id is not present :: identifier " + id+ " :: " + ex.getMessage)
 
     }
   }
@@ -226,11 +224,15 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
     val status = api match {
       case config.rcDeleteApi => httpUtil.delete(uri + "/" +identifier).status
       case config.rcCreateApi =>
-        val req: String = ScalaModuleJsonUtils.serialize(request)
+        val plainReq: String = ScalaModuleJsonUtils.serialize(request)
+        val req = removeBadChars(plainReq)
+        logger.info("RC Create API request: " + req)
         val httpResponse = httpUtil.post(uri, req)
         if(httpResponse.status == 200) {
           val response = ScalaJsonUtil.deserialize[Map[String, AnyRef]](httpResponse.body)
           id = response.getOrElse("result", Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]].getOrElse(config.rcEntity, Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]].getOrElse("osid","").asInstanceOf[String]
+        } else {
+          logger.error("RC Create Error Response: " + httpResponse.status +  " :: Response: " + httpResponse.body)
         }
         httpResponse.status
       case config.rcSearchApi =>
@@ -250,6 +252,10 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
       throw ServerException("ERR_API_CALL", "Something Went Wrong While Making API Call:  " + api +  " | Status is: " + status)
     }
     id
+  }
+
+  private def removeBadChars(request: String): String = {
+    config.badCharList.split(",").foldLeft(request)((curReq, removeChar) => StringUtils.remove(curReq, removeChar))
   }
 
   private def cleanUp(fileName: String, path: String): Unit = {
