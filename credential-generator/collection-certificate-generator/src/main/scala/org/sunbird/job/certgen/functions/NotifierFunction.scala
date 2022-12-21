@@ -59,11 +59,13 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
         logger.info("notification template is present in the cert-templates object {}",
           certTemplate.get(metaData.templateId).containsKey(config.notifyTemplate))
         val notifyTemplate = getNotifyTemplateFromRes(certTemplate.get(metaData.templateId))
+        val ratingUrl = config.domainUrl + config.ratingMidPoint + config.courseId + config.ratingEndPoint + config.batchId
         val request = mutable.Map[String, AnyRef]("request" -> (notifyTemplate ++ mutable.Map[String, AnyRef](
           config.firstName -> userResponse.getOrElse(config.firstName, "").asInstanceOf[String],
           config.trainingName -> metaData.courseName,
           config.heldDate -> dateFormatter.format(metaData.issuedOn),
           config.recipientUserIds -> List[String](metaData.userId),
+          config.ratingPageUrl -> ratingUrl,
           config.body -> "email body")))
 
         val response = httpUtil.post(url, ScalaJsonUtil.serialize(request))
