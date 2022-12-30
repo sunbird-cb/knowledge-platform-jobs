@@ -131,6 +131,9 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val data = "data"
   val category = "category"
   val certificates = "certificates"
+  val ratingMidPoint: String = "/app/toc/"
+  val ratingEndPoint: String = "/overview?batchId="
+  val ratingPageUrl: String = "ratingPageUrl"
 
 
   // Tags
