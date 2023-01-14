@@ -39,7 +39,7 @@ class TestObjectReader extends ObjectReader {
 
   override def getExtData(identifier: String, pkgVersion: Double, mimeType: String, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil): Option[ObjectExtData] = None
 
-  override def getHierarchy(identifier: String, pkgVersion: Double, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil): Option[Map[String, AnyRef]] = None
+  override def getHierarchy(identifier: String, pkgVersion: Double, readerConfig: ExtDataConfig,  isChild: Boolean = false)(implicit cassandraUtil: CassandraUtil): Option[Map[String, AnyRef]] = None
 
   override def getExtDatas(identifiers: List[String], readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil): Option[Map[String, AnyRef]] = None
 
