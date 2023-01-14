@@ -33,7 +33,7 @@ trait ObjectReader {
 
   def getExtData(identifier: String, pkgVersion: Double, mimeType: String, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil): Option[ObjectExtData]
 
-  def getHierarchy(identifier: String, pkgVersion: Double, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil): Option[Map[String, AnyRef]]
+  def getHierarchy(identifier: String, pkgVersion: Double, readerConfig: ExtDataConfig, isChild: Boolean = false)(implicit cassandraUtil: CassandraUtil): Option[Map[String, AnyRef]]
 
   def getEditableObjId(identifier: String, pkgVersion: Double): String = {
     if (pkgVersion > 0) identifier + ".img" else identifier
