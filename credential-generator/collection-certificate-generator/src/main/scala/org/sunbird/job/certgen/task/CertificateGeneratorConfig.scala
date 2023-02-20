@@ -22,6 +22,9 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val kafkaInputTopic: String = config.getString("kafka.input.topic")
   val kafkaAuditEventTopic: String = config.getString("kafka.output.audit.topic")
 
+  val enableSuppressException: Boolean = if(config.hasPath("enable.suppress.exception")) config.getBoolean("enable.suppress.exception") else false
+  val enableRcCertificate: Boolean = if(config.hasPath("enable.rc.certificate")) config.getBoolean("enable.rc.certificate") else false
+
 
   // Producers
   val certificateGeneratorAuditProducer = "collection-certificate-generator-audit-events-sink"
@@ -30,9 +33,15 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val notifierParallelism: Int = if(config.hasPath("task.notifier.parallelism")) config.getInt("task.notifier.parallelism") else 1
   val userFeedParallelism: Int = if(config.hasPath("task.userfeed.parallelism")) config.getInt("task.userfeed.parallelism") else 1
 
+  //ES configuration
+  val esConnection: String = config.getString("es.basePath")
+  val certIndex: String = "certs"
+  val certIndexType: String = "_doc"
 
 
   // Cassandra Configurations
+  val sbKeyspace: String = config.getString("lms-cassandra.sbkeyspace")
+  val certRegTable: String = config.getString("lms-cassandra.certreg.table")
   val dbEnrollmentTable: String = config.getString("lms-cassandra.user_enrolments.table")
   val dbKeyspace: String = config.getString("lms-cassandra.keyspace")
   val dbHost: String = config.getString("lms-cassandra.host")
@@ -61,18 +70,30 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   // env vars
   val storageType: String = config.getString("cert_cloud_storage_type")
   val containerName: String = config.getString("cert_container_name")
-  val azureStorageSecret: String = config.getString("cert_azure_storage_secret")
-  val azureStorageKey: String = config.getString("cert_azure_storage_key")
+  val azureStorageSecret: String = if (config.hasPath("cert_azure_storage_secret")) config.getString("cert_azure_storage_secret") else ""
+  val azureStorageKey: String = if (config.hasPath("cert_azure_storage_key")) config.getString("cert_azure_storage_key") else ""
   val domainUrl: String = config.getString("cert_domain_url")
   val encServiceUrl: String = config.getString("service.enc.basePath")
   val certRegistryBaseUrl: String = config.getString("service.certreg.basePath")
   val learnerServiceBaseUrl: String = config.getString("service.learner.basePath")
   val basePath: String = domainUrl.concat("/").concat("certs")
-  val awsStorageSecret: String = ""
-  val awsStorageKey: String = ""
+  val awsStorageSecret: String = if (config.hasPath("cert_aws_storage_secret")) config.getString("cert_aws_storage_secret") else ""
+  val awsStorageKey: String = if (config.hasPath("cert_aws_storage_key")) config.getString("cert_aws_storage_key") else ""
   val addCertRegApi = "/certs/v2/registry/add"
   val userFeedCreateEndPoint:String = "/private/user/feed/v1/create"
   val notificationEndPoint: String = "/v2/notification"
+  val cephs3StorageSecret: String = if (config.hasPath("cert_cephs3_storage_secret")) config.getString("cert_cephs3_storage_secret") else ""
+  val cephs3StorageKey: String = if (config.hasPath("cert_cephs3_storage_key")) config.getString("cert_cephs3_storage_key") else ""
+  val cephs3StorageEndPoint: String = if (config.hasPath("cert_cephs3_storage_endpoint")) config.getString("cert_cephs3_storage_endpoint") else ""
+  val AZURE: String = "azure"
+  val CEPHS3: String = "cephs3"
+  val AWS: String = "aws"
+  val rcBaseUrl: String = config.getString("service.rc.basePath")
+  val rcEntity: String = config.getString("service.rc.entity")
+  val rcCreateApi: String = "service.rc.create.api"
+  val rcDeleteApi: String = "service.rc.delete.api"
+  val rcSearchApi: String = "service.rc.search.api"
+
 
   //constant
   val DATA: String = "data"
@@ -114,6 +135,8 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val name = "name"
   val token = "token"
   val lastIssuedOn = "lastIssuedOn"
+  val templateUrl = "templateUrl"
+  val `type` = "type"
   val certificate = "certificate"
   val action = "action"
   val courseName = "courseName"

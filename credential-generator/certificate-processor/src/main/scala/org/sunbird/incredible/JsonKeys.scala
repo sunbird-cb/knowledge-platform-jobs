@@ -28,6 +28,10 @@ object JsonKeys {
   val AWS: String = "aws"
   val AWS_STORAGE_KEY: String = "AWS_STORAGE_KEY"
   val AWS_STORAGE_SECRET: String = "AWS_STORAGE_SECRET"
+  val CEPHS3: String = "cephs3"
+  val CEPHS3_STORAGE_KEY: String = "CEPHS3_STORAGE_KEY"
+  val CEPHS3_STORAGE_SECRET: String = "CEPHS3_STORAGE_SECRET"
+  val CEPHS3_STORAGE_HOST: String = "CEPHS3_STORAGE_ENDPOINT"
   val SLUG: String = "sunbird_cert_slug"
   val ACCESS_CODE_LENGTH: String = "ACCESS_CODE_LENGTH"
   val PATH: String = "path"
@@ -120,4 +124,5 @@ object JsonKeys {
   val EXPIRY_DATE: String = "expiryDate"
   val ISSUER_NAME: String = "issuerName"
   val EDATA = "edata"
+  val PROVIDER_NAME: String = "providerName"
 }
