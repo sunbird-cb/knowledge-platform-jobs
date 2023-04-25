@@ -31,6 +31,7 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
         storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, storageKey, storageSecret, Option(endPoint)));
       } else throw new Exception("Error while initialising cloud storage: " + cloudStorageType)
     }
+    printf("storageService::"+storageService)
     storageService
   }
 
