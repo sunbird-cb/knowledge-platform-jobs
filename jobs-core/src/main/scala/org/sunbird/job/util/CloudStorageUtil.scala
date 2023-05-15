@@ -1,6 +1,7 @@
 package org.sunbird.job.util
 
 import org.apache.commons.lang3.StringUtils
+import org.slf4j.LoggerFactory
 import org.sunbird.cloud.storage.BaseStorageService
 import org.sunbird.cloud.storage.factory.{StorageConfig, StorageServiceFactory}
 import org.sunbird.job.BaseJobConfig
@@ -12,7 +13,8 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
   val cloudStorageType: String = config.getString("cloud_storage_type", "azure")
   var storageService: BaseStorageService = null
   val container: String = getContainerName
-  
+  private[this] val logger = LoggerFactory.getLogger(classOf[CloudStorageUtil])
+
   @throws[Exception]
   def getService: BaseStorageService = {
     if (null == storageService) {
@@ -46,8 +48,11 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
 
   def uploadFile(folderName: String, file: File, slug: Option[Boolean] = Option(true), container: String = container): Array[String] = {
     val slugFile = if (slug.getOrElse(true)) Slug.createSlugFile(file) else file
+    logger.info("slugFile: "+slugFile)
     val objectKey = folderName + "/" + slugFile.getName
+    logger.info("objectKey: "+objectKey)
     val url = getService.upload(container, slugFile.getAbsolutePath, objectKey, Option.apply(false), Option.apply(1), Option.apply(5), Option.empty)
+    logger.info("url: "+url)
     Array[String](objectKey, url)
   }
 
