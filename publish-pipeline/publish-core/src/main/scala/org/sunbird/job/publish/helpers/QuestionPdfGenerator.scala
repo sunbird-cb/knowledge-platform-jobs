@@ -31,7 +31,6 @@ trait QuestionPdfGenerator extends ObjectTemplateGenerator {
     logger.info(s"QuestionPdfGenerator ::: getPreviewFileUrl fileName :: ${fileName}")
     val file: Option[File] = writeFile(fileName, fileContent)
     logger.info(s"QuestionPdfGenerator ::: getPreviewFileUrl file :: ${file}")
-    logger.info("file : "+)
     uploadFile(file, obj)
   }
 
