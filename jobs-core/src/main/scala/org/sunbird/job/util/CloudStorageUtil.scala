@@ -51,6 +51,8 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
     logger.info("slugFile: "+slugFile)
     val objectKey = folderName + "/" + slugFile.getName
     logger.info("objectKey: "+objectKey)
+    logger.info("slugfile absoulyte path: "+slugFile.getAbsolutePath)
+    logger.info("Container: "+container)
     val url = getService.upload(container, slugFile.getAbsolutePath, objectKey, Option.apply(false), Option.apply(1), Option.apply(5), Option.empty)
     logger.info("url: "+url)
     Array[String](objectKey, url)
