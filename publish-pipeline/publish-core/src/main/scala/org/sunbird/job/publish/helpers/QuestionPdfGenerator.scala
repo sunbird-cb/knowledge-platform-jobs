@@ -141,6 +141,9 @@ trait QuestionPdfGenerator extends ObjectTemplateGenerator {
     fileOption match {
       case Some(file: File) =>
         val folder = "questionset" + File.separator + obj.identifier
+        logger.info("obj.identifier :"+obj.identifier)
+        logger.info("file pdf :"+file)
+        logger.info("folder :"+folder)
         val urlArray: Array[String] = cloudStorageUtil.uploadFile(folder, file, Some(true))
         Some(urlArray(1))
       case _ => None
