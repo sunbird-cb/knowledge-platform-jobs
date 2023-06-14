@@ -402,7 +402,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
         TelemetryEvent(
           actor = ActorObject(id = userId),
           edata = EventData(props = properties, `type` = action), // action values are "start", "complete".
-          context = EventContext(cdata = Array(Map("type" -> config.courseBatch, "id" -> batchId).asJava)),
+          context = EventContext(cdata = Map("type" -> config.courseBatch, "id" -> batchId).asJava),
           `object` = EventObject(id = c.contentId, `type` = "Content", rollup = Map[String, String]("l1" -> courseId).asJava)
         )
       })

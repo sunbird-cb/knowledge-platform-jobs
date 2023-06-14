@@ -12,8 +12,8 @@ case class EventContext(channel: String = "in.sunbird",
                         env: String = "Course",
                         sid: String = UUID.randomUUID().toString,
                         did: String = UUID.randomUUID().toString,
-                        pdata: util.Map[String, String] = Map("ver" -> "3.0", "id" -> "org.sunbird.learning.platform", "pid" -> "course-progress-updater").asJava,
-                        cdata: Array[util.Map[String, String]])
+                        pdata: util.Map[String, String] = Map("ver" -> "3.0", "id" -> "dev.sunbird.learning.platform", "pid" -> "course-progress-updater").asJava,
+                        cdata: util.Map[String, String])
 
 
 case class EventData(props: Array[String], `type`: String)
@@ -27,9 +27,9 @@ case class TelemetryEvent(actor: ActorObject,
                           syncts: Long = System.currentTimeMillis(),
                           ets: Long = System.currentTimeMillis(),
                           context: EventContext = EventContext(
-                            cdata = Array[util.Map[String, String]]()
+                            cdata = util.Map[String, String]
                           ),
-                          mid: String = s"LP.AUDIT.${UUID.randomUUID().toString}",
+                          mid: String = s"AUDIT.${UUID.randomUUID().toString}",
                           `object`: EventObject,
                           tags: util.List[AnyRef] = new util.ArrayList[AnyRef]()
                          )
