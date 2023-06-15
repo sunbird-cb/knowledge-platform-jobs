@@ -115,6 +115,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
 
     // Content AUDIT Event generation and pushing to output tag.
     finalUserConsumptionList.flatMap(userConsumption => contentAuditEvents(userConsumption)).foreach(event => context.output(config.auditEventOutputTag, gson.toJson(event)))
+
   }
 
   /**
@@ -150,7 +151,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
       } else {
         Option(CollectionProgress(userId, userConsumption.batchId, courseId, completedCount, null, contentStatus, inputContents))
       }
-      Option(UserEnrolmentAgg(UserActivityAgg("Course", userId, courseId, contextId, Map("completedCount" -> completedCount.toDouble), Map("completedCount" -> System.currentTimeMillis())), collectionProgress))
+      Option(UserEnrolmentAgg(UserActivityAgg("Course", userId, courseId, contextId, Map("completedCount" -> completedCount), Map("completedCount" -> System.currentTimeMillis())), collectionProgress))
     }
   }
 
@@ -289,7 +290,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
   def getUserAggQuery(progress: UserActivityAgg):
   Update.Where = {
     QueryBuilder.update(config.dbKeyspace, config.dbUserActivityAggTable)
-      .`with`(QueryBuilder.putAll(config.aggregates, progress.aggregates.asJava))
+      .`with`(QueryBuilder.putAll(config.agg, progress.agg.asJava))
       .and(QueryBuilder.putAll(config.aggLastUpdated, progress.agg_last_updated.asJava))
       .where(QueryBuilder.eq(config.activityId, progress.activity_id))
       .and(QueryBuilder.eq(config.activityType, progress.activity_type))
@@ -402,7 +403,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
         TelemetryEvent(
           actor = ActorObject(id = userId),
           edata = EventData(props = properties, `type` = action), // action values are "start", "complete".
-          context = EventContext(cdata = Map("type" -> config.courseBatch, "id" -> batchId).asJava),
+          context = EventContext(cdata = Array(Map("type" -> config.courseBatch, "id" -> batchId).asJava)),
           `object` = EventObject(id = c.contentId, `type` = "Content", rollup = Map[String, String]("l1" -> courseId).asJava)
         )
       })

@@ -9,7 +9,7 @@ case class AssessedUser(userId: String, additionalProps: Map[String, Any] = Map[
 
 case class ActorObject(id: String = "Certificate Generator", `type`: String = "System")
 
-case class EventContext(pdata: Map[String, String] = Map("ver" -> "1.0", "id" -> "org.sunbird.learning.platform"))
+case class EventContext(pdata: Map[String, String] = Map("ver" -> "1.0", "id" -> "dev.sunbird.learning.platform"))
 
 
 case class EventObject(id: String, `type`: String = "GenerateCertificate")
@@ -19,7 +19,7 @@ case class BEJobRequestEvent(actor: ActorObject= ActorObject(),
                           edata: Map[String, AnyRef],
                           ets: Long = System.currentTimeMillis(),
                           context: EventContext = EventContext(),
-                          mid: String = s"LMS.${UUID.randomUUID().toString}",
+                          mid: String = s"BE_JOB_REQUEST.${UUID.randomUUID().toString}",
                           `object`: EventObject
                          )
 

@@ -70,7 +70,7 @@ class CollectionProgressCompleteFunction(config: ActivityAggregateUpdaterConfig)
     val auditEvent = TelemetryEvent(
       actor = ActorObject(id = data.userId),
       edata = EventData(props = Array("status", "completedon"), `type` = "enrol-complete"), // action values are "start", "complete".
-      context = EventContext(cdata = Map("type" -> config.courseBatch, "id" -> data.batchId).asJava),
+      context = EventContext(cdata = Array(Map("type" -> config.courseBatch, "id" -> data.batchId).asJava, Map("type" -> "Course", "id" -> data.courseId).asJava)),
       `object` = EventObject(id = data.userId, `type` = "User", rollup = Map[String, String]("l1" -> data.courseId).asJava)
     )
     logger.info("audit event =>"+gson.toJson(auditEvent))
