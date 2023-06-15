@@ -290,7 +290,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
   def getUserAggQuery(progress: UserActivityAgg):
   Update.Where = {
     QueryBuilder.update(config.dbKeyspace, config.dbUserActivityAggTable)
-      .`with`(QueryBuilder.putAll(config.agg, progress.agg.asJava))
+      .`with`(QueryBuilder.putAll(config.aggregates, progress.aggregates.asJava))
       .and(QueryBuilder.putAll(config.aggLastUpdated, progress.agg_last_updated.asJava))
       .where(QueryBuilder.eq(config.activityId, progress.activity_id))
       .and(QueryBuilder.eq(config.activityType, progress.activity_type))
