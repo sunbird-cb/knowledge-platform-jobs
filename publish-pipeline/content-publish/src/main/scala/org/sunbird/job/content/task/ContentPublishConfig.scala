@@ -95,4 +95,5 @@ class ContentPublishConfig(override val config: Config) extends PublishConfig(co
   val nestedFields: util.List[String] = if (config.hasPath("content.nested.fields")) config.getStringList("content.nested.fields") else util.Arrays.asList[String]("badgeAssertions","targets","badgeAssociations")
 
   val allowedExtensionsWord: util.List[String] = if (config.hasPath("mimetype.allowed_extensions.word")) config.getStringList("mimetype.allowed_extensions.word") else util.Arrays.asList[String]("doc", "docx", "ppt", "pptx", "key", "odp", "pps", "odt", "wpd", "wps", "wks")
+  val isECARGenerationEnabled: Boolean = if (config.hasPath("content.ecar.file.generation.enabled")) config.getBoolean("content.ecar.file.generation.enabled") else true
 }
