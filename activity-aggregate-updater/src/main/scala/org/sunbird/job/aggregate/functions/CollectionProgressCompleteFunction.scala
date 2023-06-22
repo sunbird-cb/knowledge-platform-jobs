@@ -132,8 +132,8 @@ class CollectionProgressCompleteFunction(config: ActivityAggregateUpdaterConfig)
    */
   def createIssueCertEvent(enrolment: CollectionProgress, context: ProcessFunction[List[CollectionProgress], String]#Context)(implicit metrics: Metrics): Unit = {
     val ets = System.currentTimeMillis
-    val mid = s"""LP.${ets}.${UUID.randomUUID}"""
-    val event = s"""{"eid": "BE_JOB_REQUEST","ets": ${ets},"mid": "${mid}","actor": {"id": "Course Certificate Generator","type": "System"},"context": {"pdata": {"ver": "1.0","id": "org.sunbird.platform"}},"object": {"id": "${enrolment.batchId}_${enrolment.courseId}","type": "CourseCertificateGeneration"},"edata": {"userIds": ["${enrolment.userId}"],"action": "issue-certificate","iteration": 1, "trigger": "auto-issue","batchId": "${enrolment.batchId}","reIssue": false,"courseId": "${enrolment.courseId}"}}"""
+    val mid = s"""AUDIT.${UUID.randomUUID}"""
+    val event = s"""{"eid": "AUDIT","ets": ${ets},"mid": "${mid}","actor": {"id": "Course Certificate Generator","type": "System"},"context": {"pdata": {"ver": "1.0","id": "org.sunbird.platform"}},"object": {"id": "${enrolment.batchId}_${enrolment.courseId}","type": "CourseCertificateGeneration"},"edata": {"userIds": ["${enrolment.userId}"],"action": "issue-certificate","iteration": 1, "trigger": "auto-issue","batchId": "${enrolment.batchId}","reIssue": false,"courseId": "${enrolment.courseId}"}}"""
     logger.info("o/p event:  "+event)
     context.output(config.certIssueOutputTag, event)
     metrics.incCounter(config.certIssueEventsCount)
