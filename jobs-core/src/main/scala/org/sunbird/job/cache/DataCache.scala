@@ -28,7 +28,7 @@ class DataCache(val config: BaseJobConfig, val redisConnect: RedisConnect, val d
       // Write testcase for catch block
       // $COVERAGE-OFF$ Disabling scoverage
       case ex: Exception => {
-        logger.debug("Exception when inserting data to redis cache", ex)
+        logger.debug("Exception when closing connection to redis", ex)
       }
     }
   }
@@ -187,7 +187,24 @@ class DataCache(val config: BaseJobConfig, val redisConnect: RedisConnect, val d
   }
 
   def del(key: String): Unit = {
-    this.redisConnection.del(key)
+    try {
+      this.redisConnection.del(key)
+    } catch {
+      case ex: JedisException =>
+        logger.error("Exception when deleting data from redis cache", ex)
+        close()
+        this.redisConnection = redisConnect.getConnection(dbIndex)
+        retryDel(key)
+    }
+  }
+
+  def retryDel(key: String): Unit = {
+    try {
+      this.redisConnection.del(key)
+    } catch {
+      case ex: JedisException => 
+        logger.error("Exception when retrying delete data from redis cache", ex)
+    }
   }
 
 }
