@@ -100,14 +100,8 @@ class CollectionPublishFunction(config: ContentPublishConfig, httpUtil: HttpUtil
           var enrichedObj = enrichObject(updatedObj)(neo4JUtil, cassandraUtil, readerConfig, cloudStorageUtil, config, definitionCache, definitionConfig)
           logger.info("CollectionPublishFunction:: Collection Object Enriched: " + enrichedObj.identifier)
           
-          var objWithEcar = enrichedObj
-          if (config.isECARGenerationEnabled) {
-            objWithEcar = getObjectWithEcar(enrichedObj, pkgTypes)(ec, neo4JUtil, cassandraUtil, readerConfig, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil)
-            logger.info("CollectionPublishFunction:: ECAR generation completed for Collection Object: " + objWithEcar.identifier)
-          } else {
-            logger.info("Ecar file generation is skipped as per configuration")
-          }
-
+          var objWithEcar = getObjectWithEcar(enrichedObj, pkgTypes, config.isECARGenerationEnabled)(ec, neo4JUtil, cassandraUtil, readerConfig, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil)
+          
           val collRelationalMetadata = getRelationalMetadata(obj.identifier, obj.pkgVersion-1, readerConfig)(cassandraUtil).getOrElse(Map.empty[String, AnyRef])
 
           saveOnSuccess(new ObjectData(objWithEcar.identifier, objWithEcar.metadata.-("children"), objWithEcar.extData, objWithEcar.hierarchy))(neo4JUtil, cassandraUtil, readerConfig, definitionCache, definitionConfig)

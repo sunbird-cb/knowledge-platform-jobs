@@ -124,7 +124,7 @@ trait CollectionPublisher extends ObjectReader with SyncMessagesGenerator with O
 
   override def deleteExternalData(obj: ObjectData, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil): Unit = None
 
-  def getObjectWithEcar(obj: ObjectData, pkgTypes: List[String])(implicit ec: ExecutionContext, neo4JUtil: Neo4JUtil, cassandraUtil: CassandraUtil, readerConfig: ExtDataConfig, cloudStorageUtil: CloudStorageUtil, config: PublishConfig, defCache: DefinitionCache, defConfig: DefinitionConfig, httpUtil: HttpUtil): ObjectData = {
+  def getObjectWithEcar(obj: ObjectData, pkgTypes: List[String], isECARGenerationEnabled: Boolean = true)(implicit ec: ExecutionContext, neo4JUtil: Neo4JUtil, cassandraUtil: CassandraUtil, readerConfig: ExtDataConfig, cloudStorageUtil: CloudStorageUtil, config: PublishConfig, defCache: DefinitionCache, defConfig: DefinitionConfig, httpUtil: HttpUtil): ObjectData = {
    val collRelationalMetadata = getRelationalMetadata(obj.identifier, obj.pkgVersion-1, readerConfig).getOrElse(Map.empty[String, AnyRef])
     // Line 1107 in PublishFinalizer
     val children = obj.hierarchy.getOrElse(Map()).getOrElse("children", List()).asInstanceOf[List[Map[String, AnyRef]]]
@@ -136,12 +136,17 @@ trait CollectionPublisher extends ObjectReader with SyncMessagesGenerator with O
     nodes += obj
     nodeIds += obj.identifier
 
-    val ecarMap: Map[String, String] = generateEcar(updatedObj, pkgTypes)
-    val variants: java.util.Map[String, java.util.Map[String, String]] = ecarMap.map { case (key, value) => key.toLowerCase -> Map[String, String]("ecarUrl" -> value, "size" -> httpUtil.getSize(value).toString).asJava }.asJava
-    logger.info("CollectionPulisher ::: getObjectWithEcar ::: variants ::: " + variants)
+    if (isECARGenerationEnabled) {
+      val ecarMap: Map[String, String] = generateEcar(updatedObj, pkgTypes)
+      val variants: java.util.Map[String, java.util.Map[String, String]] = ecarMap.map { case (key, value) => key.toLowerCase -> Map[String, String]("ecarUrl" -> value, "size" -> httpUtil.getSize(value).toString).asJava }.asJava
+      logger.info("CollectionPulisher ::: getObjectWithEcar ::: variants ::: " + variants)
 
-    val meta: Map[String, AnyRef] = Map("downloadUrl" -> ecarMap.getOrElse(EcarPackageType.SPINE, ""), "variants" -> variants, "size" -> httpUtil.getSize(ecarMap.getOrElse(EcarPackageType.SPINE, "")).asInstanceOf[AnyRef])
-    new ObjectData(updatedObj.identifier, updatedObj.metadata ++ meta, updatedObj.extData, updatedObj.hierarchy)
+      val meta: Map[String, AnyRef] = Map("downloadUrl" -> ecarMap.getOrElse(EcarPackageType.SPINE, ""), "variants" -> variants, "size" -> httpUtil.getSize(ecarMap.getOrElse(EcarPackageType.SPINE, "")).asInstanceOf[AnyRef])
+      updatedObj.metadata ++ meta
+    } else {
+      logger.info("Ecar file generation is skipped as per configuration")
+    }
+    new ObjectData(updatedObj.identifier, updatedObj.metadata, updatedObj.extData, updatedObj.hierarchy)
   }
 
   private def setCompatibilityLevel(obj: ObjectData, updatedMeta: Map[String, AnyRef]): Option[Map[String, AnyRef]] = {
