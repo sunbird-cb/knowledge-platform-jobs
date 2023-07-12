@@ -186,7 +186,7 @@ class DataCache(val config: BaseJobConfig, val redisConnect: RedisConnect, val d
       del(key);
     } catch {
       case ex@(_: JedisConnectionException | _: JedisException) =>
-        logger.error("Exception when update data to redis cache", ex)
+        logger.error("Exception when delete data to redis cache", ex)
         this.redisConnection.close()
         this.redisConnection = redisConnect.getConnection(dbIndex);
         del(key)
