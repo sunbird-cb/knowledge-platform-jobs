@@ -181,7 +181,17 @@ class DataCache(val config: BaseJobConfig, val redisConnect: RedisConnect, val d
   def del(key: String): Unit = {
     this.redisConnection.del(key)
   }
-
+  def delWithRetry(key: String): Unit = {
+    try {
+      del(key);
+    } catch {
+      case ex@(_: JedisConnectionException | _: JedisException) =>
+        logger.error("Exception when update data to redis cache", ex)
+        this.redisConnection.close()
+        this.redisConnection = redisConnect.getConnection(dbIndex);
+        del(key)
+    }
+  }
 }
 
 // $COVERAGE-ON$
