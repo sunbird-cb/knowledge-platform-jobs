@@ -86,14 +86,14 @@ class CollectionPublishFunction(config: ContentPublishConfig, httpUtil: HttpUtil
           val updatedObj = if (isCollectionShallowCopy) updateOriginPkgVersion(updObj)(neo4JUtil) else updObj
 
           // Clear redis cache
-          cache.del(data.identifier)
-          cache.del(data.identifier + COLLECTION_CACHE_KEY_SUFFIX)
-          cache.del(COLLECTION_CACHE_KEY_PREFIX + data.identifier)
+          cache.delWithRetry(data.identifier)
+          cache.delWithRetry(data.identifier + COLLECTION_CACHE_KEY_SUFFIX)
+          cache.delWithRetry(COLLECTION_CACHE_KEY_PREFIX + data.identifier)
 
           // Collection - add step to remove units of already Live content from redis - line 243 in PublishFinalizer
           val unitNodes = if (obj.identifier.endsWith(".img")) {
             val childNodes = getUnitsFromLiveContent(updatedObj)(cassandraUtil, readerConfig)
-            childNodes.filter(rec => rec.nonEmpty).foreach(childId => cache.del(COLLECTION_CACHE_KEY_PREFIX + childId))
+            childNodes.filter(rec => rec.nonEmpty).foreach(childId => cache.delWithRetry(COLLECTION_CACHE_KEY_PREFIX + childId))
             childNodes.filter(rec => rec.nonEmpty)
           } else List.empty
 
