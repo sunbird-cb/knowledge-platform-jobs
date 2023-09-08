@@ -14,7 +14,7 @@ trait BatchCreation {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[BatchCreation])
 
-  def createBatch(eData: java.util.Map[String, AnyRef], startDate: String)(implicit config: PostPublishProcessorConfig, httpUtil: HttpUtil) = {
+  def createBatch(eData: java.util.Map[String, AnyRef], startDate: String)(implicit config: PostPublishProcessorConfig, httpUtil: HttpUtil, cassandraUtil: CassandraUtil) = {
     val request = new java.util.HashMap[String, AnyRef]() {
       {
         put("request", new java.util.HashMap[String, AnyRef]() {
@@ -34,9 +34,20 @@ trait BatchCreation {
     val httpRequest = JSONUtil.serialize(request)
     val httpResponse = httpUtil.post(config.batchCreateAPIPath, httpRequest)
     if (httpResponse.status == 200) {
-      val batchId = httpResponse.body.result.batchId
+      var responseBody = JSONUtil.deserialize[java.util.Map[String, AnyRef]](httpResponse.body)
+      val result = responseBody.get("result").asInstanceOf[java.util.Map[String, AnyRef]]
+      var batchId: String = ""
+      if (!result.isEmpty) {
+        batchId = result.get("batchId").asInstanceOf[String]
+      } else {
+        logger.error("Failed to process batch create response.")
+      }
       logger.info("Batch created successfully with Id : " + batchId)
-      addCertTemplateToBatch(eData.get("identifier"), batchId)
+      if (batchId != "") {
+        addCertTemplateToBatch(eData.get("identifier").asInstanceOf[String], batchId)
+      } else {
+        logger.error("Failed to process batch create response and read BatchId value.")
+      }
     } else {
       logger.error("Batch create failed: " + httpResponse.status + " :: " + httpResponse.body)
       throw new Exception("Batch creation failed for " + eData.get("identifier"))
@@ -107,7 +118,7 @@ trait BatchCreation {
     val selectQuery = QueryBuilder.select().all().from(config.sunbirdKeyspaceName, config.sbSystemSettingsTableName)
     selectQuery.where.and(QueryBuilder.eq("id", config.defaultCertTemplateId))
     val row = cassandraUtil.findOne(selectQuery.toString)
-    val certTemplate = new util.HashMap[String, AnyRef]()
+    var certTemplate = new util.HashMap[String, AnyRef]()
     if (row != null) {
       certTemplate = JSONUtil.deserialize(row.getString("value"))
     }
