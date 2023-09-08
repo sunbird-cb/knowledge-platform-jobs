@@ -9,6 +9,7 @@ import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil, Neo4JUtil}
 
 import java.util
 import scala.collection.JavaConverters._
+import scala.collection.JavaConverters
 
 trait BatchCreation {
 
@@ -34,8 +35,8 @@ trait BatchCreation {
     val httpRequest = JSONUtil.serialize(request)
     val httpResponse = httpUtil.post(config.batchCreateAPIPath, httpRequest)
     if (httpResponse.status == 200) {
-      var responseBody = JSONUtil.deserialize[java.util.Map[String, AnyRef]](httpResponse.body)
-      val result = responseBody.get("result").asInstanceOf[java.util.Map[String, AnyRef]]
+      var responseBody: java.util.Map[String, AnyRef] = JSONUtil.deserialize[java.util.Map[String, AnyRef]](JSONUtil.serialize(httpResponse.body))
+      val result: java.util.Map[String, AnyRef] = responseBody.get("result").asInstanceOf[java.util.Map[String, AnyRef]]
       var batchId: String = ""
       if (!result.isEmpty) {
         batchId = result.get("batchId").asInstanceOf[String]
@@ -120,7 +121,7 @@ trait BatchCreation {
     val row = cassandraUtil.findOne(selectQuery.toString)
     var certTemplate = new util.HashMap[String, AnyRef]()
     if (row != null) {
-      certTemplate = JSONUtil.deserialize(row.getString("value"))
+      certTemplate = JSONUtil.deserialize[java.util.HashMap[String, AnyRef]](row.getString("value"))
     }
     if (!certTemplate.isEmpty()) {
       val request = new java.util.HashMap[String, AnyRef]() {
