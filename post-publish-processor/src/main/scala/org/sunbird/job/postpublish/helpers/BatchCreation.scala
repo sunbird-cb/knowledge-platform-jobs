@@ -34,7 +34,9 @@ trait BatchCreation {
     val httpRequest = JSONUtil.serialize(request)
     val httpResponse = httpUtil.post(config.batchCreateAPIPath, httpRequest)
     if (httpResponse.status == 200) {
-      logger.info("Batch create success: " + httpResponse.body)
+      val batchId = httpResponse.body.result.batchId
+      logger.info("Batch created successfully with Id : " + batchId)
+      addCertTemplateToBatch(eData.get("identifier"), batchId)
     } else {
       logger.error("Batch create failed: " + httpResponse.status + " :: " + httpResponse.body)
       throw new Exception("Batch creation failed for " + eData.get("identifier"))
@@ -100,4 +102,42 @@ trait BatchCreation {
     }
   }
 
+  def addCertTemplateToBatch(courseId: String, batchId: String)(implicit cassandraUtil: CassandraUtil, config: PostPublishProcessorConfig, httpUtil: HttpUtil) = {
+    logger.info("Adding cert template to batch:" + batchId + ", courseId: " + courseId)
+    val selectQuery = QueryBuilder.select().all().from(config.sunbirdKeyspaceName, config.sbSystemSettingsTableName)
+    selectQuery.where.and(QueryBuilder.eq("id", config.defaultCertTemplateId))
+    val row = cassandraUtil.findOne(selectQuery.toString)
+    val certTemplate = new util.HashMap[String, AnyRef]()
+    if (row != null) {
+      certTemplate = JSONUtil.deserialize(row.getString("value"))
+    }
+    if (!certTemplate.isEmpty()) {
+      val request = new java.util.HashMap[String, AnyRef]() {
+        {
+          put("request", new java.util.HashMap[String, AnyRef]() {
+            {
+              put("batch",  new java.util.HashMap[String, AnyRef](){
+                {
+                  put("courseId", courseId)
+                  put("batchId", batchId)
+                  put("template", certTemplate)
+                }
+              })
+            }
+          })
+        }
+      }
+      val httpRequest = JSONUtil.serialize(request)
+      logger.info("created request for add cert template -> " + httpRequest)
+      val httpResponse = httpUtil.patch(config.batchAddCertTemplateAPIPath, httpRequest)
+      if (httpResponse.status == 200) {
+        logger.info("Certificate added into Batch successfully")
+      } else {
+        logger.error("Failed to add cert into Batch. status : " + httpResponse.status + " :: " + httpResponse.body)
+        throw new Exception("Add cert into Batch failed for CourseId " + courseId + ", BatchId: " + batchId)
+      }
+    } else {
+      logger.error("Failed to read default cert template with id : " + config.defaultCertTemplateId)
+    }
+  }
 }
