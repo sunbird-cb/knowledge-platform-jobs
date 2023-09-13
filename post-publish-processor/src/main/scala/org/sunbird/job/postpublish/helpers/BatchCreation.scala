@@ -36,7 +36,8 @@ trait BatchCreation {
     val httpResponse = httpUtil.post(config.batchCreateAPIPath, httpRequest)
     if (httpResponse.status == 200) {
       var responseBody: java.util.Map[String, AnyRef] = JSONUtil.deserialize[java.util.Map[String, AnyRef]](httpResponse.body)
-      val result: java.util.Map[String, AnyRef] = responseBody.get("result").asInstanceOf[java.util.Map[String, AnyRef]]
+      val resultStr: String = JsonUtil.serialize(responseBody.get(("result")))
+      val result: java.util.Map[String, AnyRef] = JSONUtil.deserialize[java.util.Map[String, AnyRef]](resultStr)
       var batchId: String = ""
       if (!result.isEmpty) {
         batchId = result.get("batchId").asInstanceOf[String]
