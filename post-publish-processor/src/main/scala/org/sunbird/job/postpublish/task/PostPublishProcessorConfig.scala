@@ -47,9 +47,9 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val dbHost: String = config.getString("lms-cassandra.host")
   val dbPort: Int = config.getInt("lms-cassandra.port")
   val lmsKeyspaceName = config.getString("lms-cassandra.keyspace")
-  val sunbirdKeyspaceName = "sunbird"
-  val defaultCertTemplateId = "defaultCertTemplate"
-  val sbSystemSettingsTableName = "system-settings"
+  val sunbirdKeyspaceName = config.getString("lms-cassandra.sbKeyspace")
+  val defaultCertTemplateId = config.getString("lms-cassandra.certTemplateId")
+  val sbSystemSettingsTableName = config.getString("lms-cassandra.systemSettingsTable")
   val batchTableName = config.getString("lms-cassandra.batchTable")
   val dialcodeKeyspaceName = config.getString("dialcode-cassandra.keyspace")
   val dialcodeTableName = config.getString("dialcode-cassandra.imageTable")
