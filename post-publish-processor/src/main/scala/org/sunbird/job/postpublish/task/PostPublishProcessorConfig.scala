@@ -47,6 +47,9 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val dbHost: String = config.getString("lms-cassandra.host")
   val dbPort: Int = config.getInt("lms-cassandra.port")
   val lmsKeyspaceName = config.getString("lms-cassandra.keyspace")
+  val sunbirdKeyspaceName = config.getString("lms-cassandra.sbKeyspace")
+  val defaultCertTemplateId = config.getString("lms-cassandra.certTemplateId")
+  val sbSystemSettingsTableName = config.getString("lms-cassandra.systemSettingsTable")
   val batchTableName = config.getString("lms-cassandra.batchTable")
   val dialcodeKeyspaceName = config.getString("dialcode-cassandra.keyspace")
   val dialcodeTableName = config.getString("dialcode-cassandra.imageTable")
@@ -72,6 +75,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val batchCreateAPIPath = lmsBaseUrl + "/private/v1/course/batch/create"
   val searchAPIPath = searchBaseUrl + "/v3/search"
   val reserveDialCodeAPIPath = learningBaseUrl + "/content/v3/dialcode/reserve"
+  val batchAddCertTemplateAPIPath = lmsBaseUrl + "/private/v1/course/batch/cert/template/add"
 
   // QR Image Generator
   val QRImageGeneratorTopic: String = config.getString("kafka.qrimage.topic")
