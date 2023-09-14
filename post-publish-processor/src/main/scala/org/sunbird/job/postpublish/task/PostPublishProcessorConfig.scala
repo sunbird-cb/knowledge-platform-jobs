@@ -70,12 +70,13 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val lmsBaseUrl = config.getString("service.lms.basePath")
   val learningBaseUrl = config.getString("service.learning_service.basePath")
   val dialBaseUrl = config.getString("service.dial.basePath")
+  val courseServiceBaseUrl = "http://lms-service:9000"
 
   // API URLs
   val batchCreateAPIPath = lmsBaseUrl + "/private/v1/course/batch/create"
   val searchAPIPath = searchBaseUrl + "/v3/search"
   val reserveDialCodeAPIPath = learningBaseUrl + "/content/v3/dialcode/reserve"
-  val batchAddCertTemplateAPIPath = lmsBaseUrl + "/v1/course/batch/cert/template/add"
+  val batchAddCertTemplateAPIPath = courseServiceBaseUrl + "/v1/course/batch/cert/template/add"
 
   // QR Image Generator
   val QRImageGeneratorTopic: String = config.getString("kafka.qrimage.topic")
