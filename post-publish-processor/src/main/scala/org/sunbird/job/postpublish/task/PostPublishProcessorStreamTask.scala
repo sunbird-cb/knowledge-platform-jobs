@@ -47,6 +47,12 @@ class PostPublishProcessorStreamTask(config: PostPublishProcessorConfig, kafkaCo
       .name("dialcode-link-process").uid("dialcode-link-process").setParallelism(config.linkDialCodeParallelism)
 
     linkDialCodeStream.getSideOutput(config.generateQRImageOutTag).addSink(kafkaConnector.kafkaStringSink(config.QRImageGeneratorTopic))
+
+    val postPublicRelationUpdateStream = processStreamTask.getSideOutput(config.postPublishRelationUpdateOutTag)
+      .process(new PostPublishRelationUpdaterFunction(config, httpUtil))
+      .name("post-publish-relation-update-process").uid("post-publish-relation-update-process").setParallelism(config.postPublishRelationUpdateParallelism)
+
+    postPublicRelationUpdateStream.getSideOutput(config.ppostPublishRelationUpdateOutTag).addSink(kafkaConnector.kafkaStringSink(config.postPublishRelationUpdateTopic))
     env.execute(config.jobName)
   }
 }
