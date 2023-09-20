@@ -11,7 +11,7 @@ import org.sunbird.job.cache.{DataCache, RedisConnect}
 import org.sunbird.job.exception.InvalidEventException
 import org.sunbird.job.programcert.domain.Event
 import org.sunbird.job.programcert.task.ProgramCertPreProcessorConfig
-import org.sunbird.job.util.{CassandraUtil, HttpUtil}
+import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil}
 import org.sunbird.job.{BaseProcessKeyedFunction, Metrics}
 
 import scala.collection.JavaConverters._
@@ -78,7 +78,32 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                             }
                         }
                         if(isProgramCertificateToBeGenerated) {
-                            //Need to add kafka event to generate Certificate
+                            //Add kafka event to generate Certificate for Program
+                            val eData = Map[String, AnyRef](
+                                "eid" -> "BE_JOB_REQUEST",
+                                "ets" -> "1695019553226",
+                                "mid" -> "LP.1695019553226.dcfd4458-f7e4-4e23-bfb7-9531ec91a1fe",
+                                "actor" -> Map(
+                                    "id" -> "Program Certificate Generator",
+                                    "type" -> "System"),
+                                "context" -> Map(
+                                    "pdata" -> Map(
+                                    "ver" -> "1.0",
+                                    "id" -> "org.sunbird.platform")),
+                                "object" -> Map(
+                                    "id" -> event.batchId.concat("_").concat(parentCourse),
+                                    "type" -> "ProgramCertificateGeneration"),
+                                "edata" -> Map(
+                                    "userIds" -> List(event.userId),
+                                    "action" -> "issue-certificate",
+                                    "iteration" -> 1,
+                                    "trigger" -> "auto-issue",
+                                    "batchId" -> event.batchId,
+                                    "reIssue" -> false,
+                                    "courseId" -> parentCourse))
+
+                            val requestBody = JSONUtil.serialize(eData)
+                            context.output(config.generateCertificateOutputTag, requestBody)
                         }
                     }
                 }
