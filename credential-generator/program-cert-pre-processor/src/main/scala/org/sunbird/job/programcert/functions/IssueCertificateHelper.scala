@@ -14,4 +14,31 @@ import org.sunbird.job.util.{CassandraUtil, HttpUtil, ScalaJsonUtil}
 import scala.collection.JavaConverters._
 
 trait IssueCertificateHelper {
+
+  private[this] val logger = LoggerFactory.getLogger(classOf[ProgramCertPreProcessorFn])
+  def getAPICall(url: String, responseParam: String)(config: ProgramCertPreProcessorConfig, httpUtil: HttpUtil, metrics: Metrics): Map[String, AnyRef] = {
+    val response = httpUtil.get(url, config.defaultHeaders)
+    if (200 == response.status) {
+      ScalaJsonUtil.deserialize[Map[String, AnyRef]](response.body)
+        .getOrElse("result", Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]]
+        .getOrElse(responseParam, Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]]
+    } else if (400 == response.status && response.body.contains(config.userAccBlockedErrCode)) {
+      metrics.incCounter(config.skippedEventCount)
+      logger.error(s"Error while fetching user details for ${url}: " + response.status + " :: " + response.body)
+      Map[String, AnyRef]()
+    } else {
+      throw new Exception(s"Error from get API : ${url}, with response: ${response}")
+    }
+  }
+
+  def getCourseReadDetails(courseId: String)(metrics: Metrics, config: ProgramCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): List[String] = {
+    val courseMetadata = cache.getWithRetry(courseId)
+    if (null == courseMetadata || courseMetadata.isEmpty) {
+      val url = config.contentBasePath + config.contentReadApi + "/" + courseId + "?fields=primaryCategory,identifier,parentCollections"
+      val response = getAPICall(url, "content")(config, httpUtil, metrics)
+      response.getOrElse(config.parentCollections, List()).asInstanceOf[List[String]]
+    } else {
+      courseMetadata.getOrElse(config.parentCollections, List()).asInstanceOf[List[String]]
+    }
+  }
 }

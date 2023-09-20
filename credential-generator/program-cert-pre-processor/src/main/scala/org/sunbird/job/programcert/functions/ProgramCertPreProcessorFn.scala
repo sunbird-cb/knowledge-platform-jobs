@@ -15,6 +15,8 @@ import org.sunbird.job.util.{CassandraUtil, HttpUtil}
 import org.sunbird.job.{BaseProcessKeyedFunction, Metrics}
 
 import scala.collection.JavaConverters._
+import scala.collection.convert.ImplicitConversions.{`collection AsScalaIterable`, `seq AsJavaList`}
+import scala.util.control.Breaks.{break, breakable}
 
 class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil: HttpUtil)
                                (implicit val stringTypeInfo: TypeInformation[String],
@@ -32,9 +34,9 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
         cache = new DataCache(config, redisConnect, config.collectionCacheStore, List())
         cache.init()
 
-      /*val metaRedisConn = new RedisConnect(config, Option(config.metaRedisHost), Option(config.metaRedisPort))
+      val metaRedisConn = new RedisConnect(config, Option(config.metaRedisHost), Option(config.metaRedisPort))
       contentCache = new DataCache(config, metaRedisConn, config.contentCacheStore, List())
-      contentCache.init()*/
+      contentCache.init()
         logger.info("This is the flink testing")
     }
 
@@ -52,6 +54,70 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
     override def processElement(event: Event,
                                 context: KeyedProcessFunction[String, Event, String]#Context,
                                 metrics: Metrics): Unit = {
-        logger.info("Inside the Cert Processor for Program Event");
+        try {
+            val getParentForCourse = getCourseReadDetails(event.courseId)(metrics, config, contentCache, httpUtil).asInstanceOf[List[String]]
+            if(!getParentForCourse.isEmpty) {
+                for (parentCourse <- getParentForCourse) {
+                    val childrenForCuratedProgram = getProgramChildren(parentCourse)(metrics, config, contentCache, httpUtil).asInstanceOf[Map[String, AnyRef]]
+                    if (!childrenForCuratedProgram.isEmpty) {
+                        val contentDataForProgram = childrenForCuratedProgram.get(config.childrens).asInstanceOf[List[Map[String, AnyRef]]]
+                        var isProgramCertificateToBeGenerated: Boolean = true;
+                        for (childNode <- contentDataForProgram) {
+                            val courseId: String = childNode.get(config.identifier).asInstanceOf[String]
+                            val batchesForCourse: java.util.List[java.util.Map[String, AnyRef]] = childNode.get(config.batches).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
+                            val filteredBatches = batchesForCourse.filter(batch => batch.get("status") != 2).toList
+                            val batchId: String = filteredBatches.get(0).get("batchId").asInstanceOf[String]
+                            val userId: String = event.userId
+                            val primaryFields = Map(config.dbUserId.toLowerCase() -> userId, config.dbBatchId.toLowerCase -> batchId, config.dbCourseId.toLowerCase -> courseId)
+                            val isCertificateIssued: List[Row] = getCourseIssuedCertificateForUser(primaryFields)(metrics).asInstanceOf[List[Row]]
+                            breakable {
+                                if (isCertificateIssued == null) {
+                                    isProgramCertificateToBeGenerated = false;
+                                    break
+                                }
+                            }
+                        }
+                        if(isProgramCertificateToBeGenerated) {
+                            //Need to add kafka event to generate Certificate
+                        }
+                    }
+                }
+            }
+        } catch {
+            case ex: Exception => {
+                throw new InvalidEventException(ex.getMessage, Map("partition" -> event.partition, "offset" -> event.offset), ex)
+            }
+        }
+        logger.info("Inside the Process ElementForProgram");
     }
+
+    def getProgramChildren(programId: String)(metrics: Metrics, config: ProgramCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil):  Map[String, AnyRef] = {
+        val query = QueryBuilder.select().all().from(config.contentHierarchyKeySpace, config.contentHierarchyTable)
+          .where(QueryBuilder.eq(config.identifier, programId))
+        val row: Row = cassandraUtil.findOne(query.toString)
+        if (null != row) {
+            val templates = row.getMap(config.Hierarchy, TypeToken.of(classOf[String]), TypeTokens.mapOf(classOf[String], classOf[String]))
+            templates.asScala.map(template => (template._1 -> template._2.asScala.toMap)).toMap
+        } else {
+            Map[String, Map[String, String]]()
+        }
+    }
+
+    private def getCourseIssuedCertificateForUser(columns: Map[String, AnyRef])(implicit metrics: Metrics) = {
+        logger.info("primary columns {}", columns)
+        val selectWhere = QueryBuilder.select().all()
+          .from(config.keyspace, config.userEnrolmentsTable).
+          where()
+        columns.map(col => {
+            col._2 match {
+                case value: List[Any] =>
+                    selectWhere.and(QueryBuilder.in(col._1, value.asJava))
+                case _ =>
+                    selectWhere.and(QueryBuilder.eq(col._1, col._2))
+            }
+        })
+        logger.info("select query {}", selectWhere.toString)
+        cassandraUtil.find(selectWhere.toString).asScala.toList
+    }
+
 }

@@ -43,6 +43,11 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
     val dbBatchId = "batchid"
     val dbCourseId = "courseid"
     val dbUserId = "userid"
+    val contentHierarchyTable: String = "content_hierarchy"
+    val contentHierarchyKeySpace: String = "dev_hierarchy_store"
+    val Hierarchy: String = "hierarchy"
+    val childrens: String = "children"
+    val batches: String = "batches"
     
     //API URL
     val contentBasePath = config.getString("service.content.basePath")
@@ -81,5 +86,6 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
     val userAccBlockedErrCode = "UOS_USRRED0006"
     val enableSuppressException: Boolean = if(config.hasPath("enable.suppress.exception")) config.getBoolean("enable.suppress.exception") else false
     val programCertProgram: String = "program_cert_program"
+    val parentCollections: String = "parentCollections"
 
 }
