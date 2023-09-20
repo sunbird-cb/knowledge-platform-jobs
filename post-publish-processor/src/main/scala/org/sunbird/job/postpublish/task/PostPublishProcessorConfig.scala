@@ -30,6 +30,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val shallowCopyParallelism: Int = config.getInt("task.shallow_copy.parallelism")
   val linkDialCodeParallelism: Int = config.getInt("task.link_dialcode.parallelism")
   val batchCreateParallelism: Int = config.getInt("task.batch_create.parallelism")
+  val postPublishRelationUpdateParallelism: Int = config.getInt("task.post-publish-relation-update.parallelism")
 
   // Metric List
   val totalEventsCount = "total-events-count"
@@ -42,6 +43,9 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val dialLinkSuccessCount = "dial-link-success-count"
   val dialLinkFailedCount = "dial-link-failed-count"
   val qrImageGeneratorEventCount = "qr-image-event-count"
+  val postPublishRelationUpdateEventCount = "post-publish-relation-update-count"
+  val postPublishRelationUpdateSuccessCount = "post-publish-relation-update-success-count"
+  val postPublishRelationUpdateFailureCount = "post-publish-relation-update-failure-count"
 
   // Cassandra Configurations
   val dbHost: String = config.getString("lms-cassandra.host")
@@ -65,19 +69,27 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val shallowContentPublishOutTag: OutputTag[PublishMetadata] = OutputTag[PublishMetadata]("shallow-copied-content-publish")
   val publishEventOutTag: OutputTag[String] = OutputTag[String]("content-publish-request")
   val generateQRImageOutTag: OutputTag[String] = OutputTag[String]("qr-image-generator-request")
+  val postPublishRelationUpdateOutTag: OutputTag[java.util.Map[String, AnyRef]] = OutputTag[java.util.Map[String, AnyRef]]("post-publish-relation-update")
+  val ppostPublishRelationUpdateOutTag: OutputTag[String] = OutputTag[String]("ppost-publish-relation-update")
 
   val searchBaseUrl = config.getString("service.search.basePath")
   val lmsBaseUrl = config.getString("service.lms.basePath")
   val learningBaseUrl = config.getString("service.learning_service.basePath")
   val dialBaseUrl = config.getString("service.dial.basePath")
+  val contentServiceUrl = config.getString("service.notification-service.path")
 
   // API URLs
   val batchCreateAPIPath = lmsBaseUrl + "/private/v1/course/batch/create"
   val searchAPIPath = searchBaseUrl + "/v3/search"
   val reserveDialCodeAPIPath = learningBaseUrl + "/content/v3/dialcode/reserve"
   val batchAddCertTemplateAPIPath = lmsBaseUrl + "/private/v1/course/batch/cert/template/add"
+  val contentReadServicePath = contentServiceUrl + "content/v4/read/"
+  val contentHierrachyPath = contentServiceUrl + "/content/v3/hierarchy/update/"
+  val contentSystemUpdatePath = contentServiceUrl + "/content/v3/update/"
+
 
   // QR Image Generator
   val QRImageGeneratorTopic: String = config.getString("kafka.qrimage.topic")
+  val postPublishRelationUpdateTopic: String = config.getString("kafka.post-publish-relation.topic")
   val primaryCategories: util.List[String] = if (config.hasPath("dialcode.linkable.primaryCategory")) config.getStringList("dialcode.linkable.primaryCategory") else util.Arrays.asList("Course") //List[String]("Course")
 }
