@@ -70,26 +70,37 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val publishEventOutTag: OutputTag[String] = OutputTag[String]("content-publish-request")
   val generateQRImageOutTag: OutputTag[String] = OutputTag[String]("qr-image-generator-request")
   val postPublishRelationUpdateOutTag: OutputTag[java.util.Map[String, AnyRef]] = OutputTag[java.util.Map[String, AnyRef]]("post-publish-relation-update")
-  val ppostPublishRelationUpdateOutTag: OutputTag[String] = OutputTag[String]("ppost-publish-relation-update")
 
   val searchBaseUrl = config.getString("service.search.basePath")
   val lmsBaseUrl = config.getString("service.lms.basePath")
   val learningBaseUrl = config.getString("service.learning_service.basePath")
   val dialBaseUrl = config.getString("service.dial.basePath")
-  val contentServiceUrl = config.getString("service.notification-service.path")
 
   // API URLs
   val batchCreateAPIPath = lmsBaseUrl + "/private/v1/course/batch/create"
   val searchAPIPath = searchBaseUrl + "/v3/search"
   val reserveDialCodeAPIPath = learningBaseUrl + "/content/v3/dialcode/reserve"
   val batchAddCertTemplateAPIPath = lmsBaseUrl + "/private/v1/course/batch/cert/template/add"
-  val contentReadServicePath = contentServiceUrl + "content/v4/read/"
-  val contentHierrachyPath = contentServiceUrl + "/content/v3/hierarchy/update/"
-  val contentSystemUpdatePath = contentServiceUrl + "/content/v3/update/"
 
 
   // QR Image Generator
   val QRImageGeneratorTopic: String = config.getString("kafka.qrimage.topic")
-  val postPublishRelationUpdateTopic: String = config.getString("kafka.post-publish-relation.topic")
   val primaryCategories: util.List[String] = if (config.hasPath("dialcode.linkable.primaryCategory")) config.getStringList("dialcode.linkable.primaryCategory") else util.Arrays.asList("Course") //List[String]("Course")
+
+  val contentServiceBase: String = config.getString("service.content.basePath")
+  val contentReadURL = s"${contentServiceBase}/content/v3/read/"
+
+  val contentHierarchyTable: String = "content_hierarchy"
+  val contentHierarchyKeySpace: String = "dev_hierarchy_store"
+  val identifier: String = "identifier"
+  val Hierarchy: String = "hierarchy"
+  val childrens: String = "children"
+  val primaryCategory: String = "primaryCategory"
+  val versionKey: String = "versionKey"
+  val course: String = "Course"
+  val parentCollections: String="parentCollections"
+
+  val contentServiceUrl = config.getString("service.content-service.path")
+  val contentSystemUpdatePath = contentServiceUrl + "/content/v3/update/"
+
 }
