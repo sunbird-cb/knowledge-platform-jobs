@@ -164,5 +164,7 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val userFeedMsg: String = "You have earned a certificate! Download it from your profile page."
   val priorityValue = 1
   val userFeedCount = "user-feed-count"
+  val generateCertificateOutputTagName = "generate-certificate-request"
+  val generateCertificateOutputTag: OutputTag[String] = OutputTag[String](generateCertificateOutputTagName)
   
 }

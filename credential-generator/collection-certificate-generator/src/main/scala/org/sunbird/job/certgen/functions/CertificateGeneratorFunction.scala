@@ -29,6 +29,7 @@ import java.util
 import java.util.stream.Collectors
 import java.util.{Base64, Date}
 import scala.collection.JavaConverters._
+import org.sunbird.job.certgen.domain.{ BEJobRequestEvent, EventObjectCourseCertificate}
 
 class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, storageService: StorageService, @transient var cassandraUtil: CassandraUtil = null)
   extends BaseProcessKeyedFunction[String, Event, String](config) {
@@ -77,6 +78,11 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
         metrics.incCounter(config.skippedEventCount)
         logger.info(s"Certificate already issued for: ${event.eData.getOrElse("userId", "")} ${event.related}")
       }
+      val courseCompletionEvent = generateCourseCompletionEvent(event)
+      Option(courseCompletionEvent ).map(e => {
+        context.output(config.generateCertificateOutputTag, courseCompletionEvent)
+        metrics.incCounter(config.successEventCount)
+      })
     } catch {
       case e: Exception =>
         metrics.incCounter(config.failedEventCount)
@@ -355,6 +361,16 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
       actor = Actor(id = data.userId),
       context = EventContext(cdata = Array(Map("type" -> config.courseBatch, config.id -> data.batchId).asJava)),
       `object` = EventObject(id = data.certificate.id, `type` = "Certificate", rollup = Map(config.l1 -> data.courseId).asJava))
+  }
+
+
+  def generateCourseCompletionEvent(event: Event) = {
+    val eData = Map[String, AnyRef](
+      "userId" -> event.userId,
+      "batchId" -> event.batchId,
+      "courseId" -> event.courseId
+    )
+    ScalaJsonUtil.serialize(BEJobRequestEvent(edata = eData, `object` = EventObjectCourseCertificate(id = event.userId)))
   }
 
 
