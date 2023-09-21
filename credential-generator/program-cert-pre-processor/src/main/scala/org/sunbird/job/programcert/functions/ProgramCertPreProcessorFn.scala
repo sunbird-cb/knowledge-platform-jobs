@@ -3,8 +3,11 @@ package org.sunbird.job.programcert.functions
 import com.datastax.driver.core.querybuilder.QueryBuilder
 import com.datastax.driver.core.{Row, TypeTokens}
 import com.google.common.reflect.TypeToken
+import org.apache.commons.collections.CollectionUtils
+import org.apache.commons.lang3.StringUtils
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction
 import org.slf4j.LoggerFactory
 import org.sunbird.job.cache.{DataCache, RedisConnect}
@@ -26,6 +29,7 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
     private[this] val logger = LoggerFactory.getLogger(classOf[ProgramCertPreProcessorFn])
     private var cache: DataCache = _
     private var contentCache: DataCache = _
+    lazy private val mapper: ObjectMapper = new ObjectMapper()
 
     override def open(parameters: Configuration): Unit = {
         super.open(parameters)
@@ -55,23 +59,23 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                                 context: KeyedProcessFunction[String, Event, String]#Context,
                                 metrics: Metrics): Unit = {
         try {
-            val getParentForCourse = getCourseReadDetails(event.courseId)(metrics, config, contentCache, httpUtil).asInstanceOf[List[String]]
+            val getParentForCourse = getCourseReadDetails(event.courseId)(metrics, config, contentCache, httpUtil).asInstanceOf[java.util.List[String]]
             if(!getParentForCourse.isEmpty) {
                 for (parentCourse <- getParentForCourse) {
-                    val childrenForCuratedProgram = getProgramChildren(parentCourse)(metrics, config, contentCache, httpUtil).asInstanceOf[Map[String, AnyRef]]
+                    val childrenForCuratedProgram = getProgramChildren(parentCourse)(metrics, config, contentCache, httpUtil)
                     if (!childrenForCuratedProgram.isEmpty) {
-                        val contentDataForProgram = childrenForCuratedProgram.get(config.childrens).asInstanceOf[List[Map[String, AnyRef]]]
+                        val contentDataForProgram = childrenForCuratedProgram.get(config.childrens).asInstanceOf[java.util.List[java.util.HashMap[String, AnyRef]]]
                         var isProgramCertificateToBeGenerated: Boolean = true;
                         for (childNode <- contentDataForProgram) {
                             val courseId: String = childNode.get(config.identifier).asInstanceOf[String]
-                            val batchesForCourse: java.util.List[java.util.Map[String, AnyRef]] = childNode.get(config.batches).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
+                           /* val batchesForCourse: java.util.List[java.util.Map[String, AnyRef]] = childNode.get(config.batches).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
                             val filteredBatches = batchesForCourse.filter(batch => batch.get("status") != 2).toList
-                            val batchId: String = filteredBatches.get(0).get("batchId").asInstanceOf[String]
+                            val batchId: String = filteredBatches.get(0).get("batchId").asInstanceOf[String]*/
                             val userId: String = event.userId
-                            val primaryFields = Map(config.dbUserId.toLowerCase() -> userId, config.dbBatchId.toLowerCase -> batchId, config.dbCourseId.toLowerCase -> courseId)
+                            val primaryFields = Map(config.dbUserId.toLowerCase() -> userId, config.dbCourseId.toLowerCase -> courseId)
                             val isCertificateIssued: List[Row] = getCourseIssuedCertificateForUser(primaryFields)(metrics).asInstanceOf[List[Row]]
                             breakable {
-                                if (isCertificateIssued == null) {
+                                if (isCertificateIssued == null || isCertificateIssued.isEmpty) {
                                     isProgramCertificateToBeGenerated = false;
                                     break
                                 }
@@ -116,16 +120,17 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
         logger.info("Inside the Process ElementForProgram");
     }
 
-    def getProgramChildren(programId: String)(metrics: Metrics, config: ProgramCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil):  Map[String, AnyRef] = {
-        val query = QueryBuilder.select().all().from(config.contentHierarchyKeySpace, config.contentHierarchyTable)
+    def getProgramChildren(programId: String)(metrics: Metrics, config: ProgramCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil):  java.util.Map[String, AnyRef] = {
+        val query = QueryBuilder.select(config.Hierarchy).from(config.contentHierarchyKeySpace, config.contentHierarchyTable)
           .where(QueryBuilder.eq(config.identifier, programId))
-        val row: Row = cassandraUtil.findOne(query.toString)
-        if (null != row) {
-            val templates = row.getMap(config.Hierarchy, TypeToken.of(classOf[String]), TypeTokens.mapOf(classOf[String], classOf[String]))
-            templates.asScala.map(template => (template._1 -> template._2.asScala.toMap)).toMap
-        } else {
-            Map[String, Map[String, String]]()
+        val row = cassandraUtil.find(query.toString)
+        if (CollectionUtils.isNotEmpty(row)) {
+            val hierarchy = row.asScala.head.getObject(config.Hierarchy).asInstanceOf[String]
+            if (StringUtils.isNotBlank(hierarchy))
+                mapper.readValue(hierarchy, classOf[java.util.Map[String, AnyRef]])
+            else new java.util.HashMap[String, AnyRef]()
         }
+        else new java.util.HashMap[String, AnyRef]()
     }
 
     private def getCourseIssuedCertificateForUser(columns: Map[String, AnyRef])(implicit metrics: Metrics) = {
@@ -144,5 +149,4 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
         logger.info("select query {}", selectWhere.toString)
         cassandraUtil.find(selectWhere.toString).asScala.toList
     }
-
 }
