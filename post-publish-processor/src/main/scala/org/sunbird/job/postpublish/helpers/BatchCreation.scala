@@ -3,18 +3,12 @@ package org.sunbird.job.postpublish.helpers
 import com.datastax.driver.core.querybuilder.QueryBuilder
 import org.apache.commons.collections.{CollectionUtils, MapUtils}
 import org.apache.commons.lang3.StringUtils
-import org.apache.http.{HttpResponse, StatusLine}
-import org.apache.http.client.methods.HttpPatch
-import org.apache.http.entity.{ContentType, StringEntity}
-import org.apache.http.impl.client.HttpClients
 import org.slf4j.LoggerFactory
 import org.sunbird.job.postpublish.task.PostPublishProcessorConfig
-import org.sunbird.job.util.{CassandraUtil, HTTPResponse, HttpUtil, JSONUtil, Neo4JUtil}
+import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil, Neo4JUtil}
 
 import java.util
 import scala.collection.JavaConverters._
-import scala.collection.JavaConverters
-import scala.collection.immutable.HashMap
 
 trait BatchCreation {
 
@@ -156,60 +150,6 @@ trait BatchCreation {
       }
     } else {
       logger.error("Failed to read default cert template with id : " + config.defaultCertTemplateId)
-    }
-  }
-
-  def postPublishRelationUpdate(eData: java.util.Map[String, AnyRef], startDate: String)(implicit config: PostPublishProcessorConfig, httpUtil: HttpUtil, cassandraUtil: CassandraUtil): Unit = {
-    val courseId = eData.get("identifier").toString
-    val httpHeaders: Map[String, String] = HashMap.empty[String, String]
-    val content_read_url = config.contentReadServicePath + courseId + "?fields=primaryCategory,childNodes"
-    val response: HTTPResponse = httpUtil.get(content_read_url, httpHeaders)
-    val obj = JSONUtil.deserialize[Map[String, AnyRef]](response.body)
-    val contentObjMap: Map[String, AnyRef] = obj("result").asInstanceOf[Map[String, AnyRef]]("content").asInstanceOf[Map[String, AnyRef]]
-    if (contentObjMap("primaryCategory").asInstanceOf[String].equalsIgnoreCase("Program") ||
-      contentObjMap("primaryCategory").asInstanceOf[String].equalsIgnoreCase("Curated Program") ||
-      contentObjMap("primaryCategory").asInstanceOf[String].equalsIgnoreCase("Blended Program")) {
-      val content_hierarchy_url = config.contentHierrachyPath + courseId
-      val response: HTTPResponse = httpUtil.get(content_hierarchy_url, httpHeaders)
-      val obj = JSONUtil.deserialize[Map[String, AnyRef]](response.body)
-      val contentObjMap: Map[String, AnyRef] = obj("result").asInstanceOf[Map[String, AnyRef]]("content").asInstanceOf[Map[String, AnyRef]]
-      val children: List[Map[String, Any]] = contentObjMap("children").asInstanceOf[List[Map[String, Any]]]
-      val preservedData: List[(String, String)] = children.flatMap { child =>
-        val primaryCategory: Option[String] = child.get("primaryCategory").map(_.toString)
-        if (primaryCategory.contains("Course")) {
-          val courseId: Option[String] = child.get("courseId").map(_.toString)
-          val versionKey: Option[String] = child.get("versionKey").map(_.toString)
-          for {
-            courseIdValue <- courseId
-            versionKeyValue <- versionKey
-          } yield (courseIdValue, versionKeyValue)
-        } else {
-          None
-        }
-      }
-      if (preservedData.nonEmpty) {
-        preservedData.foreach { case (courseId, versionKey) =>
-          val content_system_state_url = config.contentSystemUpdatePath + courseId
-          val requestData: Map[String, Any] = Map(
-            "request" -> Map(
-              "content" -> Map(
-                "versionKey" -> versionKey,
-                "parentCollections" -> courseId
-              )
-            )
-          )
-          val jsonString: String = JSONUtil.serialize(requestData)
-          val patchRequest = new HttpPatch(content_system_state_url)
-          patchRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON))
-          val httpClient = HttpClients.createDefault()
-          val response: HttpResponse = httpClient.execute(patchRequest)
-          val statusLine: StatusLine = response.getStatusLine
-          val statusCode: Int = statusLine.getStatusCode
-          if (statusCode == 200) {
-            logger.info("Processed the request.")
-          }
-        }
-      }
     }
   }
 }
