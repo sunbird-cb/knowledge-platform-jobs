@@ -100,8 +100,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val course: String = "Course"
   val parentCollections: String="parentCollections"
 
-  val contentServiceUrl = config.getString("service.content-service.path")
-  val contentSystemUpdatePath = contentServiceUrl + "/content/v3/update/"
+  val contentSystemUpdatePath = learningBaseUrl + "/content/v3/update/"
   val defaultHeaders = Map[String, String] ("Content-Type" -> "application/json")
   val userAccBlockedErrCode = "UOS_USRRED0006"
   val name: String = "name"
