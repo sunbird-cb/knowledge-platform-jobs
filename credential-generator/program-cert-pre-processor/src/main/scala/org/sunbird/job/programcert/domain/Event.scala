@@ -19,7 +19,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
     def eData: Map[String, AnyRef] = readOrDefault[Map[String, AnyRef]]("edata", Map[String, AnyRef]())
 
     def isValid()(config: ProgramCertPreProcessorConfig): Boolean = {
-        config.programCertProgram.equalsIgnoreCase(action) && !batchId.isEmpty && !courseId.isEmpty &&
+        config.programCertPreProcess.equalsIgnoreCase(action) && !batchId.isEmpty && !courseId.isEmpty &&
           !userId.isEmpty
     }
 }

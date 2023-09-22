@@ -85,7 +85,7 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
     val assessmentContentTypes = if(config.hasPath("assessment.metrics.supported.contenttype")) config.getStringList("assessment.metrics.supported.contenttype") else util.Arrays.asList("SelfAssess")
     val userAccBlockedErrCode = "UOS_USRRED0006"
     val enableSuppressException: Boolean = if(config.hasPath("enable.suppress.exception")) config.getBoolean("enable.suppress.exception") else false
-    val programCertProgram: String = "program_cert_program"
+    val programCertPreProcess: String = "program_cert_pre_process"
     val parentCollections: String = "parentCollections"
 
 }

@@ -55,6 +55,11 @@ class CertificateGeneratorStreamTask(config: CertificateGeneratorConfig, kafkaCo
       .uid("user-feed")
       .setParallelism(config.userFeedParallelism)
 
+    processStreamTask.getSideOutput(config.generateProgramCertificateOutputTag)
+      .addSink(kafkaConnector.kafkaStringSink(config.kafkaProgramCertOutputTopic))
+      .name(config.generateProgramCertificateProducer)
+      .uid(config.generateProgramCertificateProducer)
+      .setParallelism(config.generateProgramCertificateParallelism)
 
     env.execute(config.jobName)
   }

@@ -60,4 +60,8 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def providerName: String = readOrDefault[String]("edata.providerName", "")
 
+  def primaryCategory: String = readOrDefault[String]("edata.primaryCategory", "")
+
+  def parentCollections: List[String] = readOrDefault[List[String]]("edata.parentCollections", List.empty[String])
+
 }
