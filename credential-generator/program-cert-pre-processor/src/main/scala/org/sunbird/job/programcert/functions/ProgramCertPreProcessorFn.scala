@@ -60,13 +60,12 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
             val getParentIdForCourse = event.parentCollections
             if (!getParentIdForCourse.isEmpty) {
                 for (courseParentId <- getParentIdForCourse) {
-                    val curatedProgramHierarchy = getProgramChildren(courseParentId)(metrics, config, contentCache, httpUtil)
-                    if (!curatedProgramHierarchy.isEmpty) {
-                        val batchesForProgram: java.util.List[java.util.Map[String, AnyRef]] = curatedProgramHierarchy.get(config.batches).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
-                        val filteredBatches = batchesForProgram.filter(batch => batch.get("status") != 2).toList
-                        val batchId: String = filteredBatches.get(0).get(config.dbBatchId).asInstanceOf[String]
-                        val programEnrollmentStatus = getEnrolment(event.userId, courseParentId, batchId)(metrics)
-                        if (null != programEnrollmentStatus) {
+                    val programEnrollmentStatus = getEnrolment(event.userId, courseParentId)(metrics)
+                    //if enrolled into program
+                    if (null != programEnrollmentStatus) {
+                        val curatedProgramHierarchy = getProgramChildren(courseParentId)(metrics, config, contentCache, httpUtil)
+                        if (!curatedProgramHierarchy.isEmpty) {
+                            val batchId: String = programEnrollmentStatus.getString(config.dbBatchId)
                             val contentDataForProgram = curatedProgramHierarchy.get(config.childrens).asInstanceOf[java.util.List[java.util.HashMap[String, AnyRef]]]
                             var isProgramCertificateToBeGenerated: Boolean = true;
                             for (childNode <- contentDataForProgram) {
@@ -151,14 +150,23 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
         cassandraUtil.find(selectWhere.toString).asScala.toList
     }
 
-    def getEnrolment(userId: String, programId: String, batchId: String)(implicit metrics: Metrics) = {
+    def getEnrolment(userId: String, programId: String)(implicit metrics: Metrics): Row = {
         val selectWhere: Select.Where = QueryBuilder.select().all()
           .from(config.keyspace, config.userEnrolmentsTable).
           where()
-        selectWhere.and(QueryBuilder.eq("userid", userId))
-          .and(QueryBuilder.eq("courseid", programId))
-          .and(QueryBuilder.eq("batchid", batchId))
+        selectWhere.and(QueryBuilder.eq(config.dbUserId, userId))
+          .and(QueryBuilder.eq(config.dbCourseId, programId))
         metrics.incCounter(config.dbReadCount)
-        cassandraUtil.findOne(selectWhere.toString)
+        var row: java.util.List[Row] = cassandraUtil.find(selectWhere.toString)
+        if (null != row) {
+            row = row.filter(x => x.getInt("status") != 2).toList
+            if (row.size() == 1) {
+                row.asScala.get(0)
+            } else {
+                null
+            }
+        } else {
+            null
+        }
     }
 }
