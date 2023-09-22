@@ -80,7 +80,7 @@ class PostPublishRelationUpdaterFunction(config: PostPublishProcessorConfig, htt
             )
           )
           val jsonString: String = JSONUtil.serialize(requestData)
-          val content_system_state_url = config.contentSystemUpdatePath + identifier
+          val content_system_state_url = config.learningBaseUrl + identifier
           val patchRequest = new HttpPatch(content_system_state_url)
           patchRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON))
           val httpClient = HttpClients.createDefault()
