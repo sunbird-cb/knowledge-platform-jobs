@@ -1,16 +1,17 @@
 package org.sunbird.job.postpublish.functions
 
 import com.datastax.driver.core.querybuilder.QueryBuilder
-import com.datastax.driver.core.{Row, TypeTokens}
-import com.google.common.reflect.TypeToken
+import org.apache.commons.collections.CollectionUtils
+import org.apache.commons.lang3.StringUtils
 import org.apache.flink.configuration.Configuration
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.flink.streaming.api.functions.ProcessFunction
-import org.apache.http.{HttpResponse, StatusLine}
 import org.apache.http.client.methods.HttpPatch
 import org.apache.http.entity.{ContentType, StringEntity}
 import org.apache.http.impl.client.HttpClients
+import org.apache.http.{HttpResponse, StatusLine}
 import org.slf4j.LoggerFactory
-import org.sunbird.job.cache.DataCache
+import org.sunbird.job.cache.{DataCache, RedisConnect}
 import org.sunbird.job.exception.APIException
 import org.sunbird.job.postpublish.helpers.BatchCreation
 import org.sunbird.job.postpublish.task.PostPublishProcessorConfig
@@ -21,7 +22,6 @@ import java.time.format.DateTimeFormatter
 import java.time.{ZoneId, ZonedDateTime}
 import java.util
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 /**
  * @author mahesh.vakkund
@@ -31,20 +31,31 @@ class PostPublishRelationUpdaterFunction(config: PostPublishProcessorConfig, htt
   extends BaseProcessFunction[java.util.Map[String, AnyRef], String](config) with BatchCreation {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[PostPublishRelationUpdaterFunction])
+  lazy private val mapper: ObjectMapper = new ObjectMapper()
+  private var cache: DataCache = _
+  private var contentCache: DataCache = _
 
   override def open(parameters: Configuration): Unit = {
     super.open(parameters)
     cassandraUtil = new CassandraUtil(config.dbHost, config.dbPort)
+    val redisConnect = new RedisConnect(config)
+    cache = new DataCache(config, redisConnect, config.collectionCacheStore, List())
+    cache.init()
+
+    val metaRedisConn = new RedisConnect(config, Option(config.metaRedisHost), Option(config.metaRedisPort))
+    contentCache = new DataCache(config, metaRedisConn, config.contentCacheStore, List())
+    contentCache.init()
   }
 
   override def close(): Unit = {
     cassandraUtil.close()
+    cache.close()
     super.close()
   }
 
-  private def postPublishRelationUpdate(eData: util.Map[String, AnyRef], startDate: String)(implicit config: PostPublishProcessorConfig, httpUtil: HttpUtil, cassandraUtil: CassandraUtil): Unit = {
-    val childrenForCuratedProgram: Map[String, AnyRef] = getProgramChildren(eData.get("identifier").asInstanceOf[String])
-    if (childrenForCuratedProgram.nonEmpty) {
+  private def postPublishRelationUpdate(eData: util.Map[String, AnyRef], startDate: String)(implicit config: PostPublishProcessorConfig, httpUtil: HttpUtil, cassandraUtil: CassandraUtil,metrics:Metrics): Unit = {
+    val childrenForCuratedProgram = getProgramChildren(eData.get("identifier").asInstanceOf[String])(metrics, config, contentCache, httpUtil)
+    if (!childrenForCuratedProgram.isEmpty) {
       val contentDataForProgram = childrenForCuratedProgram.get(config.childrens).asInstanceOf[List[Map[String, AnyRef]]]
       for (childNode <- contentDataForProgram) {
         val primaryCategory: String = childNode.get(config.primaryCategory).asInstanceOf[String]
@@ -99,28 +110,30 @@ class PostPublishRelationUpdaterFunction(config: PostPublishProcessorConfig, htt
     }
   }
 
-  private def getProgramChildren(programId: String): Map[String, AnyRef] = {
-    val query = QueryBuilder.select().all().from(config.contentHierarchyKeySpace, config.contentHierarchyTable)
+  def getProgramChildren(programId: String)(metrics: Metrics, config: PostPublishProcessorConfig, cache: DataCache, httpUtil: HttpUtil): java.util.Map[String, AnyRef] = {
+    val query = QueryBuilder.select(config.Hierarchy).from(config.contentHierarchyKeySpace, config.contentHierarchyTable)
       .where(QueryBuilder.eq(config.identifier, programId))
-    val row: Row = cassandraUtil.findOne(query.toString)
-    if (null != row) {
-      val templates = row.getMap(config.Hierarchy, TypeToken.of(classOf[String]), TypeTokens.mapOf(classOf[String], classOf[String]))
-      templates.asScala.map(template => (template._1 -> template._2.asScala.toMap)).toMap
-    } else {
-      Map[String, Map[String, String]]()
+    val row = cassandraUtil.find(query.toString)
+    if (CollectionUtils.isNotEmpty(row)) {
+      val hierarchy = row.asScala.head.getObject(config.Hierarchy).asInstanceOf[String]
+      if (StringUtils.isNotBlank(hierarchy))
+        mapper.readValue(hierarchy, classOf[java.util.Map[String, AnyRef]])
+      else new java.util.HashMap[String, AnyRef]()
     }
+    else new java.util.HashMap[String, AnyRef]()
   }
+
 
 
   override def processElement(eData: java.util.Map[String, AnyRef], context: ProcessFunction[java.util.Map[String, AnyRef], String]#Context, metrics: Metrics): Unit = {
     val collectionId = eData.getOrDefault("identifier", "")
     metrics.incCounter(config.postPublishRelationUpdateEventCount)
     val startDate = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-    logger.info("Creating Batch for " + collectionId + " with start date:" + startDate)
+    logger.info("Processng Post Publish Relation update for Batch " + collectionId + " with start date:" + startDate)
     try {
-      postPublishRelationUpdate(eData, startDate)(config, httpUtil, cassandraUtil)
+      postPublishRelationUpdate(eData, startDate)(config, httpUtil, cassandraUtil,metrics)
       metrics.incCounter(config.postPublishRelationUpdateSuccessCount)
-      logger.info("Batch created for " + collectionId)
+      logger.info("Post Publish Update done for" + collectionId)
     } catch {
       case ex: Throwable =>
         logger.error(s"Error while processing message for identifier : ${collectionId}.", ex)

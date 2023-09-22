@@ -6,7 +6,7 @@ import org.apache.flink.api.java.typeutils.TypeExtractor
 import org.apache.flink.streaming.api.scala.OutputTag
 import org.sunbird.job.BaseJobConfig
 import org.sunbird.job.postpublish.functions.PublishMetadata
-
+import scala.collection.immutable.Map
 import java.util
 
 class PostPublishProcessorConfig(override val config: Config) extends BaseJobConfig(config, "post-publish-processor") {
@@ -69,7 +69,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val shallowContentPublishOutTag: OutputTag[PublishMetadata] = OutputTag[PublishMetadata]("shallow-copied-content-publish")
   val publishEventOutTag: OutputTag[String] = OutputTag[String]("content-publish-request")
   val generateQRImageOutTag: OutputTag[String] = OutputTag[String]("qr-image-generator-request")
-  val postPublishRelationUpdateOutTag: OutputTag[java.util.Map[String, AnyRef]] = OutputTag[java.util.Map[String, AnyRef]]("post-publish-relation-update")
+  val postPublishRelationUpdateOutTag:OutputTag[java.util.Map[String, AnyRef]]= OutputTag[java.util.Map[String, AnyRef]]("post-publish-relation-update")
 
   val searchBaseUrl = config.getString("service.search.basePath")
   val lmsBaseUrl = config.getString("service.lms.basePath")
@@ -87,7 +87,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val QRImageGeneratorTopic: String = config.getString("kafka.qrimage.topic")
   val primaryCategories: util.List[String] = if (config.hasPath("dialcode.linkable.primaryCategory")) config.getStringList("dialcode.linkable.primaryCategory") else util.Arrays.asList("Course") //List[String]("Course")
 
-  val contentServiceBase: String = config.getString("service.content.basePath")
+  val contentServiceBase: String = config.getString("service.content-service.path")
   val contentReadURL = s"${contentServiceBase}/content/v3/read/"
 
   val contentHierarchyTable: String = "content_hierarchy"
@@ -102,5 +102,14 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
 
   val contentServiceUrl = config.getString("service.content-service.path")
   val contentSystemUpdatePath = contentServiceUrl + "/content/v3/update/"
+  val defaultHeaders = Map[String, String] ("Content-Type" -> "application/json")
+  val userAccBlockedErrCode = "UOS_USRRED0006"
+  val name: String = "name"
+
+  val collectionCacheStore: Int = 0
+  val metaRedisHost: String = config.getString("redis-meta.host")
+  val metaRedisPort: Int = config.getInt("redis-meta.port")
+  val contentCacheStore: Int = 5
+
 
 }
