@@ -48,4 +48,32 @@ trait PostPublishRelationUpdate {
         throw new APIException(s"Error in getContentMetaData for $identifier - ${e.getLocalizedMessage}", e)
     }
   }
+
+  def getCourseInfo(courseId: String)(metrics: Metrics, config: CollectionCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): Map[String, Any] = {
+        val courseMetadata = cache.getWithRetry(courseId)
+        val courseInfoMap = if (null == courseMetadata || courseMetadata.isEmpty) {
+            val url = config.contentBasePath + config.contentReadURL + "/" + courseId + "?fields=name,parentCollections,primaryCategory"
+            val response = getAPICall(url, "content")(config, httpUtil, metrics)
+            val courseName = StringContext.processEscapes(response.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
+            val primaryCategory = StringContext.processEscapes(response.getOrElse(config.primaryCategory, "").asInstanceOf[String]).filter(_ >= ' ')
+            val parentCollections = response.getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]]
+            Map(
+                "courseId" -> courseId, 
+                "courseName" -> courseName, 
+                "parentCollections" -> parentCollections,
+                "primaryCategory" -> primaryCategory
+            )
+        } else {
+            val courseName = StringContext.processEscapes(courseMetadata.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
+            val primaryCategory = StringContext.processEscapes(courseMetadata.getOrElse(config.primaryCategory, "").asInstanceOf[String]).filter(_ >= ' ')
+            val parentCollections = courseMetadata.getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]]
+            Map(
+                "courseId" -> courseId, 
+                "courseName" -> courseName, 
+                "parentCollections" -> parentCollections,
+                "primaryCategory" -> primaryCategory
+            )
+        }
+        courseInfoMap
+    }
 }
