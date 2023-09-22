@@ -32,15 +32,10 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
 
     //Cassandra config
     val dbHost: String = config.getString("lms-cassandra.host")
-    /*val dbHost: String = "192.168.56.101"
-    val dbPort: Int = 9042*/
     val dbPort: Int = config.getInt("lms-cassandra.port")
     val keyspace: String = config.getString("lms-cassandra.keyspace")
-    val courseTable: String = config.getString("lms-cassandra.course_batch.table")
     val userEnrolmentsTable: String = config.getString("lms-cassandra.user_enrolments.table")
-    val assessmentTable: String = config.getString("lms-cassandra.assessment_aggregator.table")
-    val useActivityAggTable: String = config.getString("lms-cassandra.user_activity_agg.table")
-    val dbBatchId = "batchid"
+    val dbBatchId = "batchId"
     val dbCourseId = "courseid"
     val dbUserId = "userid"
     val contentHierarchyTable: String = "content_hierarchy"
@@ -53,7 +48,7 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
     val contentBasePath = config.getString("service.content.basePath")
     val learnerBasePath = config.getString("service.learner.basePath")
     val userReadApi = config.getString("user_read_api")
-    val contentReadApi = config.getString("content_read_api")
+    val contentReadApi = "/content/v4/read"
 
     // Metric List
     val totalEventsCount = "total-events-count"
@@ -65,26 +60,11 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
     val cacheHitCount = "cache-hit-cout"
     
     //Constants
-    val issueCertificate = "issue-certificate"
-    val certTemplates = "cert_templates"
-    val criteria: String = "criteria"
-    val enrollment: String = "enrollment"
-    val assessment: String = "assessment"
-    val users: String = "users"
-    val active: String = "active"
-    val issuedCertificates: String = "issued_certificates"
     val status: String = "status"
     val name: String = "name"
-    val user: String= "user"
     val defaultHeaders = Map[String, String] ("Content-Type" -> "application/json")
     val identifier: String = "identifier"
-    val completedOn: String = "completedon"
-    val issuer: String = "issuer"
-    val signatoryList: String = "signatoryList"
-    val certBasePath: String = config.getString("cert_domain_url") + "/certs"
-    val assessmentContentTypes = if(config.hasPath("assessment.metrics.supported.contenttype")) config.getStringList("assessment.metrics.supported.contenttype") else util.Arrays.asList("SelfAssess")
     val userAccBlockedErrCode = "UOS_USRRED0006"
-    val enableSuppressException: Boolean = if(config.hasPath("enable.suppress.exception")) config.getBoolean("enable.suppress.exception") else false
     val programCertPreProcess: String = "program_cert_pre_process"
     val parentCollections: String = "parentCollections"
 

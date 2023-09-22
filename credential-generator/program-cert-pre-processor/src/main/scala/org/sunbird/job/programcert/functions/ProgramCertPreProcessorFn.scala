@@ -1,8 +1,7 @@
 package org.sunbird.job.programcert.functions
 
-import com.datastax.driver.core.querybuilder.QueryBuilder
-import com.datastax.driver.core.{Row, TypeTokens}
-import com.google.common.reflect.TypeToken
+import com.datastax.driver.core.Row
+import com.datastax.driver.core.querybuilder.{QueryBuilder, Select}
 import org.apache.commons.collections.CollectionUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.flink.api.common.typeinfo.TypeInformation
@@ -41,7 +40,6 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
       val metaRedisConn = new RedisConnect(config, Option(config.metaRedisHost), Option(config.metaRedisPort))
       contentCache = new DataCache(config, metaRedisConn, config.contentCacheStore, List())
       contentCache.init()
-        logger.info("This is the flink testing")
     }
 
     override def close(): Unit = {
@@ -59,55 +57,58 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                                 context: KeyedProcessFunction[String, Event, String]#Context,
                                 metrics: Metrics): Unit = {
         try {
-            val getParentForCourse = getCourseReadDetails(event.courseId)(metrics, config, contentCache, httpUtil).asInstanceOf[java.util.List[String]]
-            if(!getParentForCourse.isEmpty) {
-                for (parentCourse <- getParentForCourse) {
-                    val childrenForCuratedProgram = getProgramChildren(parentCourse)(metrics, config, contentCache, httpUtil)
-                    if (!childrenForCuratedProgram.isEmpty) {
-                        val contentDataForProgram = childrenForCuratedProgram.get(config.childrens).asInstanceOf[java.util.List[java.util.HashMap[String, AnyRef]]]
-                        var isProgramCertificateToBeGenerated: Boolean = true;
-                        for (childNode <- contentDataForProgram) {
-                            val courseId: String = childNode.get(config.identifier).asInstanceOf[String]
-                           /* val batchesForCourse: java.util.List[java.util.Map[String, AnyRef]] = childNode.get(config.batches).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
-                            val filteredBatches = batchesForCourse.filter(batch => batch.get("status") != 2).toList
-                            val batchId: String = filteredBatches.get(0).get("batchId").asInstanceOf[String]*/
-                            val userId: String = event.userId
-                            val primaryFields = Map(config.dbUserId.toLowerCase() -> userId, config.dbCourseId.toLowerCase -> courseId)
-                            val isCertificateIssued: List[Row] = getCourseIssuedCertificateForUser(primaryFields)(metrics).asInstanceOf[List[Row]]
-                            breakable {
-                                if (isCertificateIssued == null || isCertificateIssued.isEmpty) {
-                                    isProgramCertificateToBeGenerated = false;
-                                    break
+            val getParentIdForCourse = event.parentCollections
+            if (!getParentIdForCourse.isEmpty) {
+                for (courseParentId <- getParentIdForCourse) {
+                    val curatedProgramHierarchy = getProgramChildren(courseParentId)(metrics, config, contentCache, httpUtil)
+                    if (!curatedProgramHierarchy.isEmpty) {
+                        val batchesForProgram: java.util.List[java.util.Map[String, AnyRef]] = curatedProgramHierarchy.get(config.batches).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
+                        val filteredBatches = batchesForProgram.filter(batch => batch.get("status") != 2).toList
+                        val batchId: String = filteredBatches.get(0).get(config.dbBatchId).asInstanceOf[String]
+                        val programEnrollmentStatus = getEnrolment(event.userId, courseParentId, batchId)(metrics)
+                        if (null != programEnrollmentStatus) {
+                            val contentDataForProgram = curatedProgramHierarchy.get(config.childrens).asInstanceOf[java.util.List[java.util.HashMap[String, AnyRef]]]
+                            var isProgramCertificateToBeGenerated: Boolean = true;
+                            for (childNode <- contentDataForProgram) {
+                                val courseId: String = childNode.get(config.identifier).asInstanceOf[String]
+                                val userId: String = event.userId
+                                val primaryFields = Map(config.dbUserId.toLowerCase() -> userId, config.dbCourseId.toLowerCase -> courseId)
+                                val isCertificateIssued: List[Row] = getCourseIssuedCertificateForUser(primaryFields)(metrics)
+                                breakable {
+                                    if (isCertificateIssued == null || isCertificateIssued.isEmpty) {
+                                        isProgramCertificateToBeGenerated = false;
+                                        break
+                                    }
                                 }
                             }
-                        }
-                        if(isProgramCertificateToBeGenerated) {
-                            //Add kafka event to generate Certificate for Program
-                            val eData = Map[String, AnyRef](
-                                "eid" -> "BE_JOB_REQUEST",
-                                "ets" -> "1695019553226",
-                                "mid" -> "LP.1695019553226.dcfd4458-f7e4-4e23-bfb7-9531ec91a1fe",
-                                "actor" -> Map(
-                                    "id" -> "Program Certificate Generator",
-                                    "type" -> "System"),
-                                "context" -> Map(
-                                    "pdata" -> Map(
-                                    "ver" -> "1.0",
-                                    "id" -> "org.sunbird.platform")),
-                                "object" -> Map(
-                                    "id" -> event.batchId.concat("_").concat(parentCourse),
-                                    "type" -> "ProgramCertificateGeneration"),
-                                "edata" -> Map(
-                                    "userIds" -> List(event.userId),
-                                    "action" -> "issue-certificate",
-                                    "iteration" -> 1,
-                                    "trigger" -> "auto-issue",
-                                    "batchId" -> event.batchId,
-                                    "reIssue" -> false,
-                                    "courseId" -> parentCourse))
+                            if (isProgramCertificateToBeGenerated) {
+                                //Add kafka event to generate Certificate for Program
+                                val eData = Map[String, AnyRef](
+                                    "eid" -> "BE_JOB_REQUEST",
+                                    "ets" -> "1695019553226",
+                                    "mid" -> "LP.1695019553226.dcfd4458-f7e4-4e23-bfb7-9531ec91a1fe",
+                                    "actor" -> Map(
+                                        "id" -> "Program Certificate Generator",
+                                        "type" -> "System"),
+                                    "context" -> Map(
+                                        "pdata" -> Map(
+                                            "ver" -> "1.0",
+                                            "id" -> "org.sunbird.platform")),
+                                    "object" -> Map(
+                                        "id" -> batchId.concat("_").concat(courseParentId),
+                                        "type" -> "ProgramCertificateGeneration"),
+                                    "edata" -> Map(
+                                        "userIds" -> List(event.userId),
+                                        "action" -> "issue-certificate",
+                                        "iteration" -> 1,
+                                        "trigger" -> "auto-issue",
+                                        "batchId" -> batchId,
+                                        "reIssue" -> false,
+                                        "courseId" -> courseParentId))
 
-                            val requestBody = JSONUtil.serialize(eData)
-                            context.output(config.generateCertificateOutputTag, requestBody)
+                                val requestBody = JSONUtil.serialize(eData)
+                                context.output(config.generateCertificateOutputTag, requestBody)
+                            }
                         }
                     }
                 }
@@ -148,5 +149,16 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
         })
         logger.info("select query {}", selectWhere.toString)
         cassandraUtil.find(selectWhere.toString).asScala.toList
+    }
+
+    def getEnrolment(userId: String, programId: String, batchId: String)(implicit metrics: Metrics) = {
+        val selectWhere: Select.Where = QueryBuilder.select().all()
+          .from(config.keyspace, config.userEnrolmentsTable).
+          where()
+        selectWhere.and(QueryBuilder.eq("userid", userId))
+          .and(QueryBuilder.eq("courseid", programId))
+          .and(QueryBuilder.eq("batchid", batchId))
+        metrics.incCounter(config.dbReadCount)
+        cassandraUtil.findOne(selectWhere.toString)
     }
 }
