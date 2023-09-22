@@ -13,9 +13,9 @@ import org.sunbird.job.util._
 /**
  * @author mahesh.vakkund
  */
-trait PostPublishRelationUpdate {
+trait PostPublishRelationUpdater {
 
-  private[this] val logger = LoggerFactory.getLogger(classOf[PostPublishRelationUpdate])
+  private[this] val logger = LoggerFactory.getLogger(classOf[PostPublishRelationUpdater])
 
   def getPrimaryCategory(identifier: String, event: Event)(metrics: Metrics,config: PostPublishProcessorConfig, httpUtil: HttpUtil,cache: DataCache,contentCache:DataCache): java.util.Map[String, AnyRef] = {
     logger.info("Process Batch Creation for content: " + identifier)
@@ -35,7 +35,7 @@ trait PostPublishRelationUpdate {
   def getCourseInfo(courseId: String)(metrics: Metrics, config: PostPublishProcessorConfig, cache: DataCache, httpUtil: HttpUtil): java.util.Map[String, AnyRef] = {
     val courseMetadata = cache.getWithRetry(courseId)
     if (null == courseMetadata || courseMetadata.isEmpty) {
-      val url = config.contentReadURL + "/" + courseId + "?fields=name,parentCollections,primaryCategory"
+      val url = config.contentReadURL + "/" + courseId + "?fields=identifier,name,versionKey,parentCollections,primaryCategory"
       val response = getAPICall(url, "content")(config, httpUtil, metrics)
       val courseName = StringContext.processEscapes(response.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
       val primaryCategory = StringContext.processEscapes(response.getOrElse(config.primaryCategory, "").asInstanceOf[String]).filter(_ >= ' ')

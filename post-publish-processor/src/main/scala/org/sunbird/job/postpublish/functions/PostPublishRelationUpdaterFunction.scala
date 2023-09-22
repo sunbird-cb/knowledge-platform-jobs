@@ -13,7 +13,7 @@ import org.apache.http.{HttpResponse, StatusLine}
 import org.slf4j.LoggerFactory
 import org.sunbird.job.cache.{DataCache, RedisConnect}
 import org.sunbird.job.exception.APIException
-import org.sunbird.job.postpublish.helpers.BatchCreation
+import org.sunbird.job.postpublish.helpers.PostPublishRelationUpdater
 import org.sunbird.job.postpublish.task.PostPublishProcessorConfig
 import org.sunbird.job.util.{CassandraUtil, HTTPResponse, HttpUtil, JSONUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
@@ -28,7 +28,7 @@ import scala.collection.mutable.ListBuffer
  */
 class PostPublishRelationUpdaterFunction(config: PostPublishProcessorConfig, httpUtil: HttpUtil,
                                          @transient var cassandraUtil: CassandraUtil = null)
-  extends BaseProcessFunction[java.util.Map[String, AnyRef], String](config) with BatchCreation {
+  extends BaseProcessFunction[java.util.Map[String, AnyRef], String](config) with PostPublishRelationUpdater {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[PostPublishRelationUpdaterFunction])
   lazy private val mapper: ObjectMapper = new ObjectMapper()
@@ -54,16 +54,16 @@ class PostPublishRelationUpdaterFunction(config: PostPublishProcessorConfig, htt
   }
 
   private def postPublishRelationUpdate(eData: util.Map[String, AnyRef], startDate: String)(implicit config: PostPublishProcessorConfig, httpUtil: HttpUtil, cassandraUtil: CassandraUtil,metrics:Metrics): Unit = {
-    val childrenForCuratedProgram = getProgramChildren(eData.get("identifier").asInstanceOf[String])(metrics, config, contentCache, httpUtil)
-    if (!childrenForCuratedProgram.isEmpty) {
-      val contentDataForProgram = childrenForCuratedProgram.get(config.childrens).asInstanceOf[List[Map[String, AnyRef]]]
-      for (childNode <- contentDataForProgram) {
+    val programHierarchy = getProgramHierarchy(eData.get("identifier").asInstanceOf[String])(metrics, config, contentCache, httpUtil)
+    if (!programHierarchy.isEmpty) {
+      val childCourseList = programHierarchy.get(config.children).asInstanceOf[List[Map[String, AnyRef]]]
+      for (childNode <- childCourseList) {
         val primaryCategory: String = childNode.get(config.primaryCategory).asInstanceOf[String]
         if (primaryCategory.equalsIgnoreCase("Course")) {
-          val versionKey: String = childNode.get(config.versionKey).asInstanceOf[String]
-          val contentObj: java.util.Map[String, AnyRef] = getContentMetaData(childNode.get("identifier").asInstanceOf[String], httpUtil, config);
-          val parentCollections: ListBuffer[String] = contentObj.get(config.parentCollections).asInstanceOf[ListBuffer[String]]
-          val identifier: String = eData.get("identifier").asInstanceOf[String]
+          val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(childNode.get("identifier").asInstanceOf[String])(metrics, config, contentCache, httpUtil)
+          val parentCollections: ListBuffer[String] = contentObj.getOrDefault(config.parentCollections, ListBuffer.empty[String]).asInstanceOf[ListBuffer[String]]
+          val versionKey: String = contentObj.get(config.versionKey).asInstanceOf[String]
+          val identifier: String = childNode.get("identifier").asInstanceOf[String]
           if (parentCollections.isEmpty) {
             parentCollections += identifier
           } else {
@@ -80,8 +80,7 @@ class PostPublishRelationUpdaterFunction(config: PostPublishProcessorConfig, htt
             )
           )
           val jsonString: String = JSONUtil.serialize(requestData)
-          val content_system_state_url = config.learningBaseUrl + identifier
-          val patchRequest = new HttpPatch(content_system_state_url)
+          val patchRequest = new HttpPatch(config.contentSystemUpdatePath + identifier)
           patchRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON))
           val httpClient = HttpClients.createDefault()
           val response: HttpResponse = httpClient.execute(patchRequest)
@@ -90,7 +89,7 @@ class PostPublishRelationUpdaterFunction(config: PostPublishProcessorConfig, htt
           if (statusCode == 200) {
             logger.info("Processed the request.")
           } else {
-            // TO-DO
+            logger.error("Received error response for system update API. Response: " + JSONUtil.serialize(response))
           }
         }
       }
@@ -110,7 +109,7 @@ class PostPublishRelationUpdaterFunction(config: PostPublishProcessorConfig, htt
     }
   }
 
-  def getProgramChildren(programId: String)(metrics: Metrics, config: PostPublishProcessorConfig, cache: DataCache, httpUtil: HttpUtil): java.util.Map[String, AnyRef] = {
+  def getProgramHierarchy(programId: String)(metrics: Metrics, config: PostPublishProcessorConfig, cache: DataCache, httpUtil: HttpUtil): java.util.Map[String, AnyRef] = {
     val query = QueryBuilder.select(config.Hierarchy).from(config.contentHierarchyKeySpace, config.contentHierarchyTable)
       .where(QueryBuilder.eq(config.identifier, programId))
     val row = cassandraUtil.find(query.toString)

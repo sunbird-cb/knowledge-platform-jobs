@@ -94,13 +94,13 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val contentHierarchyKeySpace: String = "dev_hierarchy_store"
   val identifier: String = "identifier"
   val Hierarchy: String = "hierarchy"
-  val childrens: String = "children"
+  val children: String = "children"
   val primaryCategory: String = "primaryCategory"
   val versionKey: String = "versionKey"
   val course: String = "Course"
   val parentCollections: String="parentCollections"
 
-  val contentSystemUpdatePath = learningBaseUrl + "/content/v3/update/"
+  val contentSystemUpdatePath = learningBaseUrl + "/system/v3/content/update/"
   val defaultHeaders = Map[String, String] ("Content-Type" -> "application/json")
   val userAccBlockedErrCode = "UOS_USRRED0006"
   val name: String = "name"
