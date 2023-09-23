@@ -87,8 +87,8 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val QRImageGeneratorTopic: String = config.getString("kafka.qrimage.topic")
   val primaryCategories: util.List[String] = if (config.hasPath("dialcode.linkable.primaryCategory")) config.getStringList("dialcode.linkable.primaryCategory") else util.Arrays.asList("Course") //List[String]("Course")
 
-  val contentServiceBase: String = config.getString("service.content-service.path")
-  val contentReadURL = s"${contentServiceBase}/content/v3/read/"
+  val contentServiceBase: String = config.getString("content.basePath")
+  val contentReadURL = contentServiceBase+ "/content/v3/read/"
 
   val contentHierarchyTable: String = "content_hierarchy"
   val contentHierarchyKeySpace: String = "dev_hierarchy_store"
@@ -105,10 +105,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val userAccBlockedErrCode = "UOS_USRRED0006"
   val name: String = "name"
 
-  val collectionCacheStore: Int = 0
-  val metaRedisHost: String = config.getString("redis-meta.host")
-  val metaRedisPort: Int = config.getInt("redis-meta.port")
-  val contentCacheStore: Int = 5
+  val contentCacheStore: Int = 0
 
 
 }
