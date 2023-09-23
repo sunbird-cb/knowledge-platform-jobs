@@ -55,6 +55,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val defaultCertTemplateId = config.getString("lms-cassandra.certTemplateId")
   val sbSystemSettingsTableName = config.getString("lms-cassandra.systemSettingsTable")
   val batchTableName = config.getString("lms-cassandra.batchTable")
+  val hierarchyStoreKeySpace = config.getString("lms-cassandra.hierarchyStoreKeySpace")
   val dialcodeKeyspaceName = config.getString("dialcode-cassandra.keyspace")
   val dialcodeTableName = config.getString("dialcode-cassandra.imageTable")
 
@@ -91,7 +92,6 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val contentReadURL = contentServiceBase+ "/content/v3/read/"
 
   val contentHierarchyTable: String = "content_hierarchy"
-  val contentHierarchyKeySpace: String = "dev_hierarchy_store"
   val identifier: String = "identifier"
   val Hierarchy: String = "hierarchy"
   val children: String = "children"

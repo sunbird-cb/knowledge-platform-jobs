@@ -135,7 +135,7 @@ class PostPublishRelationUpdaterFunction(
   ): java.util.Map[String, AnyRef] = {
     val query = QueryBuilder
       .select(config.Hierarchy)
-      .from(config.contentHierarchyKeySpace, config.contentHierarchyTable)
+      .from(config.hierarchyStoreKeySpace, config.contentHierarchyTable)
       .where(QueryBuilder.eq(config.identifier, programId))
     val row = cassandraUtil.find(query.toString)
     if (CollectionUtils.isNotEmpty(row)) {
