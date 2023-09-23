@@ -154,7 +154,7 @@ class PostPublishRelationUpdaterFunction(
   ): Unit = {
     val identifier = eData.getOrDefault("identifier", "").asInstanceOf[String]
     val isValidProgram: Boolean =
-      getPrimaryCategory(identifier)(metrics, config, httpUtil, cache)
+      verifyPrimaryCategory(identifier)(metrics, config, httpUtil, cache)
     if (!isValidProgram) {
       metrics.incCounter(config.postPublishRelationUpdateEventCount)
       logger.info(

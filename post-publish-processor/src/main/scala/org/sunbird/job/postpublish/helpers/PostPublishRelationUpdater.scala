@@ -17,7 +17,7 @@ trait PostPublishRelationUpdater {
   private[this] val logger =
     LoggerFactory.getLogger(classOf[PostPublishRelationUpdater])
 
-  def getPrimaryCategory(identifier: String)(
+  def verifyPrimaryCategory(identifier: String)(
       metrics: Metrics,
       config: PostPublishProcessorConfig,
       httpUtil: HttpUtil,
