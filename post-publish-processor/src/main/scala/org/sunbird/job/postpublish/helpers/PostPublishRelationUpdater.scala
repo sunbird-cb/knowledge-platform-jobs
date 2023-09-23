@@ -17,19 +17,17 @@ trait PostPublishRelationUpdater {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[PostPublishRelationUpdater])
 
-  def getPrimaryCategory(identifier: String, event: Event)(metrics: Metrics,config: PostPublishProcessorConfig, httpUtil: HttpUtil,cache: DataCache,contentCache:DataCache): java.util.Map[String, AnyRef] = {
-    logger.info("Process Batch Creation for content: " + identifier)
+  def getPrimaryCategory(identifier: String)(metrics: Metrics, config: PostPublishProcessorConfig, httpUtil: HttpUtil, cache: DataCache): Boolean = {
+    logger.info("Verify Program post-publish required for content: " + identifier)
     // Get the primary Categories for the courses here
+    var isValidProgram = false
     val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(identifier)(metrics, config, cache, httpUtil)
     if (contentObj.isEmpty) {
       contentObj.get("primaryCategory") match {
-        case Some("Program" | "Curated Program" | "Blended Program") => contentObj
-        case _ => new java.util.HashMap[String, AnyRef]()
+        case Some("Program" | "Curated Program" | "Blended Program") => isValidProgram = true
       }
-    } else {
-      new
-          java.util.HashMap[String, AnyRef]()
     }
+    isValidProgram
   }
 
   def getCourseInfo(courseId: String)(metrics: Metrics, config: PostPublishProcessorConfig, cache: DataCache, httpUtil: HttpUtil): java.util.Map[String, AnyRef] = {

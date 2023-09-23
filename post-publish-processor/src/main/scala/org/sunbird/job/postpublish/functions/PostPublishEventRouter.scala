@@ -23,20 +23,11 @@ class PostPublishEventRouter(config: PostPublishProcessorConfig, httpUtil: HttpU
   private[this] val logger = LoggerFactory.getLogger(classOf[PostPublishEventRouter])
   val mapType: Type = new TypeToken[java.util.Map[String, AnyRef]]() {}.getType
   val contentTypes = List("Course")
-  private var cache: DataCache = _
-  private var contentCache: DataCache = _
 
   override def open(parameters: Configuration): Unit = {
     super.open(parameters)
     cassandraUtil = new CassandraUtil(config.dbHost, config.dbPort)
     neo4JUtil = new Neo4JUtil(config.graphRoutePath, config.graphName)
-    val redisConnect = new RedisConnect(config)
-    cache = new DataCache(config, redisConnect, config.collectionCacheStore, List())
-    cache.init()
-
-    val metaRedisConn = new RedisConnect(config, Option(config.metaRedisHost), Option(config.metaRedisPort))
-    contentCache = new DataCache(config, metaRedisConn, config.contentCacheStore, List())
-    contentCache.init()
   }
 
   override def close(): Unit = {
@@ -64,9 +55,7 @@ class PostPublishEventRouter(config: PostPublishProcessorConfig, httpUtil: HttpU
         context.output(config.linkDIALCodeOutTag, dialCodeDetails)
 
       //Process Post Publish Relation Update
-      val postPublishRelationUpdateDetails: java.util.Map[String, AnyRef] = getPrimaryCategory(identifier, event)(metrics, config, httpUtil,cache,contentCache)
-      if(!postPublishRelationUpdateDetails.isEmpty)
-        context.output(config.postPublishRelationUpdateOutTag,postPublishRelationUpdateDetails)
+      context.output(config.postPublishRelationUpdateOutTag, null)
 
     } else {
       metrics.incCounter(config.skippedEventCount)
