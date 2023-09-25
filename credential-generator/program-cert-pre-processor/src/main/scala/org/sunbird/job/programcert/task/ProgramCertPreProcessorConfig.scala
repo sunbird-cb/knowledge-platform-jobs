@@ -8,7 +8,7 @@ import org.sunbird.job.BaseJobConfig
 
 import java.util
 
-class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJobConfig(config, "collection-cert-pre-processor") {
+class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJobConfig(config, "program-cert-pre-processor") {
 
     implicit val stringTypeInfo: TypeInformation[String] = TypeExtractor.getForClass(classOf[String])
     
@@ -21,7 +21,7 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
     //kafka config
     val kafkaInputTopic: String = config.getString("kafka.input.topic")
     val kafkaOutputTopic: String = config.getString("kafka.output.topic")
-    val certificatePreProcessorConsumer: String = "collection-cert-pre-processor-consumer"
+    val certificatePreProcessorConsumer: String = "program-cert-pre-processor-consumer"
     val generateCertificateProducer = "generate-certificate-sink"
     override val kafkaConsumerParallelism: Int = config.getInt("task.consumer.parallelism")
     val generateCertificateParallelism:Int = config.getInt("task.generate_certificate.parallelism")
