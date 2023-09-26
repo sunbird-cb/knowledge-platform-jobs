@@ -88,7 +88,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val QRImageGeneratorTopic: String = config.getString("kafka.qrimage.topic")
   val primaryCategories: util.List[String] = if (config.hasPath("dialcode.linkable.primaryCategory")) config.getStringList("dialcode.linkable.primaryCategory") else util.Arrays.asList("Course") //List[String]("Course")
 
-  val contentServiceBase: String = config.getString("content.basePath")
+  val contentServiceBase: String = config.getString("service.content.basePath")
   val contentReadURL = contentServiceBase+ "/content/v3/read/"
 
   val contentHierarchyTable: String = "content_hierarchy"
