@@ -187,5 +187,9 @@ class PostPublishRelationUpdaterFunction(
     }
   }
 
-  override def metricsList(): List[String] = ???
+  override def metricsList(): List[String] = {
+    List(config.postPublishRelationUpdateEventCount, 
+        config.postPublishRelationUpdateSuccessCount, 
+        config.postPublishRelationUpdateFailureCount)
+  }
 }
