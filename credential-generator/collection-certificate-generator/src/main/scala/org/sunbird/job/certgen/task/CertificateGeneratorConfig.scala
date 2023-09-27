@@ -169,5 +169,8 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val generateProgramCertificateOutputTag: OutputTag[String] = OutputTag[String](generateProgramCertificateOutputTagName)
 
   val generateProgramCertificateProducer = "generate-program-certificate-sink"
-  
+
+  val courseProvider: String ="courseProvider"
+  val coursePosterImage :String ="coursePosterImage"
+
 }

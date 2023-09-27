@@ -3,7 +3,9 @@ package org.sunbird.job.collectioncert.functions
 import java.text.SimpleDateFormat
 import com.datastax.driver.core.querybuilder.QueryBuilder
 import com.datastax.driver.core.{Row, TypeTokens}
+import org.apache.commons.collections.CollectionUtils
 import org.apache.commons.lang3.StringUtils
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.sunbird.job.Metrics
 import org.sunbird.job.cache.DataCache
@@ -15,7 +17,6 @@ import scala.collection.JavaConverters._
 
 trait IssueCertificateHelper {
     private[this] val logger = LoggerFactory.getLogger(classOf[CollectionCertPreProcessorFn])
-
 
     def issueCertificate(event:Event, template: Map[String, String])(cassandraUtil: CassandraUtil, cache:DataCache, contentCache: DataCache, metrics: Metrics, config: CollectionCertPreProcessorConfig, httpUtil: HttpUtil): String = {
         //validCriteria
@@ -233,7 +234,8 @@ trait IssueCertificateHelper {
             "providerName" -> providerName,
             "tag" -> event.batchId,
             "primaryCategory" -> courseInfo.getOrElse("primaryCategory", "").asInstanceOf[String],
-            "parentCollections" -> courseInfo.getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]]
+            "parentCollections" -> courseInfo.getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]],
+            "coursePosterImage" -> courseInfo.getOrElse("coursePosterImage", "").asInstanceOf[String],
         )
 
         ScalaJsonUtil.serialize(BEJobRequestEvent(edata = eData, `object` = EventObject(id= event.userId)))
@@ -259,26 +261,30 @@ trait IssueCertificateHelper {
     def getCourseInfo(courseId: String)(metrics: Metrics, config: CollectionCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): Map[String, Any] = {
         val courseMetadata = cache.getWithRetry(courseId)
         val courseInfoMap = if (null == courseMetadata || courseMetadata.isEmpty) {
-            val url = config.contentBasePath + config.contentReadApi + "/" + courseId + "?fields=name,parentCollections,primaryCategory"
+            val url = config.contentBasePath + config.contentReadApi + "/" + courseId + "?fields=name,parentCollections,primaryCategory,posterImage"
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
             val courseName = StringContext.processEscapes(response.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
             val primaryCategory = StringContext.processEscapes(response.getOrElse(config.primaryCategory, "").asInstanceOf[String]).filter(_ >= ' ')
+            val posterImage: String = StringContext.processEscapes(response.getOrElse(config.posterImage, "").asInstanceOf[String]).filter(_ >= ' ')
             val parentCollections = response.getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]]
             Map(
                 "courseId" -> courseId, 
                 "courseName" -> courseName, 
                 "parentCollections" -> parentCollections,
-                "primaryCategory" -> primaryCategory
+                "primaryCategory" -> primaryCategory,
+                "coursePosterImage" -> posterImage,
             )
         } else {
             val courseName = StringContext.processEscapes(courseMetadata.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
             val primaryCategory = StringContext.processEscapes(courseMetadata.getOrElse(config.primaryCategory, "").asInstanceOf[String]).filter(_ >= ' ')
             val parentCollections = courseMetadata.getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]]
+            val posterImage: String = StringContext.processEscapes(courseMetadata.getOrElse(config.posterImage, "").asInstanceOf[String]).filter(_ >= ' ')
             Map(
                 "courseId" -> courseId, 
                 "courseName" -> courseName, 
                 "parentCollections" -> parentCollections,
-                "primaryCategory" -> primaryCategory
+                "primaryCategory" -> primaryCategory,
+                "coursePosterImage" -> posterImage,
             )
         }
         courseInfoMap
