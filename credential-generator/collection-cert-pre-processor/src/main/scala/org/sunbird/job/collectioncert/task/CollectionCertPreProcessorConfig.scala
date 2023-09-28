@@ -81,5 +81,6 @@ class CollectionCertPreProcessorConfig(override val config: Config) extends Base
     val enableSuppressException: Boolean = if(config.hasPath("enable.suppress.exception")) config.getBoolean("enable.suppress.exception") else false
     val primaryCategory: String = "primaryCategory"
     val parentCollections: String = "parentCollections"
+    val posterImage: String = "posterImage"
 
 }
