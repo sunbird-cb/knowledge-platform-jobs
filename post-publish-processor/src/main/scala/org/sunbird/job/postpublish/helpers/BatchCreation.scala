@@ -9,7 +9,6 @@ import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil, Neo4JUtil}
 
 import java.util
 import scala.collection.JavaConverters._
-import scala.collection.JavaConverters
 
 trait BatchCreation {
 

@@ -20,7 +20,7 @@ import org.sunbird.job.{BaseProcessFunction, Metrics}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-case class NotificationMetaData(userId: String, courseName: String, issuedOn: Date, courseId: String, batchId: String, templateId: String, partition: Int, offset: Long)
+case class NotificationMetaData(userId: String, courseName: String, issuedOn: Date, courseId: String, batchId: String, templateId: String, partition: Int, offset: Long, courseProvider: String, coursePosterImage:String)
 
 class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @transient var cassandraUtil: CassandraUtil = null)(implicit val stringTypeInfo: TypeInformation[String])
   extends BaseProcessFunction[NotificationMetaData, String](config) {
@@ -58,6 +58,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
         certTemplate.get(metaData.templateId).containsKey(config.notifyTemplate)) {
         logger.info("notification template is present in the cert-templates object {}",
           certTemplate.get(metaData.templateId).containsKey(config.notifyTemplate))
+        logger.info("Sending notification email. URL: {}", url)
         val notifyTemplate = getNotifyTemplateFromRes(certTemplate.get(metaData.templateId))
         val ratingUrl = config.domainUrl + config.ratingMidPoint + metaData.courseId + config.ratingEndPoint + metaData.batchId
         val request = mutable.Map[String, AnyRef]("request" -> (notifyTemplate ++ mutable.Map[String, AnyRef](
@@ -66,8 +67,12 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
           config.heldDate -> dateFormatter.format(metaData.issuedOn),
           config.recipientUserIds -> List[String](metaData.userId),
           config.ratingPageUrl -> ratingUrl,
-          config.body -> "email body")))
-
+          config.body -> "email body",
+          config.courseName -> metaData.courseName,
+          config.courseProvider -> metaData.courseProvider,
+          config.coursePosterImage -> metaData.coursePosterImage
+        )))
+        logger.info("request body created for notification: {}", ScalaJsonUtil.serialize(request))
         val response = httpUtil.post(url, ScalaJsonUtil.serialize(request))
         if (response.status == 200) {
           metrics.incCounter(config.notifiedUserCount)

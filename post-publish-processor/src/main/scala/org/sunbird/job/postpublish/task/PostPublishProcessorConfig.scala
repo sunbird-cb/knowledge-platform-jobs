@@ -6,7 +6,7 @@ import org.apache.flink.api.java.typeutils.TypeExtractor
 import org.apache.flink.streaming.api.scala.OutputTag
 import org.sunbird.job.BaseJobConfig
 import org.sunbird.job.postpublish.functions.PublishMetadata
-
+import scala.collection.immutable.Map
 import java.util
 
 class PostPublishProcessorConfig(override val config: Config) extends BaseJobConfig(config, "post-publish-processor") {
@@ -30,6 +30,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val shallowCopyParallelism: Int = config.getInt("task.shallow_copy.parallelism")
   val linkDialCodeParallelism: Int = config.getInt("task.link_dialcode.parallelism")
   val batchCreateParallelism: Int = config.getInt("task.batch_create.parallelism")
+  val postPublishRelationUpdateParallelism: Int = config.getInt("task.post-publish-relation-update.parallelism")
 
   // Metric List
   val totalEventsCount = "total-events-count"
@@ -42,6 +43,9 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val dialLinkSuccessCount = "dial-link-success-count"
   val dialLinkFailedCount = "dial-link-failed-count"
   val qrImageGeneratorEventCount = "qr-image-event-count"
+  val postPublishRelationUpdateEventCount = "post-publish-relation-update-count"
+  val postPublishRelationUpdateSuccessCount = "post-publish-relation-update-success-count"
+  val postPublishRelationUpdateFailureCount = "post-publish-relation-update-failure-count"
 
   // Cassandra Configurations
   val dbHost: String = config.getString("lms-cassandra.host")
@@ -51,6 +55,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val defaultCertTemplateId = config.getString("lms-cassandra.certTemplateId")
   val sbSystemSettingsTableName = config.getString("lms-cassandra.systemSettingsTable")
   val batchTableName = config.getString("lms-cassandra.batchTable")
+  val hierarchyStoreKeySpace = config.getString("lms-cassandra.hierarchyStoreKeySpace")
   val dialcodeKeyspaceName = config.getString("dialcode-cassandra.keyspace")
   val dialcodeTableName = config.getString("dialcode-cassandra.imageTable")
 
@@ -65,6 +70,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val shallowContentPublishOutTag: OutputTag[PublishMetadata] = OutputTag[PublishMetadata]("shallow-copied-content-publish")
   val publishEventOutTag: OutputTag[String] = OutputTag[String]("content-publish-request")
   val generateQRImageOutTag: OutputTag[String] = OutputTag[String]("qr-image-generator-request")
+  val postPublishRelationUpdateOutTag:OutputTag[java.util.Map[String, AnyRef]]= OutputTag[java.util.Map[String, AnyRef]]("post-publish-relation-update")
 
   val searchBaseUrl = config.getString("service.search.basePath")
   val lmsBaseUrl = config.getString("service.lms.basePath")
@@ -77,7 +83,29 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val reserveDialCodeAPIPath = learningBaseUrl + "/content/v3/dialcode/reserve"
   val batchAddCertTemplateAPIPath = lmsBaseUrl + "/private/v1/course/batch/cert/template/add"
 
+
   // QR Image Generator
   val QRImageGeneratorTopic: String = config.getString("kafka.qrimage.topic")
   val primaryCategories: util.List[String] = if (config.hasPath("dialcode.linkable.primaryCategory")) config.getStringList("dialcode.linkable.primaryCategory") else util.Arrays.asList("Course") //List[String]("Course")
+
+  val contentServiceBase: String = config.getString("service.content.basePath")
+  val contentReadURL = contentServiceBase+ "/content/v3/read/"
+
+  val contentHierarchyTable: String = "content_hierarchy"
+  val identifier: String = "identifier"
+  val Hierarchy: String = "hierarchy"
+  val children: String = "children"
+  val primaryCategory: String = "primaryCategory"
+  val versionKey: String = "versionKey"
+  val course: String = "Course"
+  val parentCollections: String="parentCollections"
+
+  val contentSystemUpdatePath = learningBaseUrl + "/system/v3/content/update/"
+  val defaultHeaders = Map[String, String] ("Content-Type" -> "application/json")
+  val userAccBlockedErrCode = "UOS_USRRED0006"
+  val name: String = "name"
+
+  val contentCacheStore: Int = 0
+
+
 }
