@@ -52,7 +52,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
       val row = getNotificationTemplates(primaryFields, metrics)
       val certTemplate = row.getMap(config.cert_templates, com.google.common.reflect.TypeToken.of(classOf[String]),
         TypeTokens.mapOf(classOf[String], classOf[String]))
-      val url = config.learnerServiceBaseUrl + config.notificationEndPoint
+      val url = config.learnerServiceBaseUrl + config.newEmailTemplateNotificationEndPoint
       if (certTemplate != null && StringUtils.isNotBlank(metaData.templateId) &&
         certTemplate.containsKey(metaData.templateId) &&
         certTemplate.get(metaData.templateId).containsKey(config.notifyTemplate)) {
