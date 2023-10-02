@@ -79,20 +79,20 @@ class PostPublishRelationUpdaterFunction(
         val identifier: String = childNode.get("identifier").asInstanceOf[String]
         if (primaryCategory.equalsIgnoreCase("Course")) {
           val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(identifier)(metrics, config, cache, httpUtil)
-          val parentCollections: ListBuffer[String] = contentObj.getOrDefault(config.parentCollections, ListBuffer.empty[String]).asInstanceOf[ListBuffer[String]]
+          val parentCollections: java.util.ArrayList[String] = contentObj.getOrDefault(config.parentCollections, new java.util.ArrayList()).asInstanceOf[java.util.ArrayList[String]]
           val versionKey: String = contentObj.get(config.versionKey).asInstanceOf[String]
           if (parentCollections.isEmpty) {
-            parentCollections += identifier
+            parentCollections.add(identifier)
           } else {
             if (!parentCollections.contains(identifier)) {
-              parentCollections += identifier
+              parentCollections.add(identifier)
             }
           }
           val requestData: Map[String, Any] = Map(
             "request" -> Map(
               "content" -> Map(
                 "versionKey" -> versionKey,
-                "parentCollections" -> parentCollections.toList
+                "parentCollections" -> parentCollections
               )
           ))
           val jsonString: String = JSONUtil.serialize(requestData)
