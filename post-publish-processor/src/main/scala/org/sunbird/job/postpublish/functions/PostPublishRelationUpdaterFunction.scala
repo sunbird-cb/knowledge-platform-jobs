@@ -20,8 +20,8 @@ import org.sunbird.job.{BaseProcessFunction, Metrics}
 
 import java.time.format.DateTimeFormatter
 import java.time.{ZoneId, ZonedDateTime}
-import java.util
 import scala.collection.JavaConverters._
+import scala.collection.convert.ImplicitConversions.{`collection AsScalaIterable`, `seq AsJavaList`}
 import scala.collection.mutable.ListBuffer
 
 /** @author
@@ -72,58 +72,49 @@ class PostPublishRelationUpdaterFunction(
       return
     }
 
-    val childCourseList = programHierarchy
-      .get(config.children)
-      .asInstanceOf[List[Map[String, AnyRef]]]
-    for (childNode <- childCourseList) {
+    val childrenList = programHierarchy.get(config.children).asInstanceOf[java.util.List[java.util.HashMap[String, AnyRef]]]
+    for (childNode <- childrenList) {
       val primaryCategory: String =
         childNode.get(config.primaryCategory).asInstanceOf[String]
-      if (primaryCategory.equalsIgnoreCase("Course")) {
-        val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(
-          childNode.get("identifier").asInstanceOf[String]
-        )(metrics, config, cache, httpUtil)
-        val parentCollections: ListBuffer[String] = contentObj
-          .getOrDefault(config.parentCollections, ListBuffer.empty[String])
-          .asInstanceOf[ListBuffer[String]]
-        val versionKey: String =
-          contentObj.get(config.versionKey).asInstanceOf[String]
-        val identifier: String =
-          childNode.get("identifier").asInstanceOf[String]
-        if (parentCollections.isEmpty) {
-          parentCollections += identifier
-        } else {
-          if (!parentCollections.contains(identifier)) {
+        val identifier: String = childNode.get("identifier").asInstanceOf[String]
+        if (primaryCategory.equalsIgnoreCase("Course")) {
+          val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(identifier)(metrics, config, cache, httpUtil)
+          val parentCollections: ListBuffer[String] = contentObj.getOrDefault(config.parentCollections, ListBuffer.empty[String]).asInstanceOf[ListBuffer[String]]
+          val versionKey: String = contentObj.get(config.versionKey).asInstanceOf[String]
+          if (parentCollections.isEmpty) {
             parentCollections += identifier
+          } else {
+            if (!parentCollections.contains(identifier)) {
+              parentCollections += identifier
+            }
+          }
+          val requestData: Map[String, Any] = Map(
+            "request" -> Map(
+              "content" -> Map(
+                "versionKey" -> versionKey,
+                "parentCollections" -> parentCollections.toList
+              )
+          ))
+          val jsonString: String = JSONUtil.serialize(requestData)
+          val patchRequest = new HttpPatch(
+            config.contentSystemUpdatePath + identifier
+          )
+          patchRequest.setEntity(
+            new StringEntity(jsonString, ContentType.APPLICATION_JSON)
+          )
+          val httpClient = HttpClients.createDefault()
+          val response: HttpResponse = httpClient.execute(patchRequest)
+          val statusLine: StatusLine = response.getStatusLine
+          val statusCode: Int = statusLine.getStatusCode
+          if (statusCode == 200) {
+            logger.info("Processed the request.")
+          } else {
+            logger.error(
+              "Received error response for system update API. Response: " + JSONUtil
+                .serialize(response)
+            )
           }
         }
-        val requestData: Map[String, Any] = Map(
-          "request" -> Map(
-            "content" -> Map(
-              "versionKey" -> versionKey,
-              "parentCollections" -> parentCollections.toList
-            )
-          )
-        )
-        val jsonString: String = JSONUtil.serialize(requestData)
-        val patchRequest = new HttpPatch(
-          config.contentSystemUpdatePath + identifier
-        )
-        patchRequest.setEntity(
-          new StringEntity(jsonString, ContentType.APPLICATION_JSON)
-        )
-        val httpClient = HttpClients.createDefault()
-        val response: HttpResponse = httpClient.execute(patchRequest)
-        val statusLine: StatusLine = response.getStatusLine
-        val statusCode: Int = statusLine.getStatusCode
-        if (statusCode == 200) {
-          logger.info("Processed the request.")
-        } else {
-          logger.error(
-            "Received error response for system update API. Response: " + JSONUtil
-              .serialize(response)
-          )
-        }
-      }
     }
   }
 
@@ -154,7 +145,7 @@ class PostPublishRelationUpdaterFunction(
   ): Unit = {
     val isValidProgram: Boolean =
       verifyPrimaryCategory(identifier)(metrics, config, httpUtil, cache)
-    if (!isValidProgram) {
+    if (isValidProgram) {
       metrics.incCounter(config.postPublishRelationUpdateEventCount)
       logger.info(
         "PostPublishRelationUpdaterFunction:: started for Content : " + identifier

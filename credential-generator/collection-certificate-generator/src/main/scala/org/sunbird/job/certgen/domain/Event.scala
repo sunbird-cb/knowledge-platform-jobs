@@ -64,4 +64,5 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def parentCollections: List[String] = readOrDefault[List[String]]("edata.parentCollections", List.empty[String])
 
+  def coursePosterImage: String = readOrDefault[String]("edata.coursePosterImage", "")
 }
