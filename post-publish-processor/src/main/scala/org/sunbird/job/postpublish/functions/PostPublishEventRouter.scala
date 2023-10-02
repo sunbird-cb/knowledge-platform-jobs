@@ -55,7 +55,7 @@ class PostPublishEventRouter(config: PostPublishProcessorConfig, httpUtil: HttpU
         context.output(config.linkDIALCodeOutTag, dialCodeDetails)
 
       //Process Post Publish Relation Update
-      context.output(config.postPublishRelationUpdateOutTag, null)
+      context.output(config.postPublishRelationUpdateOutTag, identifier)
 
     } else {
       metrics.incCounter(config.skippedEventCount)

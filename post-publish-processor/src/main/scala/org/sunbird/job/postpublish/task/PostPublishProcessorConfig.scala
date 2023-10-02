@@ -70,7 +70,7 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
   val shallowContentPublishOutTag: OutputTag[PublishMetadata] = OutputTag[PublishMetadata]("shallow-copied-content-publish")
   val publishEventOutTag: OutputTag[String] = OutputTag[String]("content-publish-request")
   val generateQRImageOutTag: OutputTag[String] = OutputTag[String]("qr-image-generator-request")
-  val postPublishRelationUpdateOutTag:OutputTag[java.util.Map[String, AnyRef]]= OutputTag[java.util.Map[String, AnyRef]]("post-publish-relation-update")
+  val postPublishRelationUpdateOutTag:OutputTag[String]= OutputTag[String]("post-publish-relation-update")
 
   val searchBaseUrl = config.getString("service.search.basePath")
   val lmsBaseUrl = config.getString("service.lms.basePath")

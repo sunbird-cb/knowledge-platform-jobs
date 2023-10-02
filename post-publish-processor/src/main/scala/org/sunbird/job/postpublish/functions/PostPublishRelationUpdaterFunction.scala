@@ -31,7 +31,7 @@ class PostPublishRelationUpdaterFunction(
     config: PostPublishProcessorConfig,
     httpUtil: HttpUtil,
     @transient var cassandraUtil: CassandraUtil = null
-) extends BaseProcessFunction[java.util.Map[String, AnyRef], String](config)
+) extends BaseProcessFunction[String, String](config)
     with PostPublishRelationUpdater {
 
   private[this] val logger =
@@ -55,7 +55,7 @@ class PostPublishRelationUpdaterFunction(
   }
 
   private def postPublishRelationUpdate(
-      eData: util.Map[String, AnyRef]
+      identifier: String
   )(implicit
       config: PostPublishProcessorConfig,
       httpUtil: HttpUtil,
@@ -63,7 +63,7 @@ class PostPublishRelationUpdaterFunction(
       metrics: Metrics
   ): Unit = {
     val programHierarchy = getProgramHierarchy(
-      eData.get("identifier").asInstanceOf[String]
+      identifier
     )(metrics, config, cache, httpUtil)
     if (programHierarchy.isEmpty) {
       logger.info(
@@ -148,11 +148,10 @@ class PostPublishRelationUpdaterFunction(
   }
 
   override def processElement(
-      eData: java.util.Map[String, AnyRef],
-      context: ProcessFunction[java.util.Map[String, AnyRef], String]#Context,
+      identifier: String,
+      context: ProcessFunction[String, String]#Context,
       metrics: Metrics
   ): Unit = {
-    val identifier = eData.getOrDefault("identifier", "").asInstanceOf[String]
     val isValidProgram: Boolean =
       verifyPrimaryCategory(identifier)(metrics, config, httpUtil, cache)
     if (!isValidProgram) {
@@ -161,7 +160,7 @@ class PostPublishRelationUpdaterFunction(
         "PostPublishRelationUpdaterFunction:: started for Content : " + identifier
       )
       try {
-        postPublishRelationUpdate(eData)(
+        postPublishRelationUpdate(identifier)(
           config,
           httpUtil,
           cassandraUtil,
