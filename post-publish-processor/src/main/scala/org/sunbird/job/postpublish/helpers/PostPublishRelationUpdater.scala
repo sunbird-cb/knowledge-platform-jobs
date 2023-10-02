@@ -31,9 +31,12 @@ trait PostPublishRelationUpdater {
     val contentObj: java.util.Map[String, AnyRef] =
       getCourseInfo(identifier)(metrics, config, cache, httpUtil)
     if (!contentObj.isEmpty) {
-      contentObj.get("primaryCategory") match {
-        case Some("Program" | "Curated Program" | "Blended Program") =>
-          isValidProgram = true
+      val primaryCategory = contentObj.get("primaryCategory")
+      if (primaryCategory != null && 
+         (primaryCategory == "Program" 
+            || primaryCategory == "Curated Program" 
+            || primaryCategory == "Blended Program")) {
+        isValidProgram = true
       }
     }
     isValidProgram
