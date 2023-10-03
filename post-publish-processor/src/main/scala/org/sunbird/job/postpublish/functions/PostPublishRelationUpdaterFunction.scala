@@ -104,6 +104,7 @@ class PostPublishRelationUpdaterFunction(
               )
           ))
           val jsonString: String = JSONUtil.serialize(requestData)
+          logger.info("Calling content update with body: " + jsonString)
           val patchRequest = new HttpPatch(
             config.contentSystemUpdatePath + identifier
           )
