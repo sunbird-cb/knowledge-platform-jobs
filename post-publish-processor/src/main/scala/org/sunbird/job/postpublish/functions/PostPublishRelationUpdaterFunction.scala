@@ -74,17 +74,12 @@ class PostPublishRelationUpdaterFunction(
 
     val childrenList = programHierarchy.get(config.children).asInstanceOf[java.util.List[java.util.HashMap[String, AnyRef]]]
     for (childNode <- childrenList) {
-      val primaryCategory: String =
-        childNode.get(config.primaryCategory).asInstanceOf[String]
+      val primaryCategory: String = childNode.get(config.primaryCategory).asInstanceOf[String]
         val childId: String = childNode.get("identifier").asInstanceOf[String]
         if (primaryCategory.equalsIgnoreCase("Course")) {
           val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(childId)(metrics, config, cache, httpUtil)
-          var versionKey: String = ""
-          val versionKeyOption: Option[String] = Option(contentObj.get(config.versionKey)).map(_.asInstanceOf[String])
-          if (versionKeyOption.isDefined) {
-            versionKey = versionKeyOption.get
-          }
-          logger.info("Current versionKey is: " + versionKey)
+          var versionKey: String = contentObj.getOrDefault(config.versionKey, "").asInstanceOf[String]
+          logger.info("Child Course Id: " + childId + ", Info: " + JSONUtil.serialize(contentObj))
 
           // Use Option to safely handle null values
           val parentCollections: List[String] = Option(contentObj.get(config.parentCollections))
