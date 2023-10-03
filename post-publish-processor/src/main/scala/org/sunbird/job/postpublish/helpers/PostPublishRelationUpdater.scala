@@ -66,6 +66,11 @@ trait PostPublishRelationUpdater {
           response.getOrElse(config.primaryCategory, "").asInstanceOf[String]
         )
         .filter(_ >= ' ')
+      val versionKey = StringContext
+        .processEscapes(
+          response.getOrElse(config.versionKey, "").asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
       val parentCollections = response
         .getOrElse("parentCollections", List.empty[String])
         .asInstanceOf[List[String]]
@@ -75,6 +80,7 @@ trait PostPublishRelationUpdater {
       courseInfoMap.put("courseName", courseName)
       courseInfoMap.put("parentCollections", parentCollections)
       courseInfoMap.put("primaryCategory", primaryCategory)
+      courseInfoMap.put("versionKey", versionKey)
       courseInfoMap
     } else {
       val courseName = StringContext
@@ -89,6 +95,11 @@ trait PostPublishRelationUpdater {
             .asInstanceOf[String]
         )
         .filter(_ >= ' ')
+      val versionKey = StringContext
+        .processEscapes(
+          courseMetadata.getOrElse(config.versionKey, "").asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
       val parentCollections = courseMetadata
         .getOrElse("parentCollections", List.empty[String])
         .asInstanceOf[List[String]]
@@ -98,6 +109,7 @@ trait PostPublishRelationUpdater {
       courseInfoMap.put("courseName", courseName)
       courseInfoMap.put("parentCollections", parentCollections)
       courseInfoMap.put("primaryCategory", primaryCategory)
+      courseInfoMap.put("versionKey", versionKey)
       courseInfoMap
     }
 
