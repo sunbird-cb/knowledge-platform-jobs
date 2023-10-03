@@ -76,9 +76,9 @@ class PostPublishRelationUpdaterFunction(
     for (childNode <- childrenList) {
       val primaryCategory: String =
         childNode.get(config.primaryCategory).asInstanceOf[String]
-        val identifier: String = childNode.get("identifier").asInstanceOf[String]
+        val childId: String = childNode.get("identifier").asInstanceOf[String]
         if (primaryCategory.equalsIgnoreCase("Course")) {
-          val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(identifier)(metrics, config, cache, httpUtil)
+          val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(childId)(metrics, config, cache, httpUtil)
           var versionKey: String = ""
           val versionKeyOption: Option[String] = Option(contentObj.get(config.versionKey)).map(_.asInstanceOf[String])
           if (versionKeyOption.isDefined) {
@@ -111,7 +111,7 @@ class PostPublishRelationUpdaterFunction(
           val jsonString: String = JSONUtil.serialize(requestData)
           logger.info("Calling content update with body: " + jsonString)
           val patchRequest = new HttpPatch(
-            config.contentSystemUpdatePath + identifier
+            config.contentSystemUpdatePath + childId
           )
           patchRequest.setEntity(
             new StringEntity(jsonString, ContentType.APPLICATION_JSON)

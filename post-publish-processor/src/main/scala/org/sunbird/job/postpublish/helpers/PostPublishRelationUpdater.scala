@@ -56,6 +56,7 @@ trait PostPublishRelationUpdater {
       val url =
         config.contentReadURL + "/" + courseId + "?fields=identifier,name,versionKey,parentCollections,primaryCategory"
       val response = getAPICall(url, "content")(config, httpUtil, metrics)
+      logger.info("Content read response" + JSONUtil.serialize(response))
       val courseName = StringContext
         .processEscapes(
           response.getOrElse(config.name, "").asInstanceOf[String]
@@ -80,7 +81,7 @@ trait PostPublishRelationUpdater {
       courseInfoMap.put("courseName", courseName)
       courseInfoMap.put("parentCollections", parentCollections)
       courseInfoMap.put("primaryCategory", primaryCategory)
-      courseInfoMap.put("versionKey", versionKey)
+      courseInfoMap.put(config.versionKey, versionKey)
       courseInfoMap
     } else {
       val courseName = StringContext
@@ -109,7 +110,7 @@ trait PostPublishRelationUpdater {
       courseInfoMap.put("courseName", courseName)
       courseInfoMap.put("parentCollections", parentCollections)
       courseInfoMap.put("primaryCategory", primaryCategory)
-      courseInfoMap.put("versionKey", versionKey)
+      courseInfoMap.put(config.versionKey, versionKey)
       courseInfoMap
     }
 
