@@ -276,9 +276,9 @@ trait IssueCertificateHelper {
             )
         } else {
             val courseName = StringContext.processEscapes(courseMetadata.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
-            val primaryCategory = StringContext.processEscapes(courseMetadata.getOrElse(config.primaryCategory, "").asInstanceOf[String]).filter(_ >= ' ')
-            val parentCollections = courseMetadata.getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]]
-            val posterImage: String = StringContext.processEscapes(courseMetadata.getOrElse(config.posterImage, "").asInstanceOf[String]).filter(_ >= ' ')
+            val primaryCategory = StringContext.processEscapes(courseMetadata.getOrElse("primarycategory", "").asInstanceOf[String]).filter(_ >= ' ')
+            val parentCollections = courseMetadata.getOrElse("parentcollections", List.empty[String]).asInstanceOf[List[String]]
+            val posterImage: String = StringContext.processEscapes(courseMetadata.getOrElse("posterimage", "").asInstanceOf[String]).filter(_ >= ' ')
             Map(
                 "courseId" -> courseId, 
                 "courseName" -> courseName, 
