@@ -86,11 +86,11 @@ trait PostPublishRelationUpdater {
     } else {
       logger.info("Content read response from cache " + JSONUtil.serialize(courseMetadata))
       val name = courseMetadata.getOrElse(config.name, "").asInstanceOf[String]
-      val category = courseMetadata.getOrElse(config.primaryCategory, "").asInstanceOf[String]
-      val version = courseMetadata.getOrElse(config.versionKey, "").asInstanceOf[String]
+      val category = courseMetadata.getOrElse("primarycategory", "").asInstanceOf[String]
+      val version = courseMetadata.getOrElse("versionkey", "").asInstanceOf[String]
       logger.info("name: " + name + ", category: " + category + ", version: " + version)
       val parentCollections = courseMetadata
-        .getOrElse("parentCollections", List.empty[String])
+        .getOrElse("parentcollections", List.empty[String])
         .asInstanceOf[List[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
