@@ -73,8 +73,8 @@ trait PostPublishRelationUpdater {
         )
         .filter(_ >= ' ')
       val parentCollections = response
-        .getOrElse("parentCollections", List.empty[String])
-        .asInstanceOf[List[String]]
+        .getOrElse("parentCollections", new java.util.ArrayList())
+        .asInstanceOf[java.util.ArrayList[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)
@@ -90,8 +90,8 @@ trait PostPublishRelationUpdater {
       val version = courseMetadata.getOrElse("versionkey", "").asInstanceOf[String]
       logger.info("name: " + name + ", category: " + category + ", version: " + version)
       val parentCollections = courseMetadata
-        .getOrElse("parentcollections", List.empty[String])
-        .asInstanceOf[List[String]]
+        .getOrElse("parentcollections", new java.util.ArrayList())
+        .asInstanceOf[java.util.ArrayList[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)
