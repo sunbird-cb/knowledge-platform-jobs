@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory
 import org.sunbird.job.cache.{DataCache, RedisConnect}
 import org.sunbird.job.aggregate.domain.{UserContentConsumption, _}
 import org.sunbird.job.aggregate.task.ActivityAggregateUpdaterConfig
-import org.sunbird.job.util.{CassandraUtil, HttpUtil}
+import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil}
 import org.sunbird.job.{Metrics, WindowBaseProcessFunction}
 
 import scala.collection.JavaConverters._
@@ -57,7 +57,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
               events: Iterable[Map[String, AnyRef]],
               metrics: Metrics): Unit = {
 
-    logger.debug("Input Events Size: " + events.toList.size)
+    logger.info("Input Events : " + JSONUtil.serialize(events.toList))
     val inputUserConsumptionList: List[UserContentConsumption] = events
         .groupBy(key => (key.get(config.courseId), key.get(config.batchId), key.get(config.userId)))
         .values.map(value => {
