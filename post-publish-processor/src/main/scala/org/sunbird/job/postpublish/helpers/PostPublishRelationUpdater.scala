@@ -38,6 +38,9 @@ trait PostPublishRelationUpdater {
             || primaryCategory == "Blended Program")) {
         isValidProgram = true
       }
+      logger.info("PrimaryCategory value is :" + primaryCategory + ", for Id: " + identifier)
+    } else {
+      logger.error("Failed to read content details for Id: " + identifier)
     }
     isValidProgram
   }
