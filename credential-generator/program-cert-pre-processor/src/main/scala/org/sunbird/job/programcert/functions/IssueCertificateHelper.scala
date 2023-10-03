@@ -30,15 +30,4 @@ trait IssueCertificateHelper {
       throw new Exception(s"Error from get API : ${url}, with response: ${response}")
     }
   }
-
-  def getCourseReadDetails(courseId: String)(metrics: Metrics, config: ProgramCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): java.util.ArrayList[String] = {
-    val courseMetadata = cache.getWithRetry(courseId)
-    if (null == courseMetadata || courseMetadata.isEmpty) {
-      val url = config.contentBasePath + config.contentReadApi + "/" + courseId + "?fields=primaryCategory,identifier,parentCollections"
-      val response = getAPICall(url, "content")(config, httpUtil, metrics)
-      response.getOrElse(config.parentCollections, new java.util.ArrayList()).asInstanceOf[java.util.ArrayList[String]]
-    } else {
-      courseMetadata.getOrElse(config.parentCollections.toLowerCase(), new java.util.ArrayList()).asInstanceOf[java.util.ArrayList[String]]
-    }
-  }
 }

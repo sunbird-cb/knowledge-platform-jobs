@@ -216,6 +216,12 @@ trait IssueCertificateHelper {
         val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
         val related = getRelatedData(event, enrolledUser, assessedUser, userDetails, additionalProps, certName, courseName)(config)
         val providerName = getCourseOrganisation(event.courseId)(metrics, config, cache, httpUtil)
+        val parentCollections: List[String] = Option(courseInfo.get(config.parentCollections))
+            .collect {
+              case list: java.util.List[_] =>
+                list.asInstanceOf[java.util.List[String]].asScala.toList
+            }
+            .getOrElse(List.empty)
         val eData = Map[String, AnyRef] (
             "issuedDate" -> dateFormatter.format(enrolledUser.issuedOn),
             "data" -> List(Map[String, AnyRef]("recipientName" -> recipientName, "recipientId" -> event.userId)),
@@ -234,7 +240,7 @@ trait IssueCertificateHelper {
             "providerName" -> providerName,
             "tag" -> event.batchId,
             "primaryCategory" -> courseInfo.getOrElse("primaryCategory", "").asInstanceOf[String],
-            "parentCollections" -> courseInfo.getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]],
+            "parentCollections" -> parentCollections,
             "coursePosterImage" -> courseInfo.getOrElse("coursePosterImage", "").asInstanceOf[String],
         )
 
@@ -266,7 +272,7 @@ trait IssueCertificateHelper {
             val courseName = StringContext.processEscapes(response.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
             val primaryCategory = StringContext.processEscapes(response.getOrElse(config.primaryCategory, "").asInstanceOf[String]).filter(_ >= ' ')
             val posterImage: String = StringContext.processEscapes(response.getOrElse(config.posterImage, "").asInstanceOf[String]).filter(_ >= ' ')
-            val parentCollections = response.getOrElse("parentCollections", new java.util.ArrayList()).asInstanceOf[java.util.ArrayList[String]]
+            val parentCollections = response.getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]]
             Map(
                 "courseId" -> courseId, 
                 "courseName" -> courseName, 

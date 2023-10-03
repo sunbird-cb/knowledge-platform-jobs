@@ -73,8 +73,7 @@ trait PostPublishRelationUpdater {
         )
         .filter(_ >= ' ')
       val parentCollections = response
-        .getOrElse("parentCollections", new java.util.ArrayList())
-        .asInstanceOf[java.util.ArrayList[String]]
+        .getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)
@@ -84,11 +83,9 @@ trait PostPublishRelationUpdater {
       courseInfoMap.put(config.versionKey, versionKey)
       courseInfoMap
     } else {
-      logger.info("Content read response from cache " + JSONUtil.serialize(courseMetadata))
       val name = courseMetadata.getOrElse(config.name, "").asInstanceOf[String]
       val category = courseMetadata.getOrElse("primarycategory", "").asInstanceOf[String]
       val version = courseMetadata.getOrElse("versionkey", "").asInstanceOf[String]
-      logger.info("name: " + name + ", category: " + category + ", version: " + version)
       val parentCollections = courseMetadata
         .getOrElse("parentcollections", new java.util.ArrayList())
         .asInstanceOf[java.util.ArrayList[String]]
