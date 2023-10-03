@@ -88,34 +88,17 @@ trait PostPublishRelationUpdater {
       val name = courseMetadata.getOrElse(config.name, "").asInstanceOf[String]
       val category = courseMetadata.getOrElse(config.primaryCategory, "").asInstanceOf[String]
       val version = courseMetadata.getOrElse(config.versionKey, "").asInstanceOf[String]
-      logger.info("name: " + name, ", category: " + category + ", version: " + version)
-      val courseName = StringContext
-        .processEscapes(
-          courseMetadata.getOrElse(config.name, "").asInstanceOf[String]
-        )
-        .filter(_ >= ' ')
-      val primaryCategory = StringContext
-        .processEscapes(
-          courseMetadata
-            .getOrElse(config.primaryCategory, "")
-            .asInstanceOf[String]
-        )
-        .filter(_ >= ' ')
-      val versionKey = StringContext
-        .processEscapes(
-          courseMetadata.getOrElse(config.versionKey, "").asInstanceOf[String]
-        )
-        .filter(_ >= ' ')
+      logger.info("name: " + name + ", category: " + category + ", version: " + version)
       val parentCollections = courseMetadata
         .getOrElse("parentCollections", List.empty[String])
         .asInstanceOf[List[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)
-      courseInfoMap.put("courseName", courseName)
+      courseInfoMap.put("courseName", name)
       courseInfoMap.put("parentCollections", parentCollections)
-      courseInfoMap.put("primaryCategory", primaryCategory)
-      courseInfoMap.put(config.versionKey, versionKey)
+      courseInfoMap.put("primaryCategory", category)
+      courseInfoMap.put(config.versionKey, version)
       courseInfoMap
     }
 
