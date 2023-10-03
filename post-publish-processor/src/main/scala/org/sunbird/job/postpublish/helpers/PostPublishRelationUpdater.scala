@@ -84,6 +84,11 @@ trait PostPublishRelationUpdater {
       courseInfoMap.put(config.versionKey, versionKey)
       courseInfoMap
     } else {
+      logger.info("Content read response from cache " + JSONUtil.serialize(courseMetadata))
+      val name = courseMetadata.getOrElse(config.name, "").asInstanceOf[String]
+      val category = courseMetadata.getOrElse(config.primaryCategory, "").asInstanceOf[String]
+      val version = courseMetadata.getOrElse(config.versionKey, "").asInstanceOf[String]
+      logger.info("name: " + name, ", category: " + category + ", version: " + version)
       val courseName = StringContext
         .processEscapes(
           courseMetadata.getOrElse(config.name, "").asInstanceOf[String]
