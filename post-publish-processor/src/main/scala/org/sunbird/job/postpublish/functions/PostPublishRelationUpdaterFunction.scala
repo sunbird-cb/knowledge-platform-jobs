@@ -79,7 +79,12 @@ class PostPublishRelationUpdaterFunction(
         val identifier: String = childNode.get("identifier").asInstanceOf[String]
         if (primaryCategory.equalsIgnoreCase("Course")) {
           val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(identifier)(metrics, config, cache, httpUtil)
-          val versionKey: String = contentObj.get(config.versionKey).asInstanceOf[String]
+          var versionKey: String = ""
+          val versionKeyOption: Option[String] = Option(contentObj.get(config.versionKey)).map(_.asInstanceOf[String])
+          if (versionKeyOption.isDefined) {
+            versionKey = versionKeyOption.get
+          }
+          logger.info("Current versionKey is: " + versionKey)
 
           // Use Option to safely handle null values
           val parentCollections: List[String] = Option(contentObj.get(config.parentCollections))
