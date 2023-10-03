@@ -222,6 +222,7 @@ trait IssueCertificateHelper {
                 list.asInstanceOf[java.util.List[String]].asScala.toList
             }
             .getOrElse(List.empty)
+        logger.info("Received parentCollections from getCourseInfo : " + JSONUtil.serialize(parentCollections))
         val eData = Map[String, AnyRef] (
             "issuedDate" -> dateFormatter.format(enrolledUser.issuedOn),
             "data" -> List(Map[String, AnyRef]("recipientName" -> recipientName, "recipientId" -> event.userId)),
@@ -269,6 +270,7 @@ trait IssueCertificateHelper {
         val courseInfoMap = if (null == courseMetadata || courseMetadata.isEmpty) {
             val url = config.contentBasePath + config.contentReadApi + "/" + courseId + "?fields=name,parentCollections,primaryCategory,posterImage"
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
+            logger.info("content is read from API. response : " + JSONUtil.serialize(response))
             val courseName = StringContext.processEscapes(response.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
             val primaryCategory = StringContext.processEscapes(response.getOrElse(config.primaryCategory, "").asInstanceOf[String]).filter(_ >= ' ')
             val posterImage: String = StringContext.processEscapes(response.getOrElse(config.posterImage, "").asInstanceOf[String]).filter(_ >= ' ')
@@ -281,6 +283,7 @@ trait IssueCertificateHelper {
                 "coursePosterImage" -> posterImage,
             )
         } else {
+            logger.info("content is read from Cache. response : " + JSONUtil.serialize(courseMetadata))
             val courseName = StringContext.processEscapes(courseMetadata.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
             val primaryCategory = StringContext.processEscapes(courseMetadata.getOrElse("primarycategory", "").asInstanceOf[String]).filter(_ >= ' ')
             val parentCollections = courseMetadata.getOrElse("parentcollections", new java.util.ArrayList()).asInstanceOf[java.util.ArrayList[String]]
