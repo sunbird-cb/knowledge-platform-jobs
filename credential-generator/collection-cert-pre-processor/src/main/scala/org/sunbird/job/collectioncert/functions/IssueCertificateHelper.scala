@@ -221,7 +221,7 @@ trait IssueCertificateHelper {
                 list.asInstanceOf[java.util.List[String]].asScala.toList
             }
             .getOrElse(List.empty)
-        logger.info("Received parentCollections from getCourseInfo : " + JSONUtil.serialize(parentCollections))
+        
         val eData = Map[String, AnyRef] (
             "issuedDate" -> dateFormatter.format(enrolledUser.issuedOn),
             "data" -> List(Map[String, AnyRef]("recipientName" -> recipientName, "recipientId" -> event.userId)),
@@ -243,7 +243,7 @@ trait IssueCertificateHelper {
             "parentCollections" -> parentCollections,
             "coursePosterImage" -> courseInfo.getOrDefault("coursePosterImage", "").asInstanceOf[String],
         )
-
+        logger.info("Constructured eData from preProcessor : " + JSONUtil.serialize(eData))
         ScalaJsonUtil.serialize(BEJobRequestEvent(edata = eData, `object` = EventObject(id= event.userId)))
     }
 

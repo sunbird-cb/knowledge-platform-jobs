@@ -78,13 +78,7 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
         metrics.incCounter(config.skippedEventCount)
         logger.info(s"Certificate already issued for: ${event.eData.getOrElse("userId", "")} ${event.related}")
       }
-      logger.info("Certificate Issued for '"+ event.primaryCategory + "', parentCollections value ? " + event.parentCollections)
-      if ("Course".equalsIgnoreCase(event.primaryCategory) && !event.parentCollections.isEmpty) {
-        val courseCompletionEvent = generateCourseCompletionEvent(event)
-        Option(courseCompletionEvent ).map(e => {
-          context.output(config.generateProgramCertificateOutputTag, courseCompletionEvent)
-        })
-      }  
+      logger.info("Certificate Issued for '"+ event.primaryCategory + "', parentCollections value ? " + event.parentCollections)  
       metrics.incCounter(config.successEventCount)
     } catch {
       case e: Exception =>
@@ -316,6 +310,12 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
           val audit = ScalaJsonUtil.serialize(certificateAuditEvent)
           context.output(config.auditEventOutputTag, audit)
           logger.info("pushAuditEvent: certificate audit event success {}", audit)
+          if ("Course".equalsIgnoreCase(event.primaryCategory) && !event.parentCollections.isEmpty) {
+            val courseCompletionEvent = generateCourseCompletionEvent(event)
+            Option(courseCompletionEvent ).map(e => {
+              context.output(config.generateProgramCertificateOutputTag, courseCompletionEvent)
+            })
+          }
           context.output(config.notifierOutputTag, NotificationMetaData(certMetaData.userId, certMetaData.courseName, issuedOn, certMetaData.courseId, certMetaData.batchId, certMetaData.templateId, event.partition, event.offset, event.providerName, event.coursePosterImage))
           context.output(config.userFeedOutputTag, UserFeedMetaData(certMetaData.userId, certMetaData.courseName, issuedOn, certMetaData.courseId, event.partition, event.offset))
         } else {
