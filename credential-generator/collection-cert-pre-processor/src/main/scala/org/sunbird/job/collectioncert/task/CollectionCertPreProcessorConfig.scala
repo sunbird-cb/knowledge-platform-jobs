@@ -83,7 +83,7 @@ class CollectionCertPreProcessorConfig(override val config: Config) extends Base
     val contentReadURL = contentServiceBase+ "/content/v3/read/"
     val primaryCategory: String = "primaryCategory"
     val versionKey: String = "versionKey"
-
+    val posterImage: String = "posterImage"
 
 
 }
