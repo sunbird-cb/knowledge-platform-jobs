@@ -211,11 +211,10 @@ trait IssueCertificateHelper {
         val lastName = Option(userDetails.getOrElse("lastName", "").asInstanceOf[String]).getOrElse("")
         def nullStringCheck(name:String):String = {if(StringUtils.equalsIgnoreCase("null", name)) ""  else name}
         val recipientName = nullStringCheck(firstName).concat(" ").concat(nullStringCheck(lastName)).trim
-        val courseInfo: Map[String, Any] = getCourseInfo(event.courseId)(metrics, config, cache, httpUtil)
-        val courseName = courseInfo.getOrElse("courseName", "").asInstanceOf[String]
+        val courseInfo: java.util.Map[String, AnyRef] = getCourseInfo(event.courseId)(metrics, config, cache, httpUtil)
+        val courseName = courseInfo.getOrDefault("courseName", "").asInstanceOf[String]
         val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
         val related = getRelatedData(event, enrolledUser, assessedUser, userDetails, additionalProps, certName, courseName)(config)
-        val providerName = getCourseOrganisation(event.courseId)(metrics, config, cache, httpUtil)
         val parentCollections: List[String] = Option(courseInfo.get(config.parentCollections))
             .collect {
               case list: java.util.List[_] =>
@@ -238,11 +237,11 @@ trait IssueCertificateHelper {
             "basePath" -> config.certBasePath,
             "related" ->  related,
             "name" -> certName,
-            "providerName" -> providerName,
+            "providerName" -> courseInfo.getOrDefault("providerName", "").asInstanceOf[String],
             "tag" -> event.batchId,
-            "primaryCategory" -> courseInfo.getOrElse("primaryCategory", "").asInstanceOf[String],
+            "primaryCategory" -> courseInfo.getOrDefault("primaryCategory", "").asInstanceOf[String],
             "parentCollections" -> parentCollections,
-            "coursePosterImage" -> courseInfo.getOrElse("coursePosterImage", "").asInstanceOf[String],
+            "coursePosterImage" -> courseInfo.getOrDefault("coursePosterImage", "").asInstanceOf[String],
         )
 
         ScalaJsonUtil.serialize(BEJobRequestEvent(edata = eData, `object` = EventObject(id= event.userId)))
@@ -265,9 +264,9 @@ trait IssueCertificateHelper {
           locationProps ++ enrolledUser.additionalProps ++ assessedUser.additionalProps ++ userAdditionalProps ++ courseAdditionalProps
     }
 
-    def getCourseInfo(courseId: String)(metrics: Metrics, config: CollectionCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): Map[String, Any] = {
+    def getCourseInfo(courseId: String)(metrics: Metrics, config: CollectionCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): java.util.Map[String, AnyRef] = {
         val courseMetadata = cache.getWithRetry(courseId)
-        val courseInfoMap = if (null == courseMetadata || courseMetadata.isEmpty) {
+        if (null == courseMetadata || courseMetadata.isEmpty) {
             val url = config.contentBasePath + config.contentReadApi + "/" + courseId + "?fields=name,parentCollections,primaryCategory,posterImage"
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
             logger.info("content is read from API. response : " + JSONUtil.serialize(response))
@@ -275,27 +274,34 @@ trait IssueCertificateHelper {
             val primaryCategory = StringContext.processEscapes(response.getOrElse(config.primaryCategory, "").asInstanceOf[String]).filter(_ >= ' ')
             val posterImage: String = StringContext.processEscapes(response.getOrElse(config.posterImage, "").asInstanceOf[String]).filter(_ >= ' ')
             val parentCollections = response.getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]]
-            Map(
-                "courseId" -> courseId, 
-                "courseName" -> courseName, 
-                "parentCollections" -> parentCollections,
-                "primaryCategory" -> primaryCategory,
-                "coursePosterImage" -> posterImage,
-            )
+            val orgData = response.get("organisation").toArray
+            val pm = orgData(0).toString
+            val providerName = pm.substring(1, pm.length-1)
+            val courseInfoMap: java.util.Map[String, AnyRef] = new java.util.HashMap[String, AnyRef]()
+            courseInfoMap.put("courseId", courseId)
+            courseInfoMap.put("courseName", courseName)
+            courseInfoMap.put("parentCollections", parentCollections)
+            courseInfoMap.put("primaryCategory", primaryCategory)
+            courseInfoMap.put("coursePosterImage", posterImage)
+            courseInfoMap.put("providerName", providerName)
+            courseInfoMap
         } else {
             logger.info("content is read from Cache. response : " + JSONUtil.serialize(courseMetadata))
             val courseName = StringContext.processEscapes(courseMetadata.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
             val primaryCategory = StringContext.processEscapes(courseMetadata.getOrElse("primarycategory", "").asInstanceOf[String]).filter(_ >= ' ')
             val parentCollections = courseMetadata.getOrElse("parentcollections", new java.util.ArrayList()).asInstanceOf[java.util.ArrayList[String]]
             val posterImage: String = StringContext.processEscapes(courseMetadata.getOrElse("posterimage", "").asInstanceOf[String]).filter(_ >= ' ')
-            Map(
-                "courseId" -> courseId, 
-                "courseName" -> courseName, 
-                "parentCollections" -> parentCollections,
-                "primaryCategory" -> primaryCategory,
-                "coursePosterImage" -> posterImage,
-            )
+            val orgData = courseMetadata.get("organisation").toArray
+            val pm = orgData(0).toString
+            val providerName = pm.substring(1, pm.length-1)
+            val courseInfoMap: java.util.Map[String, AnyRef] = new java.util.HashMap[String, AnyRef]()
+            courseInfoMap.put("courseId", courseId)
+            courseInfoMap.put("courseName", courseName)
+            courseInfoMap.put("parentCollections", parentCollections)
+            courseInfoMap.put("primaryCategory", primaryCategory)
+            courseInfoMap.put("coursePosterImage", posterImage)
+            courseInfoMap.put("providerName", providerName)
+            courseInfoMap
         }
-        courseInfoMap
     }
 }
