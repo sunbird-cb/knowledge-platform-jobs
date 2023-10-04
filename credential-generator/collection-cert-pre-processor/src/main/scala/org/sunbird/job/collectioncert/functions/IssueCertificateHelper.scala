@@ -270,7 +270,6 @@ trait IssueCertificateHelper {
         if (null == courseMetadata || courseMetadata.isEmpty) {
             val url = config.contentBasePath + config.contentReadApi + "/" + courseId + "?fields=name,parentCollections,primaryCategory,posterImage,organisation"
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
-            logger.info("content is read from API. response : " + JSONUtil.serialize(response))
             val courseName = StringContext.processEscapes(response.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
             val primaryCategory = StringContext.processEscapes(response.getOrElse(config.primaryCategory, "").asInstanceOf[String]).filter(_ >= ' ')
             val posterImage: String = StringContext.processEscapes(response.getOrElse(config.posterImage, "").asInstanceOf[String]).filter(_ >= ' ')
@@ -287,7 +286,6 @@ trait IssueCertificateHelper {
             courseInfoMap.put("providerName", providerName)
             courseInfoMap
         } else {
-            logger.info("content is read from Cache. response : " + JSONUtil.serialize(courseMetadata))
             val courseName = StringContext.processEscapes(courseMetadata.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
             val primaryCategory = StringContext.processEscapes(courseMetadata.getOrElse("primarycategory", "").asInstanceOf[String]).filter(_ >= ' ')
             val parentCollections = courseMetadata.getOrElse("parentcollections", new java.util.ArrayList()).asInstanceOf[java.util.ArrayList[String]]
