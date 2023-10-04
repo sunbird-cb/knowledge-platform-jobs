@@ -84,6 +84,7 @@ class CollectionCertPreProcessorConfig(override val config: Config) extends Base
     val primaryCategory: String = "primaryCategory"
     val versionKey: String = "versionKey"
     val posterImage: String = "posterImage"
+    val parentCollections: String = "parentCollections"
 
 
 }

@@ -215,6 +215,13 @@ trait IssueCertificateHelper {
         val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
         val related = getRelatedData(event, enrolledUser, assessedUser, userDetails, additionalProps, certName, courseName)(config)
         val providerName = getCourseOrganisation(event.courseId)(metrics, config, cache, httpUtil)
+        val parentCollections: List[String] = Option(courseInfo.get(config.parentCollections))
+          .collect {
+              case list: java.util.List[_] =>
+                  list.asInstanceOf[java.util.List[String]].asScala.toList
+          }
+          .getOrElse(List.empty)
+
         val eData = Map[String, AnyRef] (
             "issuedDate" -> dateFormatter.format(enrolledUser.issuedOn),
             "data" -> List(Map[String, AnyRef]("recipientName" -> recipientName, "recipientId" -> event.userId)),
@@ -233,7 +240,7 @@ trait IssueCertificateHelper {
             "providerName" -> providerName,
             "tag" -> event.batchId,
             "primaryCategory" -> courseInfo.getOrDefault("primaryCategory", "").asInstanceOf[String],
-            "parentCollections" -> courseInfo.getOrDefault("parentCollections", List.empty[String]).asInstanceOf[List[String]],
+            "parentCollections" -> parentCollections,
             "coursePosterImage" -> courseInfo.getOrDefault("coursePosterImage", "").asInstanceOf[String],
 
         )
