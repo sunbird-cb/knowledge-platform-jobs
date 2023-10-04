@@ -9,7 +9,7 @@ import org.sunbird.job.Metrics
 import org.sunbird.job.cache.DataCache
 import org.sunbird.job.collectioncert.domain.{AssessedUser, AssessmentUserAttempt, BEJobRequestEvent, EnrolledUser, Event, EventObject}
 import org.sunbird.job.collectioncert.task.CollectionCertPreProcessorConfig
-import org.sunbird.job.util.{CassandraUtil, HttpUtil, ScalaJsonUtil}
+import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil, ScalaJsonUtil}
 
 import scala.collection.JavaConverters._
 
@@ -210,7 +210,8 @@ trait IssueCertificateHelper {
         val lastName = Option(userDetails.getOrElse("lastName", "").asInstanceOf[String]).getOrElse("")
         def nullStringCheck(name:String):String = {if(StringUtils.equalsIgnoreCase("null", name)) ""  else name}
         val recipientName = nullStringCheck(firstName).concat(" ").concat(nullStringCheck(lastName)).trim
-        val courseName = getCourseName(event.courseId)(metrics, config, cache, httpUtil)
+        val courseInfo:java.util.Map[String, AnyRef] = getCourseInfo(event.courseId)(metrics, config, cache, httpUtil)
+        val courseName = courseInfo.getOrDefault("courseName", "").asInstanceOf[String]
         val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
         val related = getRelatedData(event, enrolledUser, assessedUser, userDetails, additionalProps, certName, courseName)(config)
         val providerName = getCourseOrganisation(event.courseId)(metrics, config, cache, httpUtil)
@@ -230,7 +231,11 @@ trait IssueCertificateHelper {
             "related" ->  related,
             "name" -> certName,
             "providerName" -> providerName,
-            "tag" -> event.batchId
+            "tag" -> event.batchId,
+            "primaryCategory" -> courseInfo.getOrDefault("primaryCategory", "").asInstanceOf[String],
+            "parentCollections" -> courseInfo.getOrDefault("parentCollections", List.empty[String]).asInstanceOf[List[String]],
+            "coursePosterImage" -> courseInfo.getOrDefault("coursePosterImage", "").asInstanceOf[String],
+
         )
 
         ScalaJsonUtil.serialize(BEJobRequestEvent(edata = eData, `object` = EventObject(id= event.userId)))
@@ -251,5 +256,61 @@ trait IssueCertificateHelper {
         val courseAdditionalProps: Map[String, Any] = if(additionalProps.getOrElse("course", List()).nonEmpty) Map("course" -> Map("name" -> courseName)) else Map()
         Map[String, Any]("batchId" -> event.batchId, "courseId" -> event.courseId, "type" -> certName) ++
           locationProps ++ enrolledUser.additionalProps ++ assessedUser.additionalProps ++ userAdditionalProps ++ courseAdditionalProps
+    }
+
+    def getCourseInfo(courseId: String)(
+      metrics: Metrics,
+      config: CollectionCertPreProcessorConfig,
+      cache: DataCache,
+      httpUtil: HttpUtil
+    ): java.util.Map[String, AnyRef] = {
+        val courseMetadata = cache.getWithRetry(courseId)
+        if (null == courseMetadata || courseMetadata.isEmpty) {
+            val url =
+                config.contentReadURL + "/" + courseId + "?fields=identifier,name,versionKey,parentCollections,primaryCategory"
+            val response = getAPICall(url, "content")(config, httpUtil, metrics)
+            logger.info("Content read response" + JSONUtil.serialize(response))
+            val courseName = StringContext
+              .processEscapes(
+                  response.getOrElse(config.name, "").asInstanceOf[String]
+              )
+              .filter(_ >= ' ')
+            val primaryCategory = StringContext
+              .processEscapes(
+                  response.getOrElse(config.primaryCategory, "").asInstanceOf[String]
+              )
+              .filter(_ >= ' ')
+            val versionKey = StringContext
+              .processEscapes(
+                  response.getOrElse(config.versionKey, "").asInstanceOf[String]
+              )
+              .filter(_ >= ' ')
+            val parentCollections = response
+              .getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]]
+            val courseInfoMap: java.util.Map[String, AnyRef] =
+                new java.util.HashMap[String, AnyRef]()
+            courseInfoMap.put("courseId", courseId)
+            courseInfoMap.put("courseName", courseName)
+            courseInfoMap.put("parentCollections", parentCollections)
+            courseInfoMap.put("primaryCategory", primaryCategory)
+            courseInfoMap.put(config.versionKey, versionKey)
+            courseInfoMap
+        } else {
+            val name = courseMetadata.getOrElse(config.name, "").asInstanceOf[String]
+            val category = courseMetadata.getOrElse("primarycategory", "").asInstanceOf[String]
+            val version = courseMetadata.getOrElse("versionkey", "").asInstanceOf[String]
+            val parentCollections = courseMetadata
+              .getOrElse("parentcollections", new java.util.ArrayList())
+              .asInstanceOf[java.util.ArrayList[String]]
+            val courseInfoMap: java.util.Map[String, AnyRef] =
+                new java.util.HashMap[String, AnyRef]()
+            courseInfoMap.put("courseId", courseId)
+            courseInfoMap.put("courseName", name)
+            courseInfoMap.put("parentCollections", parentCollections)
+            courseInfoMap.put("primaryCategory", category)
+            courseInfoMap.put(config.versionKey, version)
+            courseInfoMap
+        }
+
     }
 }
