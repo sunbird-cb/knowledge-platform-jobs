@@ -67,5 +67,6 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
     val userAccBlockedErrCode = "UOS_USRRED0006"
     val programCertPreProcess: String = "program_cert_pre_process"
     val parentCollections: String = "parentCollections"
+    val issuedCertificates: String = "issued_certificates"
 
 }

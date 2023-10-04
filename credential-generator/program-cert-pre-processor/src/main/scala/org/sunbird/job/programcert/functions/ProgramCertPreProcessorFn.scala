@@ -1,6 +1,6 @@
 package org.sunbird.job.programcert.functions
 
-import com.datastax.driver.core.Row
+import com.datastax.driver.core.{Row, TypeTokens}
 import com.datastax.driver.core.querybuilder.{QueryBuilder, Select}
 import org.apache.commons.collections.CollectionUtils
 import org.apache.commons.lang3.StringUtils
@@ -72,9 +72,10 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                                 val courseId: String = childNode.get(config.identifier).asInstanceOf[String]
                                 val userId: String = event.userId
                                 val primaryFields = Map(config.dbUserId.toLowerCase() -> userId, config.dbCourseId.toLowerCase -> courseId)
-                                val isCertificateIssued: List[Row] = getCourseIssuedCertificateForUser(primaryFields)(metrics)
+                                val isCertificateIssued = getCourseIssuedCertificateForUser(primaryFields)(metrics)
+                                logger.info("Is Certificate Available for courseId: " + courseId + " userId:" + userId + " :" + isCertificateIssued)
                                 breakable {
-                                    if (isCertificateIssued == null || isCertificateIssued.isEmpty) {
+                                    if (!isCertificateIssued) {
                                         isProgramCertificateToBeGenerated = false;
                                         break
                                     }
@@ -106,6 +107,7 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                                         "courseId" -> courseParentId))
 
                                 val requestBody = JSONUtil.serialize(eData)
+                                logger.info("Added the kafka event for programId: " + courseParentId + " requestBody:" + requestBody)
                                 context.output(config.generateCertificateOutputTag, requestBody)
                             }
                         }
@@ -133,8 +135,9 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
         else new java.util.HashMap[String, AnyRef]()
     }
 
-    private def getCourseIssuedCertificateForUser(columns: Map[String, AnyRef])(implicit metrics: Metrics) = {
+    private def getCourseIssuedCertificateForUser(columns: Map[String, AnyRef])(implicit metrics: Metrics): Boolean = {
         logger.info("primary columns {}", columns)
+        var isCertificateIssued : Boolean = false;
         val selectWhere = QueryBuilder.select().all()
           .from(config.keyspace, config.userEnrolmentsTable).
           where()
@@ -147,7 +150,20 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
             }
         })
         logger.info("select query {}", selectWhere.toString)
-        cassandraUtil.find(selectWhere.toString).asScala.toList
+        var row: java.util.List[Row] = cassandraUtil.find(selectWhere.toString)
+        if (null != row) {
+            row = row.filter(x => x.getList(config.issuedCertificates, TypeTokens.mapOf(classOf[String], classOf[String])) != null).toList
+            if (row.size() == 1) {
+                isCertificateIssued = true
+            } else {
+                logger.error("More than one certificate" + columns)
+                isCertificateIssued = false
+            }
+        } else {
+            logger.error("No Certificate Available" + columns)
+            isCertificateIssued = false
+        }
+        isCertificateIssued
     }
 
     def getEnrolment(userId: String, programId: String)(implicit metrics: Metrics): Row = {
@@ -159,13 +175,14 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
         metrics.incCounter(config.dbReadCount)
         var row: java.util.List[Row] = cassandraUtil.find(selectWhere.toString)
         if (null != row) {
-            row = row.filter(x => x.getInt("status") != 2).toList
             if (row.size() == 1) {
                 row.asScala.get(0)
             } else {
+                logger.error("Enrollement is more than 1, for programId:" + programId + " userId:" + userId)
                 null
             }
         } else {
+            logger.error("No Enrollement found for programId: " + programId + " userId: " + userId)
             null
         }
     }
