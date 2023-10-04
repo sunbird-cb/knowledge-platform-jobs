@@ -19,7 +19,7 @@ import org.sunbird.job.certgen.domain._
 import org.sunbird.job.certgen.exceptions.ServerException
 import org.sunbird.job.certgen.task.CertificateGeneratorConfig
 import org.sunbird.job.exception.InvalidEventException
-import org.sunbird.job.util.{CassandraUtil, ElasticSearchUtil, HttpUtil, ScalaJsonUtil}
+import org.sunbird.job.util.{CassandraUtil, ElasticSearchUtil, HttpUtil, ScalaJsonUtil, JSONUtil}
 import org.sunbird.job.{BaseProcessKeyedFunction, Metrics}
 
 import java.io.{File, IOException}
@@ -73,12 +73,10 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
       if(certValidator.isNotIssued(event)(config, metrics, cassandraUtil)) {
         if(config.enableRcCertificate) generateCertificateUsingRC(event, context)(metrics)
         else generateCertificate(event, context)(metrics)
-
       } else {
         metrics.incCounter(config.skippedEventCount)
         logger.info(s"Certificate already issued for: ${event.eData.getOrElse("userId", "")} ${event.related}")
       }
-      logger.info("Certificate Issued for '"+ event.primaryCategory + "', parentCollections value ? " + event.parentCollections)  
       metrics.incCounter(config.successEventCount)
     } catch {
       case e: Exception =>
@@ -313,8 +311,14 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
           if ("Course".equalsIgnoreCase(event.primaryCategory) && !event.parentCollections.isEmpty) {
             val courseCompletionEvent = generateCourseCompletionEvent(event)
             Option(courseCompletionEvent ).map(e => {
+              logger.info("generated course completion event : " + JSONUtil.serialize(courseCompletionEvent))
               context.output(config.generateProgramCertificateOutputTag, courseCompletionEvent)
+            }).getOrElse({
+              logger.info("Failed to generate program cert. Option is empty.")
             })
+            logger.info("Certificate Issued for '"+ event.primaryCategory + "', parentCollections value ? " + event.parentCollections)  
+          } else {
+            logger.info("Skipping event to generate program certificate.")
           }
           context.output(config.notifierOutputTag, NotificationMetaData(certMetaData.userId, certMetaData.courseName, issuedOn, certMetaData.courseId, certMetaData.batchId, certMetaData.templateId, event.partition, event.offset, event.providerName, event.coursePosterImage))
           context.output(config.userFeedOutputTag, UserFeedMetaData(certMetaData.userId, certMetaData.courseName, issuedOn, certMetaData.courseId, event.partition, event.offset))
