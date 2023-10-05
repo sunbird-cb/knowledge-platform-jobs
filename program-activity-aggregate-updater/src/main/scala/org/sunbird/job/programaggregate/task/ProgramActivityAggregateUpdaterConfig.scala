@@ -9,7 +9,7 @@ import org.sunbird.job.programaggregate.domain.CollectionProgress
 
 import java.util
 
-class ProgramActivityAggregateUpdaterConfig(override val config: Config) extends BaseJobConfig(config, "activity-aggregate-updater") {
+class ProgramActivityAggregateUpdaterConfig(override val config: Config) extends BaseJobConfig(config, "program-activity-aggregate-updater") {
 
   private val serialVersionUID = 2905979434303791379L
 
@@ -133,7 +133,7 @@ class ProgramActivityAggregateUpdaterConfig(override val config: Config) extends
   val searchAPIURL = searchServiceBasePath + "/v3/search"
 
   val contentServiceBase: String = config.getString("service.content.basePath")
-  val contentReadURL = contentServiceBase + "/content/v3/read/"
+  val contentReadURL = contentServiceBase + "/v3/read/"
 
   val identifier: String = "identifier"
   val primaryCategory: String = "primaryCategory"
