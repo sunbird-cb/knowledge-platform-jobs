@@ -27,7 +27,7 @@ class ProgramActivityAggregateUpdaterStreamTask(config: ProgramActivityAggregate
         .uid(config.activityAggregateUpdaterConsumer).setParallelism(config.kafkaConsumerParallelism)
         .rebalance
         .getSideOutput(config.uniqueConsumptionOutput)
-        .keyBy(new ActivityAggregatorKeySelector(config))
+        .keyBy(new ProgramActivityAggregatorKeySelector(config))
         .countWindow(config.thresholdBatchReadSize)
         .process(new ProgramActivityAggregatesFunction(config, httpUtil))
         .name(config.programactivityAggregateUpdaterFn)
@@ -45,7 +45,7 @@ class ProgramActivityAggregateUpdaterStreamTask(config: ProgramActivityAggregate
 }
 
 // $COVERAGE-OFF$ Disabling scoverage as the below code can only be invoked within flink cluster
-object ActivityAggregateUpdaterStreamTask {
+object ProgramActivityAggregateUpdaterStreamTask {
 
   def main(args: Array[String]): Unit = {
     val configFilePath = Option(ParameterTool.fromArgs(args).get("config.file.path"))
@@ -62,7 +62,7 @@ object ActivityAggregateUpdaterStreamTask {
 }
 // $COVERAGE-ON$
 
-class ActivityAggregatorKeySelector(config: ProgramActivityAggregateUpdaterConfig) extends KeySelector[Map[String, AnyRef], Int] {
+class ProgramActivityAggregatorKeySelector(config: ProgramActivityAggregateUpdaterConfig) extends KeySelector[Map[String, AnyRef], Int] {
   private val serialVersionUID = 7267989625042068736L
   private val shards = config.windowShards
   override def getKey(in: Map[String, AnyRef]): Int = {
