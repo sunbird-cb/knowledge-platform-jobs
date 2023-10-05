@@ -23,8 +23,8 @@ class ProgramActivityAggregateUpdaterStreamTask(config: ProgramActivityAggregate
     implicit val enrolmentCompleteTypeInfo: TypeInformation[List[CollectionProgress]] = TypeExtractor.getForClass(classOf[List[CollectionProgress]])
 
     val progressStream =
-      env.addSource(kafkaConnector.kafkaMapSource(config.kafkaInputTopic)).name(config.activityAggregateUpdaterConsumer)
-        .uid(config.activityAggregateUpdaterConsumer).setParallelism(config.kafkaConsumerParallelism)
+      env.addSource(kafkaConnector.kafkaMapSource(config.kafkaInputTopic)).name(config.programActivityAggregateUpdaterConsumer)
+        .uid(config.programActivityAggregateUpdaterConsumer).setParallelism(config.kafkaConsumerParallelism)
         .rebalance
         .getSideOutput(config.uniqueConsumptionOutput)
         .keyBy(new ProgramActivityAggregatorKeySelector(config))

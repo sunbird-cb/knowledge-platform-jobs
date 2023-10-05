@@ -107,7 +107,7 @@ class ProgramActivityAggregateUpdaterConfig(override val config: Config) extends
   val aggregates = "aggregates"
 
   // Consumers
-  val activityAggregateUpdaterConsumer = "activity-aggregate-updater-consumer"
+  val programActivityAggregateUpdaterConsumer = "program-activity-aggregate-updater-consumer"
 
   // Producers
   val programactivityAggregateUpdaterProducer = "program-activity-aggregate-updater-audit-events-sink"
