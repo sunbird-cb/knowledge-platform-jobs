@@ -59,17 +59,17 @@ class ProgramActivityAggregateUpdaterConfig(override val config: Config) extends
   val deDupExpirySec: Int = config.getInt("dedup-redis.database.expiry")
 
   // Tags
-  val uniqueConsumptionOutputTagName = "unique-consumption-events"
+  val uniqueConsumptionOutputTagName = "program-unique-consumption-events"
   val uniqueConsumptionOutput: OutputTag[Map[String, AnyRef]] = OutputTag[Map[String, AnyRef]](uniqueConsumptionOutputTagName)
   val auditEventOutputTagName = "audit-events"
   val auditEventOutputTag: OutputTag[String] = OutputTag[String](auditEventOutputTagName)
   val failedEventOutputTagName = "failed-events"
   val failedEventOutputTag: OutputTag[String] = OutputTag[String](failedEventOutputTagName)
-  val collectionCompleteOutputTagName = "collection-progress-complete-events"
+  val collectionCompleteOutputTagName = "program-collection-progress-complete-events"
   val collectionCompleteOutputTag: OutputTag[List[CollectionProgress]] = OutputTag[List[CollectionProgress]](collectionCompleteOutputTagName)
-  val collectionUpdateOutputTagName = "collection-progress-update-events"
+  val collectionUpdateOutputTagName = "program-collection-progress-update-events"
   val collectionUpdateOutputTag: OutputTag[List[CollectionProgress]] = OutputTag[List[CollectionProgress]](collectionUpdateOutputTagName)
-  val certIssueOutputTagName = "certificate-issue-events"
+  val certIssueOutputTagName = "program-certificate-issue-events"
   val certIssueOutputTag: OutputTag[String] = OutputTag[String](certIssueOutputTagName)
 
   // constants
@@ -98,7 +98,7 @@ class ProgramActivityAggregateUpdaterConfig(override val config: Config) extends
   val action = "action"
   val batchEnrolmentUpdateCode = "batch-enrolment-update"
   val routerFn = "RouterFn"
-  val consumptionDeDupFn= "consumption-dedup-process"
+  val consumptionDeDupFn= "program-consumption-dedup-process"
   val programactivityAggregateUpdaterFn = "program-activity-aggregate-updater-fn"
   val partition = "partition"
   val courseBatch = "CourseBatch"
