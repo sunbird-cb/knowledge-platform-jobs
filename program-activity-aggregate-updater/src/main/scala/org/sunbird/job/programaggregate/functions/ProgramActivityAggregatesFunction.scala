@@ -47,8 +47,12 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
   }
 
   override def close(): Unit = {
-    cassandraUtil.close()
-    cache.close()
+    if (cassandraUtil != null) {
+      cassandraUtil.close()
+    }
+    if (cache != null) {
+      cache.close()
+    }
     super.close()
   }
 
@@ -564,7 +568,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
     httpUtil: HttpUtil,
     cache: DataCache
   ): Map[String, AnyRef] = {
-    var eventInfoMap: Map[String, AnyRef] = mutable.Map.empty()
+    var eventInfoMap: mutable.Map[String, AnyRef] = mutable.Map.empty[String, AnyRef]
     val userId: String = eventData.getOrElse(config.userId, "").asInstanceOf[String]
     val courseId: String = eventData.getOrElse(config.courseId, "").asInstanceOf[String]
     val batchId: String = eventData.getOrElse(config.batchId, "").asInstanceOf[String]
@@ -578,7 +582,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
           return null;
         }
       }
-      eventInfoMap
+      eventInfoMap.toMap
     } else {
       null;
     }
