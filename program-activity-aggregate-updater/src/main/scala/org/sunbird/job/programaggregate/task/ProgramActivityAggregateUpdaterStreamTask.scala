@@ -8,7 +8,7 @@ import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.streaming.api.scala._
 import org.sunbird.job.programaggregate.domain.CollectionProgress
 import org.sunbird.job.connector.FlinkKafkaConnector
-import org.sunbird.job.programaggregate.functions.{ProgramActivityAggregatesFunction}
+import org.sunbird.job.programaggregate.functions.{ProgramContentConsumptionDeDupFunction, ProgramActivityAggregatesFunction}
 import org.sunbird.job.util.{FlinkUtil, HttpUtil}
 
 import java.io.File
@@ -26,6 +26,8 @@ class ProgramActivityAggregateUpdaterStreamTask(config: ProgramActivityAggregate
       env.addSource(kafkaConnector.kafkaMapSource(config.kafkaInputTopic)).name(config.programActivityAggregateUpdaterConsumer)
         .uid(config.programActivityAggregateUpdaterConsumer).setParallelism(config.kafkaConsumerParallelism)
         .rebalance
+        .process(new ProgramContentConsumptionDeDupFunction(config)).name(config.consumptionDeDupFn)
+        .uid(config.consumptionDeDupFn).setParallelism(config.deDupProcessParallelism)
         .getSideOutput(config.uniqueConsumptionOutput)
         .keyBy(new ProgramActivityAggregatorKeySelector(config))
         .countWindow(config.thresholdBatchReadSize)

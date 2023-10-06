@@ -18,10 +18,10 @@ import org.sunbird.job.aggregate.task.ActivityAggregateUpdaterConfig
 
 import scala.collection.JavaConverters._
 
-class ContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpdaterConfig)(implicit val stringTypeInfo: TypeInformation[String]) extends BaseProcessFunction[util.Map[String, AnyRef], String](config) {
+class ContentConsumptionDeDupFunction(config: ActivityAggregateUpdaterConfig)(implicit val stringTypeInfo: TypeInformation[String]) extends BaseProcessFunction[util.Map[String, AnyRef], String](config) {
 
   val mapType: Type = new TypeToken[Map[String, AnyRef]]() {}.getType
-  private[this] val logger = LoggerFactory.getLogger(classOf[ProgramContentConsumptionDeDupFunction])
+  private[this] val logger = LoggerFactory.getLogger(classOf[ContentConsumptionDeDupFunction])
   var deDupEngine: DeDupEngine = _
 
   override def open(parameters: Configuration): Unit = {
