@@ -473,7 +473,8 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
       logger.info("PrimaryCategory value is :" + primaryCategory + ", for Id: " + identifier)
     } else {
       logger.error("Failed to read content details for Id: " + identifier)
-    }
+    }    
+    logger.info("is program activity aggregator is skipping this event ? " + isValidProgram)
     isValidProgram
   }
 

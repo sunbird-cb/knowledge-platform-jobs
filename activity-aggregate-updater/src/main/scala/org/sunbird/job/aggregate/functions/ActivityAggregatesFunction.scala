@@ -471,6 +471,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
     } else {
       logger.error("Failed to read content details for Id: " + identifier)
     }
+    logger.info("is activity aggregator is skipping this event ? " + isValidProgram)
     isValidProgram
   }
 
