@@ -59,7 +59,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
 
     logger.info("Input Events : " + JSONUtil.serialize(events.toList))
     val inputUserConsumptionList: List[UserContentConsumption] = events
-        .filter(event=> verifyPrimaryCategory(event.get(config.courseId).asInstanceOf[String])(metrics, config, httpUtil, cache))
+        .filter(event=> verifyPrimaryCategory(event.getOrElse(config.courseId, "").asInstanceOf[String])(metrics, config, httpUtil, cache))
         .groupBy(key => (key.get(config.courseId), key.get(config.batchId), key.get(config.userId)))
         .values.map(value => {
         metrics.incCounter(config.processedEnrolmentCount)

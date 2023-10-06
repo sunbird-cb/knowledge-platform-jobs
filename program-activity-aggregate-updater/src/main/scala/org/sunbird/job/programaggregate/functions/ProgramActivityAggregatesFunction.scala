@@ -565,9 +565,9 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
     cache: DataCache
   ): Map[String, AnyRef] = {
     var eventInfoMap: Map[String, AnyRef] = mutable.Map.empty()
-    var courseId: String = eventData.get(config.courseId).asInstanceOf[String]
-    var batchId: String = eventData.get(config.batchId).asInstanceOf[String]
-    var userId: String  = eventData.get(config.userId).asInstanceOf[String]
+    val userId: String = eventData.getOrElse(config.userId, "").asInstanceOf[String]
+    val courseId: String = eventData.getOrElse(config.courseId, "").asInstanceOf[String]
+    val batchId: String = eventData.getOrElse(config.batchId, "").asInstanceOf[String]
     if ((verifyPrimaryCategory(courseId)(metrics, config, httpUtil, cache))) {
       eventInfoMap ++= eventData
       if (StringUtils.isEmpty(batchId)) {
