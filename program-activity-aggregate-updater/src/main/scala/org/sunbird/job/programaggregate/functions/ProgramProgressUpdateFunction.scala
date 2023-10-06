@@ -6,7 +6,7 @@ import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
 import org.sunbird.job.cache.RedisConnect
-import org.sunbird.job.aggregate.common.DeDupHelper
+import org.sunbird.job.programaggregate.common.DeDupHelper
 import org.sunbird.job.dedup.DeDupEngine
 import org.sunbird.job.programaggregate.domain._
 import org.sunbird.job.programaggregate.task.ProgramActivityAggregateUpdaterConfig

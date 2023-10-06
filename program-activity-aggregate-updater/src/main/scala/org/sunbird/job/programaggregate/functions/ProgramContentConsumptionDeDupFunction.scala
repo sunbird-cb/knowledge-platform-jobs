@@ -1,4 +1,4 @@
-package org.sunbird.job.aggregate.functions
+package org.sunbird.job.programaggregate.functions
 
 import java.lang.reflect.Type
 import java.security.MessageDigest
@@ -11,14 +11,14 @@ import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
 import org.sunbird.job.cache.RedisConnect
-import org.sunbird.job.aggregate.common.DeDupHelper
+import org.sunbird.job.programaggregate.common.DeDupHelper
 import org.sunbird.job.dedup.DeDupEngine
 import org.sunbird.job.{BaseProcessFunction, Metrics}
-import org.sunbird.job.aggregate.task.ActivityAggregateUpdaterConfig
+import org.sunbird.job.programaggregate.task.ProgramActivityAggregateUpdaterConfig
 
 import scala.collection.JavaConverters._
 
-class ContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpdaterConfig)(implicit val stringTypeInfo: TypeInformation[String]) extends BaseProcessFunction[util.Map[String, AnyRef], String](config) {
+class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpdaterConfig)(implicit val stringTypeInfo: TypeInformation[String]) extends BaseProcessFunction[util.Map[String, AnyRef], String](config) {
 
   val mapType: Type = new TypeToken[Map[String, AnyRef]]() {}.getType
   private[this] val logger = LoggerFactory.getLogger(classOf[ProgramContentConsumptionDeDupFunction])
