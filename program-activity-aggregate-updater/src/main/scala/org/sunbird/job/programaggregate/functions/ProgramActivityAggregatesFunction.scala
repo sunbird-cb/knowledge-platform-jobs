@@ -491,7 +491,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
     val courseMetadata = cache.getWithRetry(courseId)
     if (null == courseMetadata || courseMetadata.isEmpty) {
       val url =
-        config.contentReadURL + "/" + courseId + "?fields=identifier,name,primaryCategory"
+        config.contentReadURL + courseId + "?fields=identifier,name,primaryCategory"
       val response = getAPICall(url, "content")(config, httpUtil, metrics)
       val courseName = StringContext
         .processEscapes(
