@@ -53,7 +53,7 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
 
   override def metricsList(): List[String] = {
     List(config.totalEventsCount, config.dbReadCount, config.dbUpdateCount, config.failedEventCount, config.skippedEventCount, config.successEventCount,
-      config.cacheHitCount)
+      config.cacheHitCount, config.programCertIssueEventsCount)
   }
 
   override def processElement(event: Event,
