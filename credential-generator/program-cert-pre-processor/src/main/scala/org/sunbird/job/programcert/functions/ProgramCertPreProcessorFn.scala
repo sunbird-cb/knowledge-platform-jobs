@@ -17,7 +17,7 @@ import org.sunbird.job.programcert.task.ProgramCertPreProcessorConfig
 import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil}
 import org.sunbird.job.{BaseProcessKeyedFunction, Metrics}
 
-import java.util.UUID
+import java.util.{Date, UUID}
 import scala.collection.JavaConverters._
 import scala.collection.convert.ImplicitConversions.{`collection AsScalaIterable`, `seq AsJavaList`}
 import scala.collection.mutable
@@ -73,14 +73,26 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
               val leafNodeMap = mutable.Map[String, Int]()
 
               var isProgramCertificateToBeGenerated: Boolean = true;
+              var programCompletedOn: Date = null
               for (childNode <- contentDataForProgram) {
                 val primaryCategory = childNode.get(config.primaryCategory).asInstanceOf[String]
                 if (config.allowedPrimaryCategoryForProgram.contains(primaryCategory)) {
                   val courseId: String = childNode.get(config.identifier).asInstanceOf[String]
                   val userId: String = event.userId
                   val primaryFields = Map(config.dbUserId.toLowerCase() -> userId, config.dbCourseId.toLowerCase -> courseId)
-                  val isCertificateIssued = getCourseIssuedCertificateForUser(primaryFields)(metrics)
+                  val courseEnrollment = getCourseEnrollment(primaryFields)(metrics)
+                  val isCertificateIssued = courseEnrollment != null && !courseEnrollment.getList(config.issuedCertificates, TypeTokens.mapOf(classOf[String], classOf[String])).isEmpty
                   logger.info("Is Certificate Available for courseId: " + courseId + " userId:" + userId + " :" + isCertificateIssued)
+                  var courseCompletedOn: Date = null;
+                  if (isCertificateIssued) {
+                    courseCompletedOn = courseEnrollment.getTimestamp("completedon")
+                    if (programCompletedOn == null) {
+                      programCompletedOn = courseCompletedOn
+                    } else if (programCompletedOn.before(courseCompletedOn)) {
+                      programCompletedOn = courseCompletedOn
+                    }
+                  }
+
                   breakable {
                     if (!isCertificateIssued) {
                       isProgramCertificateToBeGenerated = false;
@@ -124,7 +136,7 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                 } else {
                   isProgramCertificateToBeGenerated = false
                 }
-                updateEnrolment(event.userId, batchId, courseParentId, programContentStatus, status, progressCount)(metrics)
+                updateEnrolment(event.userId, batchId, courseParentId, programContentStatus, status, progressCount, programCompletedOn)(metrics)
               }
 
               if (isProgramCertificateToBeGenerated) {
@@ -157,9 +169,8 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
     else new java.util.HashMap[String, AnyRef]()
   }
 
-  private def getCourseIssuedCertificateForUser(columns: Map[String, AnyRef])(implicit metrics: Metrics): Boolean = {
+  private def getCourseEnrollment(columns: Map[String, AnyRef])(implicit metrics: Metrics): Row = {
     logger.info("primary columns {}", columns)
-    var isCertificateIssued: Boolean = false;
     val selectWhere = QueryBuilder.select().all()
       .from(config.keyspace, config.userEnrolmentsTable).
       where()
@@ -174,18 +185,16 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
     logger.info("select query {}", selectWhere.toString)
     var row: java.util.List[Row] = cassandraUtil.find(selectWhere.toString)
     if (null != row) {
-      row = row.filter(x => x.getList(config.issuedCertificates, TypeTokens.mapOf(classOf[String], classOf[String])) != null).toList
       if (row.size() == 1) {
-        isCertificateIssued = true
+        row.asScala.get(0)
       } else {
         logger.error("More than one certificate" + columns)
-        isCertificateIssued = false
+        null
       }
     } else {
       logger.error("No Certificate Available" + columns)
-      isCertificateIssued = false
+      null
     }
-    isCertificateIssued
   }
 
   def getEnrolment(userId: String, programId: String)(implicit metrics: Metrics): Row = {
@@ -209,16 +218,20 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
     }
   }
 
-  def updateEnrolment(userId: String, batchId: String, programId: String, contentStatus: java.util.Map[String, Integer], status: Int, progress: Int)(implicit metrics: Metrics): Unit = {
+  def updateEnrolment(userId: String, batchId: String, programId: String, contentStatus: java.util.Map[String, Integer], status: Int, progress: Int, programCompletedOn: Date)(implicit metrics: Metrics): Unit = {
     logger.info("Enrolment updated for userId: " + userId + " batchId: " + batchId)
     val updateQuery = QueryBuilder.update(config.keyspace, config.userEnrolmentsTable)
       .`with`(QueryBuilder.set("status", status))
       .and(QueryBuilder.set("progress", progress))
       .and(QueryBuilder.set("contentstatus", contentStatus))
       .and(QueryBuilder.set("datetime", System.currentTimeMillis))
-      .where(QueryBuilder.eq("userid", userId))
+    if (status == 2) {
+      updateQuery.and(QueryBuilder.set("completedon", programCompletedOn))
+    }
+    updateQuery.where(QueryBuilder.eq("userid", userId))
       .and(QueryBuilder.eq("courseid", programId))
       .and(QueryBuilder.eq("batchid", batchId))
+
     val result = cassandraUtil.upsert(updateQuery.toString)
     if (result) {
       metrics.incCounter(config.dbUpdateCount)
