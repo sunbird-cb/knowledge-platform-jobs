@@ -57,16 +57,23 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
   }
 
   override def process(key: Int,
-              context: ProcessWindowFunction[Map[String, AnyRef], String, Int, GlobalWindow]#Context,
-              events: Iterable[Map[String, AnyRef]],
-              metrics: Metrics): Unit = {
+                       context: ProcessWindowFunction[Map[String, AnyRef], String, Int, GlobalWindow]#Context,
+                       events: Iterable[Map[String, AnyRef]],
+                       metrics: Metrics): Unit = {
 
     logger.debug("Input Events Size: " + events.toList.size)
 
-    val eventsInfo = events.filter(event => getProgramEvent(event)(metrics, config, httpUtil, cache) != null)
-    val inputUserConsumptionList: List[UserContentConsumption] = eventsInfo
-        .groupBy(key => (key.get(config.courseId), key.get(config.batchId), key.get(config.userId)))
-        .values.map(value => {
+    var updatedEventInfo: mutable.Buffer[Map[String, AnyRef]] = mutable.Buffer.empty
+    events.map(value => {
+      var eventInfoMap: mutable.Iterable[Map[String, AnyRef]] = getProgramEvent(value)(metrics, config, httpUtil, cache)
+      if (eventInfoMap != null) {
+        updatedEventInfo ++= eventInfoMap
+        updatedEventInfo
+      }
+    })
+    val inputUserConsumptionList: List[UserContentConsumption] = updatedEventInfo
+      .groupBy(key => (key.get(config.courseId), key.get(config.batchId), key.get(config.userId)))
+      .values.map(value => {
         metrics.incCounter(config.processedEnrolmentCount)
         val batchId = value.head(config.batchId).toString
         val userId = value.head(config.userId).toString
@@ -76,7 +83,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
         UserContentConsumption(userId = userId, batchId = batchId, courseId = courseId, enrichedContents)
       }).toList
 
-    if(inputUserConsumptionList.isEmpty)
+    if (inputUserConsumptionList.isEmpty)
       return
     // Fetch the content status from the table in batch format
     val dbUserConsumption: Map[String, UserContentConsumption] = getContentStatusFromDB(events.toList, metrics)
@@ -216,15 +223,19 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
     val processedContents = inputData.contents.map {
       case (contentId, inputCC) => {
         // ContentStatus from DB.
-          val dbCC: ContentStatus = dbContents.getOrElse(contentId, ContentStatus(contentId, 0, 0, 0))
-          val finalStatus = List(inputCC.status, dbCC.status).max // Final status is max of DB and Input ContentStatus.
-          val views = sumFunc(List(inputCC, dbCC), (x: ContentStatus) => { x.viewCount }) // View Count is sum of DB and Input ContentStatus.
-          val completion = sumFunc(List(inputCC, dbCC), (x: ContentStatus) => { x.completedCount }) // Completed Count is sum of DB and Input ContentStatus.
-          val eventsFor: List[String] = getEventActions(dbCC, inputCC)
-          // Merged ContentStatus.
-          (contentId, ContentStatus(contentId, finalStatus, completion, views, inputCC.fromInput, eventsFor))
-        }
+        val dbCC: ContentStatus = dbContents.getOrElse(contentId, ContentStatus(contentId, 0, 0, 0))
+        val finalStatus = List(inputCC.status, dbCC.status).max // Final status is max of DB and Input ContentStatus.
+        val views = sumFunc(List(inputCC, dbCC), (x: ContentStatus) => {
+          x.viewCount
+        }) // View Count is sum of DB and Input ContentStatus.
+        val completion = sumFunc(List(inputCC, dbCC), (x: ContentStatus) => {
+          x.completedCount
+        }) // Completed Count is sum of DB and Input ContentStatus.
+        val eventsFor: List[String] = getEventActions(dbCC, inputCC)
+        // Merged ContentStatus.
+        (contentId, ContentStatus(contentId, finalStatus, completion, views, inputCC.fromInput, eventsFor))
       }
+    }
 
     val existingContents = processedContents.keys.toList
     val remainingContents = dbData.contents.filterKeys(key => !existingContents.contains(key))
@@ -329,8 +340,8 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
    */
   def getContentStatusFromEvent(contents: List[Map[String, AnyRef]]): Map[String, ContentStatus] = {
     val enrichedContents = contents.map(content => {
-      (content.getOrElse(config.contentId, "").asInstanceOf[String], content.getOrElse(config.status, 0).asInstanceOf[Number])
-    }).filter(t => StringUtils.isNotBlank(t._1) && (t._2.intValue() > 0))
+        (content.getOrElse(config.contentId, "").asInstanceOf[String], content.getOrElse(config.status, 0).asInstanceOf[Number])
+      }).filter(t => StringUtils.isNotBlank(t._1) && (t._2.intValue() > 0))
       .map(x => {
         val completedCount = if (x._2.intValue() == 2) 1 else 0
         ContentStatus(x._1, x._2.intValue(), completedCount)
@@ -418,16 +429,17 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
   }
 
   def getDBStatus(collectionId: String): String = {
-    val requestBody = s"""{
-                       |    "request": {
-                       |        "filters": {
-                       |            "objectType": "Collection",
-                       |            "identifier": "$collectionId",
-                       |            "status": ["Live", "Unlisted", "Retired"]
-                       |        },
-                       |        "fields": ["status"]
-                       |    }
-                       |}""".stripMargin
+    val requestBody =
+      s"""{
+         |    "request": {
+         |        "filters": {
+         |            "objectType": "Collection",
+         |            "identifier": "$collectionId",
+         |            "status": ["Live", "Unlisted", "Retired"]
+         |        },
+         |        "fields": ["status"]
+         |    }
+         |}""".stripMargin
 
     val response = httpUtil.post(config.searchAPIURL, requestBody)
     if (response.status == 200) {
@@ -477,7 +489,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
       logger.info("PrimaryCategory value is :" + primaryCategory + ", for Id: " + identifier)
     } else {
       logger.error("Failed to read content details for Id: " + identifier)
-    }    
+    }
     logger.info("is program activity aggregator is skipping this event ? " + isValidProgram)
     isValidProgram
   }
@@ -567,25 +579,46 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
     config: ProgramActivityAggregateUpdaterConfig,
     httpUtil: HttpUtil,
     cache: DataCache
-  ): Map[String, AnyRef] = {
-    var eventInfoMap: mutable.Map[String, AnyRef] = mutable.Map.empty[String, AnyRef]
+  ): mutable.Iterable[Map[String, AnyRef]] = {
+    var eventInfoMap: mutable.ListBuffer[Map[String, AnyRef]] = mutable.ListBuffer.empty[Map[String, AnyRef]]
     val userId: String = eventData.getOrElse(config.userId, "").asInstanceOf[String]
     val courseId: String = eventData.getOrElse(config.courseId, "").asInstanceOf[String]
     val batchId: String = eventData.getOrElse(config.batchId, "").asInstanceOf[String]
-    if ((verifyPrimaryCategory(courseId)(metrics, config, httpUtil, cache))) {
-      eventInfoMap ++= eventData
+    val primaryCategory: String = eventData.getOrElse(config.primaryCategory, "").asInstanceOf[String]
+    val parentCollections: List[String] = eventData.getOrElse(config.parentCollections, List.empty[String]).asInstanceOf[List[String]]
+    if (config.validProgramPrimaryCategory.contains(primaryCategory)) {
+      eventInfoMap += eventData
+      var eventInfo : Map[String, AnyRef] = Map.empty
+      eventInfo ++= eventData
       if (StringUtils.isEmpty(batchId)) {
         val row = getEnrolment(userId, courseId)(metrics)
         if (row != null) {
-          eventInfoMap += ("batchId" -> row.getString("batchid"))
+          eventInfo += ("batchId" -> row.getString("batchid"))
         } else {
           return null;
         }
+        eventInfoMap += eventInfo
       }
-      eventInfoMap.toMap
+    } else if (StringUtils.isNotBlank(primaryCategory) && (primaryCategory.equals("Course") || primaryCategory.equals("Standalone Assessment"))
+      && !parentCollections.isEmpty) {
+      eventInfoMap += eventData
+      for (parentId <- parentCollections) {
+        val row = getEnrolment(userId, parentId)(metrics)
+        if (row != null) {
+          val contentConsumption: List[String] = eventData.getOrElse(config.contents, List.empty[String]).asInstanceOf[List[String]]
+          val eventInfoProgram = Map[String, AnyRef]("edata" ->
+            Map("contents" -> contentConsumption,
+              "userId" -> "${userId}",
+              "action" -> "batch-enrolment-update",
+              "iteration" -> 1, "batchId" -> row.getString("batchid"),
+              "courseId" -> parentId))
+          eventInfoMap += eventInfoProgram
+        }
+      }
     } else {
-      null;
+      logger.error("Not Valid Primary Category: " + primaryCategory + " parentCollections: " + parentCollections)
     }
+    eventInfoMap
   }
 
   def getEnrolment(userId: String, courseId: String)(implicit metrics: Metrics) = {
