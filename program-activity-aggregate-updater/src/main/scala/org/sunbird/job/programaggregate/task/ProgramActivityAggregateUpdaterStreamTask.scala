@@ -8,7 +8,7 @@ import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.streaming.api.scala._
 import org.sunbird.job.programaggregate.domain.CollectionProgress
 import org.sunbird.job.connector.FlinkKafkaConnector
-import org.sunbird.job.programaggregate.functions.{ProgramContentConsumptionDeDupFunction, ProgramActivityAggregatesFunction}
+import org.sunbird.job.programaggregate.functions.{ProgramActivityAggregatesFunction, ProgramContentConsumptionDeDupFunction, ProgramProgressCompleteFunction, ProgramProgressUpdateFunction}
 import org.sunbird.job.util.{FlinkUtil, HttpUtil}
 
 import java.io.File
@@ -40,6 +40,16 @@ class ProgramActivityAggregateUpdaterStreamTask(config: ProgramActivityAggregate
       .name(config.programactivityAggregateUpdaterProducer).uid(config.programactivityAggregateUpdaterProducer)
     progressStream.getSideOutput(config.failedEventOutputTag).addSink(kafkaConnector.kafkaStringSink(config.kafkaFailedEventTopic))
       .name(config.programactivityAggFailedEventProducer).uid(config.programactivityAggFailedEventProducer)
+
+    progressStream.getSideOutput(config.collectionUpdateOutputTag).process(new ProgramProgressUpdateFunction(config))
+      .name(config.collectionProgressUpdateFn).uid(config.collectionProgressUpdateFn).setParallelism(config.enrolmentCompleteParallelism)
+    val enrolmentCompleteStream = progressStream.getSideOutput(config.collectionCompleteOutputTag).process(new ProgramProgressCompleteFunction(config))
+      .name(config.collectionCompleteFn).uid(config.collectionCompleteFn).setParallelism(config.enrolmentCompleteParallelism)
+
+    /*enrolmentCompleteStream.getSideOutput(config.certIssueOutputTag).addSink(kafkaConnector.kafkaStringSink(config.kafkaCertIssueTopic))
+      .name(config.certIssueEventProducer).uid(config.certIssueEventProducer)
+    enrolmentCompleteStream.getSideOutput(config.auditEventOutputTag).addSink(kafkaConnector.kafkaStringSink(config.kafkaAuditEventTopic))
+      .name(config.enrolmentCompleteEventProducer).uid(config.enrolmentCompleteEventProducer)*/
 
     env.execute(config.jobName)
   }
