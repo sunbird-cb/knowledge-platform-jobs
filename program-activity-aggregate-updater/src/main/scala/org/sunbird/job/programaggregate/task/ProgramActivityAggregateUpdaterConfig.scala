@@ -144,6 +144,7 @@ class ProgramActivityAggregateUpdaterConfig(override val config: Config) extends
   val defaultHeaders = Map[String, String]("Content-Type" -> "application/json")
   val userAccBlockedErrCode = "UOS_USRRED0006"
   val name: String = "name"
+  val validProgramPrimaryCategory = List[String]("Program","Curated Program","Blended Program")
 
 
 }
