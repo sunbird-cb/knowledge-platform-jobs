@@ -63,7 +63,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
 
     logger.debug("Input Events Size: " + events.toList.size)
     logger.info("Input Event: " + events)
-    var updatedEventInfo: mutable.Buffer[Map[String, AnyRef]] = mutable.Buffer.empty
+    var updatedEventInfo: mutable.ListBuffer[Map[String, AnyRef]] = mutable.ListBuffer.empty[Map[String, AnyRef]]
     events.map(value => {
       var eventInfoMap: mutable.Iterable[Map[String, AnyRef]] = getProgramEvent(value)(metrics, config, httpUtil, cache)
       logger.info("EventInfoMap: " + eventInfoMap)
@@ -72,7 +72,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
         updatedEventInfo
       }
     })
-    logger.info("Updated Event Info: "+ updatedEventInfo)
+    logger.info("Updated Event Info: " + updatedEventInfo)
     val inputUserConsumptionList: List[UserContentConsumption] = updatedEventInfo
       .groupBy(key => (key.get(config.courseId), key.get(config.batchId), key.get(config.userId)))
       .values.map(value => {
@@ -84,7 +84,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
         val enrichedContents = getContentStatusFromEvent(userConsumedContents)
         UserContentConsumption(userId = userId, batchId = batchId, courseId = courseId, enrichedContents)
       }).toList
-
+    logger.info("the input user ConsumptionList:" + inputUserConsumptionList)
     if (inputUserConsumptionList.isEmpty)
       return
     // Fetch the content status from the table in batch format
@@ -588,10 +588,10 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
     val batchId: String = eventData.getOrElse(config.batchId, "").asInstanceOf[String]
     val primaryCategory: String = eventData.getOrElse(config.primaryCategory, "").asInstanceOf[String]
     val parentCollections: java.util.List[String] = eventData.getOrElse(config.parentCollections, new java.util.ArrayList[String]).asInstanceOf[java.util.List[String]]
-    logger.info("Inside Process Method" + primaryCategory + " ParentCollections: " + parentCollections )
+    logger.info("Inside Process Method" + primaryCategory + " ParentCollections: " + parentCollections)
     if (config.validProgramPrimaryCategory.contains(primaryCategory)) {
       eventInfoMap += eventData
-      var eventInfo : Map[String, AnyRef] = Map.empty
+      var eventInfo: Map[String, AnyRef] = Map.empty
       eventInfo ++= eventData
       if (StringUtils.isEmpty(batchId)) {
         val row = getEnrolment(userId, courseId)(metrics)
@@ -610,11 +610,11 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
         if (row != null) {
           val contentConsumption: List[String] = eventData.getOrElse(config.contents, List.empty[String]).asInstanceOf[List[String]]
           val eventInfoProgram = Map[String, AnyRef]("contents" -> contentConsumption,
-              "userId" -> userId,
-              "action" -> "batch-enrolment-update",
-              "iteration" -> 1.asInstanceOf[Integer],
-              "batchId" -> row.getString("batchid"),
-              "courseId" -> parentId)
+            "userId" -> userId,
+            "action" -> "batch-enrolment-update",
+            "iteration" -> 1.asInstanceOf[Integer],
+            "batchId" -> row.getString("batchid"),
+            "courseId" -> parentId)
           eventInfoMap += eventInfoProgram
           logger.info("EventMapInfoProgram:" + eventInfoProgram)
         }
