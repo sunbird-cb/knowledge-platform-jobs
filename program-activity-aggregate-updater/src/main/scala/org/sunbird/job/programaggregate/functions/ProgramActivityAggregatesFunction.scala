@@ -587,7 +587,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
     val courseId: String = eventData.getOrElse(config.courseId, "").asInstanceOf[String]
     val batchId: String = eventData.getOrElse(config.batchId, "").asInstanceOf[String]
     val primaryCategory: String = eventData.getOrElse(config.primaryCategory, "").asInstanceOf[String]
-    val parentCollections: List[String] = eventData.getOrElse(config.parentCollections, List.empty[String]).asInstanceOf[List[String]]
+    val parentCollections: java.util.List[String] = eventData.getOrElse(config.parentCollections, new java.util.ArrayList[String]).asInstanceOf[java.util.List[String]]
     logger.info("Inside Process Method" + primaryCategory + " ParentCollections: " + parentCollections )
     if (config.validProgramPrimaryCategory.contains(primaryCategory)) {
       eventInfoMap += eventData
@@ -603,9 +603,9 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
         eventInfoMap += eventInfo
       }
     } else if (("Course".equalsIgnoreCase(primaryCategory) || ("Standalone Assessment".equalsIgnoreCase(primaryCategory)))
-      && !parentCollections.isEmpty) {
+      && CollectionUtils.isNotEmpty(parentCollections)) {
       eventInfoMap += eventData
-      for (parentId <- parentCollections) {
+      for (parentId <- parentCollections.asScala.toList) {
         val row = getEnrolment(userId, parentId)(metrics)
         if (row != null) {
           val contentConsumption: List[String] = eventData.getOrElse(config.contents, List.empty[String]).asInstanceOf[List[String]]
