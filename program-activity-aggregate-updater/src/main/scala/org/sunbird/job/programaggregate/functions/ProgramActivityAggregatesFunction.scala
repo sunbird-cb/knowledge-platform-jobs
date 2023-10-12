@@ -62,15 +62,17 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
                        metrics: Metrics): Unit = {
 
     logger.debug("Input Events Size: " + events.toList.size)
-
+    logger.info("Input Event: " + events)
     var updatedEventInfo: mutable.Buffer[Map[String, AnyRef]] = mutable.Buffer.empty
     events.map(value => {
       var eventInfoMap: mutable.Iterable[Map[String, AnyRef]] = getProgramEvent(value)(metrics, config, httpUtil, cache)
+      logger.info("EventInfoMap: " + eventInfoMap)
       if (eventInfoMap != null) {
         updatedEventInfo ++= eventInfoMap
         updatedEventInfo
       }
     })
+    logger.info("Updated Event Info: "+ updatedEventInfo)
     val inputUserConsumptionList: List[UserContentConsumption] = updatedEventInfo
       .groupBy(key => (key.get(config.courseId), key.get(config.batchId), key.get(config.userId)))
       .values.map(value => {
@@ -586,6 +588,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
     val batchId: String = eventData.getOrElse(config.batchId, "").asInstanceOf[String]
     val primaryCategory: String = eventData.getOrElse(config.primaryCategory, "").asInstanceOf[String]
     val parentCollections: List[String] = eventData.getOrElse(config.parentCollections, List.empty[String]).asInstanceOf[List[String]]
+    logger.info("Inside Process Method" + primaryCategory + " ParentCollections: " + parentCollections )
     if (config.validProgramPrimaryCategory.contains(primaryCategory)) {
       eventInfoMap += eventData
       var eventInfo : Map[String, AnyRef] = Map.empty
@@ -599,7 +602,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
         }
         eventInfoMap += eventInfo
       }
-    } else if (StringUtils.isNotBlank(primaryCategory) && (primaryCategory.equals("Course") || primaryCategory.equals("Standalone Assessment"))
+    } else if (("Course".equalsIgnoreCase(primaryCategory) || ("Standalone Assessment".equalsIgnoreCase(primaryCategory)))
       && !parentCollections.isEmpty) {
       eventInfoMap += eventData
       for (parentId <- parentCollections) {
@@ -608,11 +611,12 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
           val contentConsumption: List[String] = eventData.getOrElse(config.contents, List.empty[String]).asInstanceOf[List[String]]
           val eventInfoProgram = Map[String, AnyRef]("edata" ->
             Map("contents" -> contentConsumption,
-              "userId" -> "${userId}",
+              "userId" -> userId,
               "action" -> "batch-enrolment-update",
               "iteration" -> 1, "batchId" -> row.getString("batchid"),
               "courseId" -> parentId))
           eventInfoMap += eventInfoProgram
+          logger.info("EventMapInfoProgram:" + eventInfoProgram)
         }
       }
     } else {
