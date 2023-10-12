@@ -80,6 +80,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
         val batchId = value.head(config.batchId).toString
         val userId = value.head(config.userId).toString
         val courseId = value.head(config.courseId).toString
+        logger.info("courseId: " + courseId + " batchId: " + batchId)
         val userConsumedContents = value.head(config.contents).asInstanceOf[List[Map[String, AnyRef]]]
         val enrichedContents = getContentStatusFromEvent(userConsumedContents)
         UserContentConsumption(userId = userId, batchId = batchId, courseId = courseId, enrichedContents)
@@ -604,7 +605,6 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
       }
     } else if (("Course".equalsIgnoreCase(primaryCategory) || ("Standalone Assessment".equalsIgnoreCase(primaryCategory)))
       && CollectionUtils.isNotEmpty(parentCollections)) {
-      eventInfoMap += eventData
       for (parentId <- parentCollections.asScala.toList) {
         val row = getEnrolment(userId, parentId)(metrics)
         if (row != null) {
