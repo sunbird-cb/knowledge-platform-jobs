@@ -609,12 +609,12 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
         val row = getEnrolment(userId, parentId)(metrics)
         if (row != null) {
           val contentConsumption: List[String] = eventData.getOrElse(config.contents, List.empty[String]).asInstanceOf[List[String]]
-          val eventInfoProgram = Map[String, AnyRef]("edata" ->
-            Map("contents" -> contentConsumption,
+          val eventInfoProgram = Map[String, AnyRef]("contents" -> contentConsumption,
               "userId" -> userId,
               "action" -> "batch-enrolment-update",
-              "iteration" -> 1, "batchId" -> row.getString("batchid"),
-              "courseId" -> parentId))
+              "iteration" -> 1.asInstanceOf[Integer],
+              "batchId" -> row.getString("batchid"),
+              "courseId" -> parentId)
           eventInfoMap += eventInfoProgram
           logger.info("EventMapInfoProgram:" + eventInfoProgram)
         }
