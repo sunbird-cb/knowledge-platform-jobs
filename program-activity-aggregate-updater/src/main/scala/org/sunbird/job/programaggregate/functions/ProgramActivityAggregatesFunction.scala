@@ -614,7 +614,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
       for (parentId <- parentCollections.asScala.toList) {
         val row = getEnrolment(userId, parentId)(metrics)
         if (row != null) {
-          val contentConsumption: List[String] = eventData.getOrElse(config.contents, List.empty[String]).asInstanceOf[List[String]]
+          val contentConsumption = eventData.getOrElse(config.contents, List[Map[String,AnyRef]]()).asInstanceOf[List[Map[String, AnyRef]]]
           val eventInfoProgram = Map[String, AnyRef]("contents" -> contentConsumption,
             "userId" -> userId,
             "action" -> "batch-enrolment-update",
