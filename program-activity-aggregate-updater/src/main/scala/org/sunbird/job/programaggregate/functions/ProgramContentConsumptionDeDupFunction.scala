@@ -70,14 +70,8 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
         }
       })
       logger.info("UpdatedEventInfoMap: " + updatedEventInfo)
-      val filteredContents = updatedEventInfo.filter(x => x.get("status") == 2).toList
-      if (filteredContents.size == 0)
-        metrics.incCounter(config.skipEventsCount)
-      else
-        metrics.incCounter(config.batchEnrolmentUpdateEventCount)
-      filteredContents.map(c => {
-        (eData + ("contents" -> List(Map("contentId" -> c.get("contentId"), "status" -> c.get("status"))))).toMap
-      }).filter(e => discardDuplicates(e)).foreach(d => context.output(config.uniqueConsumptionOutput, d))
+
+     updatedEventInfo.filter(e => discardDuplicates(e)).foreach(d => context.output(config.uniqueConsumptionOutput, d))
     } else metrics.incCounter(config.skipEventsCount)
   }
 
@@ -117,24 +111,14 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
     logger.info("Inside Process Method" + primaryCategory + " ParentCollections: " + parentCollections)
     if (config.validProgramPrimaryCategory.contains(primaryCategory)) {
       eventInfoMap += eventData
-      var eventInfo: Map[String, AnyRef] = Map.empty
-      eventInfo ++= eventData
-      if (StringUtils.isEmpty(batchId)) {
-        val row = getEnrolment(userId, courseId)(metrics)
-        if (row != null) {
-          eventInfo += ("batchId" -> row.getString("batchid"))
-        } else {
-          return null;
-        }
-        eventInfoMap += eventInfo
-      }
     } else if (("Course".equalsIgnoreCase(primaryCategory) || ("Standalone Assessment".equalsIgnoreCase(primaryCategory)))
       && !parentCollections.isEmpty) {
       for (parentId <- parentCollections) {
         val row = getEnrolment(userId, parentId)(metrics)
         if (row != null) {
           val contentConsumption = eventData.getOrElse(config.contents, List[Map[String, AnyRef]]()).asInstanceOf[List[Map[String, AnyRef]]]
-          val eventInfoProgram = Map[String, AnyRef]("contents" -> contentConsumption,
+          val filteredContents = contentConsumption.filter(x => x.get("status") == 2)
+          val eventInfoProgram = Map[String, AnyRef]("contents" -> filteredContents,
             "userId" -> userId,
             "action" -> "batch-enrolment-update",
             "iteration" -> 1.asInstanceOf[Integer],
