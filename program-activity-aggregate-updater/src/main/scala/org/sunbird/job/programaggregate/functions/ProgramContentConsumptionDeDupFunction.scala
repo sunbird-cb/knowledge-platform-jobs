@@ -61,14 +61,12 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
       val contents = eData.getOrElse(config.contents, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.List[java.util.Map[String, AnyRef]]].asScala
       logger.info("Input Event: " + contents)
       var updatedEventInfo: mutable.ListBuffer[Map[String, AnyRef]] = mutable.ListBuffer.empty[Map[String, AnyRef]]
-      contents.map(value => {
-        var eventInfoMap: mutable.Iterable[Map[String, AnyRef]] = getProgramEvent(value.asScala.toMap)(metrics, config, httpUtil, cache)
-        logger.info("EventInfoMap: " + eventInfoMap)
-        if (eventInfoMap != null) {
-          updatedEventInfo ++= eventInfoMap
-          updatedEventInfo
-        }
-      })
+      var eventInfoMap: mutable.Iterable[Map[String, AnyRef]] = getProgramEvent(event.asScala.toMap)(metrics, config, httpUtil, cache)
+      logger.info("EventInfoMap: " + eventInfoMap)
+      if (eventInfoMap != null) {
+        updatedEventInfo ++= eventInfoMap
+      }
+
       logger.info("UpdatedEventInfoMap: " + updatedEventInfo)
 
      updatedEventInfo.filter(e => discardDuplicates(e)).foreach(d => context.output(config.uniqueConsumptionOutput, d))
