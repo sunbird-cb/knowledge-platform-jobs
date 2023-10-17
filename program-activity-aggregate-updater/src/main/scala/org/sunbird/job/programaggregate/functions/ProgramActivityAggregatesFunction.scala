@@ -60,20 +60,8 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
                        context: ProcessWindowFunction[Map[String, AnyRef], String, Int, GlobalWindow]#Context,
                        events: Iterable[Map[String, AnyRef]],
                        metrics: Metrics): Unit = {
-
-    logger.debug("Input Events Size: " + events.toList.size)
-    logger.info("Input Event: " + events)
-    var updatedEventInfo: mutable.ListBuffer[Map[String, AnyRef]] = mutable.ListBuffer.empty[Map[String, AnyRef]]
-    events.map(value => {
-      var eventInfoMap: mutable.Iterable[Map[String, AnyRef]] = getProgramEvent(value)(metrics, config, httpUtil, cache)
-      logger.info("EventInfoMap: " + eventInfoMap)
-      if (eventInfoMap != null) {
-        updatedEventInfo ++= eventInfoMap
-        updatedEventInfo
-      }
-    })
-    logger.info("Updated Event Info: " + updatedEventInfo)
-    val inputUserConsumptionList: List[UserContentConsumption] = updatedEventInfo
+    logger.info("Event Info Inside ProgramActivityAggregrator: " + events)
+    val inputUserConsumptionList: List[UserContentConsumption] = events
       .groupBy(key => (key.get(config.courseId), key.get(config.batchId), key.get(config.userId)))
       .values.map(value => {
         metrics.incCounter(config.processedEnrolmentCount)
@@ -474,7 +462,7 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
     } else cacheStatus
   }
 
-  def verifyPrimaryCategory(identifier: String)(
+/*  def verifyPrimaryCategory(identifier: String)(
     metrics: Metrics,
     config: ProgramActivityAggregateUpdaterConfig,
     httpUtil: HttpUtil,
@@ -646,6 +634,6 @@ class ProgramActivityAggregatesFunction(config: ProgramActivityAggregateUpdaterC
       .and(QueryBuilder.eq("courseid", courseId))
     metrics.incCounter(config.dbReadCount)
     cassandraUtil.findOne(selectWhere.toString)
-  }
+  }*/
 }
 
