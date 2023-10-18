@@ -63,7 +63,7 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
       var updatedEventInfo: mutable.ListBuffer[Map[String, AnyRef]] = mutable.ListBuffer.empty[Map[String, AnyRef]]
       var eventInfoMap: mutable.Iterable[Map[String, AnyRef]] = getProgramEvent(eData.toMap)(metrics, config, httpUtil, cache)
       logger.info("EventInfoMap: " + eventInfoMap)
-      if (eventInfoMap != null) {
+      if (eventInfoMap.nonEmpty) {
         updatedEventInfo ++= eventInfoMap
       }
 
@@ -117,14 +117,16 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
         if (row != null) {
           val contentConsumption = eventData.getOrElse(config.contents, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.List[java.util.Map[String, AnyRef]]].asScala.map(_.asScala.toMap)
           val filteredContents = contentConsumption.filter(x => x.get("status") == 2)
-          val eventInfoProgram = Map[String, AnyRef]("contents" -> filteredContents.toList,
-            "userId" -> userId,
-            "action" -> "batch-enrolment-update",
-            "iteration" -> 1.asInstanceOf[Integer],
-            "batchId" -> row.getString("batchid"),
-            "courseId" -> parentId)
-          eventInfoMap += eventInfoProgram
-          logger.info("EventMapInfoProgram:" + eventInfoProgram)
+          if(filteredContents.nonEmpty) {
+            val eventInfoProgram = Map[String, AnyRef]("contents" -> filteredContents,
+              "userId" -> userId,
+              "action" -> "batch-enrolment-update",
+              "iteration" -> 1.asInstanceOf[Integer],
+              "batchId" -> row.getString("batchid"),
+              "courseId" -> parentId)
+            eventInfoMap += eventInfoProgram
+            logger.info("EventMapInfoProgram:" + eventInfoProgram)
+          }
         }
       }
     } else {
