@@ -122,7 +122,7 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
         if (row != null) {
           val contentConsumption = eventData.getOrElse(config.contents, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.List[java.util.Map[String, AnyRef]]].asScala.map(_.asScala.toMap).toList
           logger.info("contentConsumption: " + contentConsumption)
-          val filteredContents = contentConsumption.filter(x => x.get("status").asInstanceOf[Integer] == 2)
+          val filteredContents = contentConsumption.filter(x => x.get("status").asInstanceOf[Double].toInt == 2)
           logger.info("filteredContents: " + filteredContents)
           if(filteredContents.nonEmpty) {
             val eventInfoProgram = Map[String, AnyRef]("contents" -> filteredContents,
