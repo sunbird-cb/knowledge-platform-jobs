@@ -118,9 +118,12 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
       && !parentCollections.isEmpty) {
       for (parentId <- parentCollections) {
         val row = getEnrolment(userId, parentId)(metrics)
+        logger.info("Enrollment: " + row)
         if (row != null) {
           val contentConsumption = eventData.getOrElse(config.contents, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.List[java.util.Map[String, AnyRef]]].asScala.map(_.asScala.toMap).toList
+          logger.info("contentConsumption: " + contentConsumption)
           val filteredContents = contentConsumption.filter(x => x.get("status") == 2)
+          logger.info("filteredContents: " + filteredContents)
           if(filteredContents.nonEmpty) {
             val eventInfoProgram = Map[String, AnyRef]("contents" -> filteredContents,
               "userId" -> userId,
