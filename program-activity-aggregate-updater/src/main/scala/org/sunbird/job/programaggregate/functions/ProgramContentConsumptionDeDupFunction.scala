@@ -82,6 +82,7 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
       val userId = event.getOrElse(config.userId, "").asInstanceOf[String]
       val courseId = event.getOrElse(config.courseId, "").asInstanceOf[String]
       val batchId = event.getOrElse(config.batchId, "").asInstanceOf[String]
+      logger.info("Event List inside discardDuplicates" + event)
       val contents = event.getOrElse(config.contents, List[Map[String,AnyRef]]()).asInstanceOf[List[Map[String, AnyRef]]]
       if (contents.nonEmpty) {
         val content = contents.head
@@ -115,7 +116,7 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
       for (parentId <- parentCollections) {
         val row = getEnrolment(userId, parentId)(metrics)
         if (row != null) {
-          val contentConsumption = eventData.getOrElse(config.contents, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.List[java.util.Map[String, AnyRef]]].asScala.map(_.asScala.toMap)
+          val contentConsumption = eventData.getOrElse(config.contents, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.List[java.util.Map[String, AnyRef]]].asScala.map(_.asScala.toMap).toList
           val filteredContents = contentConsumption.filter(x => x.get("status") == 2)
           if(filteredContents.nonEmpty) {
             val eventInfoProgram = Map[String, AnyRef]("contents" -> filteredContents,
