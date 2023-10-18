@@ -110,7 +110,10 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
     val parentCollections: List[String] = contentObj.get(config.parentCollections).asInstanceOf[List[String]]
     logger.info("Inside Process Method" + primaryCategory + " ParentCollections: " + parentCollections)
     if (config.validProgramPrimaryCategory.contains(primaryCategory)) {
-      eventInfoMap += eventData
+      val contentConsumption = eventData.getOrElse(config.contents, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.List[java.util.Map[String, AnyRef]]].asScala.map(_.asScala.toMap).toList
+      val mergedMap = eventData.updated(config.contents, contentConsumption)
+      eventInfoMap += mergedMap
+      logger.info("Inside Valid Primary " + mergedMap)
     } else if (("Course".equalsIgnoreCase(primaryCategory) || ("Standalone Assessment".equalsIgnoreCase(primaryCategory)))
       && !parentCollections.isEmpty) {
       for (parentId <- parentCollections) {
