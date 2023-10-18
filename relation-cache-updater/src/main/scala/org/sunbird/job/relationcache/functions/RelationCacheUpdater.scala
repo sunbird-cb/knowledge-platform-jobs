@@ -70,6 +70,8 @@ class RelationCacheUpdater(config: RelationCacheUpdaterConfig)
                 logger.info("Units cache updating for: "+ unitsMap.size)
                 storeDataInCache("", "", unitsMap, collectionCache)(metrics)
                 metrics.incCounter(config.successEventCount)
+                val childrenCoursesMap = getOrComposeChildrenCoursesList(rootId, hierarchy)
+                storeDataInCache(rootId, "childrenCourses", childrenCoursesMap, collectionCache)(metrics)
             } else {
                 logger.warn("Hierarchy Empty: " + rootId)
                 metrics.incCounter(config.skippedEventCount)
@@ -193,5 +195,20 @@ class RelationCacheUpdater(config: RelationCacheUpdaterConfig)
                 else Map()) ++ children.flatMap(child => getUnitMaps(child)).toMap
             else Map()
         } else Map()
+    }
+
+    private def getOrComposeChildrenCoursesList(identifier: String, hierarchy: java.util.Map[String, AnyRef]): Map[String, List[String]] = {
+        val children = getChildren(hierarchy)
+        val resultList: List[String] = children.asScala.flatMap { childMap =>
+            childMap.get("primaryCategory") match {
+                case Some(primaryCategory: String) if primaryCategory == "Course" =>
+                    childMap.get("identifier") match {
+                        case Some(identifier: String) => Some(identifier)
+                        case _ => None
+                    }
+                case _ => None
+            }
+        }.toList
+        Map(identifier -> resultList)
     }
 }
