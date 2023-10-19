@@ -252,7 +252,7 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
   }
 
   def getAllEnrolments(userId: String)(implicit metrics: Metrics): java.util.List[Row] = {
-    val selectWhere: Select.Where = QueryBuilder.select(config.dbUserId, config.dbCourseId, config.dbBatchId, config.contentStatus, config.progress, config.issuedCertificates, "completedon")
+    val selectWhere: Select.Where = QueryBuilder.select(config.dbUserId, config.dbCourseId, config.dbBatchId, config.contentStatus, config.progress, config.issuedCertificates, "completedon", "active")
       .from(config.keyspace, config.userEnrolmentsTable).where()
     selectWhere.and(QueryBuilder.eq(config.dbUserId, userId))
     metrics.incCounter(config.dbReadCount)
