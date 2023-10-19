@@ -70,8 +70,8 @@ class RelationCacheUpdater(config: RelationCacheUpdaterConfig)
                 logger.info("Units cache updating for: "+ unitsMap.size)
                 storeDataInCache("", "", unitsMap, collectionCache)(metrics)
                 metrics.incCounter(config.successEventCount)
-                val childrenCoursesMap = getOrComposeChildrenCoursesList(rootId, hierarchy)
-                storeDataInCache(rootId, "childrenCourses", childrenCoursesMap, collectionCache)(metrics)
+                val childrenCoursesMap = getOrComposeChildrenCoursesList(hierarchy)
+                storeListDataInCache(rootId, "childrenCourses", childrenCoursesMap, collectionCache)(metrics)
             } else {
                 logger.warn("Hierarchy Empty: " + rootId)
                 metrics.incCounter(config.skippedEventCount)
@@ -197,18 +197,31 @@ class RelationCacheUpdater(config: RelationCacheUpdaterConfig)
         } else Map()
     }
 
-    private def getOrComposeChildrenCoursesList(identifier: String, hierarchy: java.util.Map[String, AnyRef]): Map[String, List[String]] = {
-        val children = getChildren(hierarchy)
-        val resultList: List[String] = children.asScala.flatMap { childMap =>
-            childMap.get("primaryCategory") match {
-                case Some(primaryCategory: String) if primaryCategory == "Course" =>
-                    childMap.get("identifier") match {
-                        case Some(identifier: String) => Some(identifier)
-                        case _ => None
-                    }
-                case _ => None
+
+    private def getOrComposeChildrenCoursesList(hierarchy: java.util.Map[String, AnyRef]): List[String] = {
+        val children = getChildren(hierarchy).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
+        val resultList = new java.util.ArrayList[String]()
+        val childrenScala = children.asScala.toList
+        for (childrenNode <- childrenScala) {
+            val primaryCategory = childrenNode.get("primaryCategory").asInstanceOf[String]
+            if (List("Course").contains(primaryCategory)) {
+                val courseId = childrenNode.get("identifier").asInstanceOf[String]
+                resultList.add(courseId)
             }
-        }.toList
-        Map(identifier -> resultList)
+        }
+        resultList.asScala.toList
+    }
+
+    private def storeListDataInCache(rootId: String, suffix: String, data: List[String], cache: DataCache)(implicit metrics: Metrics): Unit = {
+        val finalSuffix = Option(suffix).filter(StringUtils.isNotBlank).map(":" + _).getOrElse("")
+        val finalPrefix = Option(rootId).filter(StringUtils.isNotBlank).map(_ + ":").getOrElse("")
+        try {
+            cache.createListWithRetry(finalPrefix + rootId + finalSuffix, data)
+            metrics.incCounter(config.cacheWrite)
+        } catch {
+            case e: Throwable => metrics.incCounter(config.failedEventCount)
+                logger.info(s"Failed to write data for $suffix: $rootId with prefix: $finalPrefix and data: $data")
+                throw e
+        }
     }
 }
