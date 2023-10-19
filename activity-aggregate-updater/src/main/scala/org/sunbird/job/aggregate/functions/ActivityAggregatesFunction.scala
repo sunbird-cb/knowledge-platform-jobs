@@ -85,7 +85,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
     val userConsumptionQueries = finalUserConsumptionList.flatMap(userConsumption => getContentConsumptionQueries(userConsumption))
     updateDB(config.thresholdBatchWriteSize, userConsumptionQueries)(metrics)
 
-
+    logger.info("The value for userConsumptionQueries:" + userConsumptionQueries)
     val courseAggregations = finalUserConsumptionList.flatMap(userConsumption => {
 
       // Course Level Agg using the merged data of ContentConsumption per user, course and batch.
@@ -107,13 +107,13 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
 
     // Saving enrolment completion data.
     val collectionProgressList = courseAggregations.filter(agg => agg.collectionProgress.nonEmpty).map(agg => agg.collectionProgress.get)
-
+    logger.info("The value for collectionProgressList:" + collectionProgressList)
     val collectionProgressUpdateList = collectionProgressList.filter(progress => !progress.completed)
     context.output(config.collectionUpdateOutputTag, collectionProgressUpdateList)
-
+    logger.info("The value for collectionProgressUpdateList:" + collectionProgressUpdateList)
     val collectionProgressCompleteList = collectionProgressList.filter(progress => progress.completed)
     context.output(config.collectionCompleteOutputTag, collectionProgressCompleteList)
-
+    logger.info("The value for collectionProgressCompleteList:" + collectionProgressCompleteList)
     // Content AUDIT Event generation and pushing to output tag.
     finalUserConsumptionList.flatMap(userConsumption => contentAuditEvents(userConsumption)).foreach(event => context.output(config.auditEventOutputTag, gson.toJson(event)))
   }
