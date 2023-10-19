@@ -62,13 +62,14 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
     try {
       val getParentIdForCourse = event.parentCollections
       if (!getParentIdForCourse.isEmpty) {
+        val enrolmentRecords = getAllEnrolments(event.userId)(metrics)
         for (courseParentId <- getParentIdForCourse) {
-          val programEnrollmentStatus = getEnrolment(event.userId, courseParentId)(metrics)
+          val programEnrollmentRow = getEnrollmentRecord(enrolmentRecords, courseParentId)
           //if enrolled into program
-          if (null != programEnrollmentStatus && programEnrollmentStatus.getList(config.issuedCertificates, TypeTokens.mapOf(classOf[String], classOf[String])).isEmpty) {
+          if (programEnrollmentRow.isDefined && programEnrollmentRow.get.getList(config.issuedCertificates, TypeTokens.mapOf(classOf[String], classOf[String])).isEmpty) {
             val programHierarchy = getProgramChildren(courseParentId)(metrics, config, contentCache, httpUtil)
             if (!programHierarchy.isEmpty) {
-              val batchId: String = programEnrollmentStatus.getString(config.dbBatchId)
+              val batchId: String = programEnrollmentRow.get.getString(config.dbBatchId)
               val contentDataForProgram = programHierarchy.get(config.childrens).asInstanceOf[java.util.List[java.util.HashMap[String, AnyRef]]]
               val leafNodeMap = mutable.Map[String, Int]()
 
@@ -79,13 +80,12 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                 if (config.allowedPrimaryCategoryForProgram.contains(primaryCategory)) {
                   val courseId: String = childNode.get(config.identifier).asInstanceOf[String]
                   val userId: String = event.userId
-                  val primaryFields = Map(config.dbUserId.toLowerCase() -> userId, config.dbCourseId.toLowerCase -> courseId)
-                  val courseEnrollment = getCourseEnrollment(primaryFields)(metrics)
-                  val isCertificateIssued = courseEnrollment != null && !courseEnrollment.getList(config.issuedCertificates, TypeTokens.mapOf(classOf[String], classOf[String])).isEmpty
+                  val courseEnrollmentRow = getEnrollmentRecord(enrolmentRecords, courseId)
+                  val isCertificateIssued = courseEnrollmentRow.isDefined && !courseEnrollmentRow.get.getList(config.issuedCertificates, TypeTokens.mapOf(classOf[String], classOf[String])).isEmpty
                   logger.info("Is Certificate Available for courseId: " + courseId + " userId:" + userId + " :" + isCertificateIssued)
                   var courseCompletedOn: Date = null;
                   if (isCertificateIssued) {
-                    courseCompletedOn = courseEnrollment.getTimestamp("completedon")
+                    courseCompletedOn = courseEnrollmentRow.get.getTimestamp("completedon")
                     if (programCompletedOn == null) {
                       programCompletedOn = courseCompletedOn
                     } else if (programCompletedOn.before(courseCompletedOn)) {
@@ -107,9 +107,9 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                 }
               }
               if (!leafNodeMap.isEmpty) {
-                val programContentStatus = Option(programEnrollmentStatus.getMap(
+                val programContentStatus = Option(programEnrollmentRow.get.getMap(
                   config.contentStatus, TypeToken.of(classOf[String]), TypeToken.of(classOf[Integer]))).head
-                var progressCount: Integer = Option(programEnrollmentStatus.getInt(config.progress)).head
+                var progressCount: Integer = Option(programEnrollmentRow.get.getInt(config.progress)).head
 
                 var updateCount = 0
 
@@ -249,5 +249,25 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
     logger.info("o/p event:  " + event)
     context.output(config.generateCertificateOutputTag, event)
     metrics.incCounter(config.programCertIssueEventsCount)
+  }
+
+  def getAllEnrolments(userId: String)(implicit metrics: Metrics): java.util.List[Row] = {
+    val selectWhere: Select.Where = QueryBuilder.select(config.dbUserId, config.dbCourseId, config.dbBatchId, config.contentStatus, config.progress, config.issuedCertificates, "completedon")
+      .from(config.keyspace, config.userEnrolmentsTable).where()
+    selectWhere.and(QueryBuilder.eq(config.dbUserId, userId))
+    metrics.incCounter(config.dbReadCount)
+    cassandraUtil.find(selectWhere.toString)
+  }
+
+  def getEnrollmentRecord(enrollList: java.util.List[Row], courseId: String): Option[Row] = {
+    if(null != enrollList) {
+      enrollList.asScala.find { row =>
+        val courseid = row.getString("courseid")
+        val active = row.getBool("active")
+        courseid == courseId && active
+      }
+    } else {
+      None
+    }
   }
 }
