@@ -44,7 +44,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
   override def processElement(metaData: NotificationMetaData,
                               context: ProcessFunction[NotificationMetaData, String]#Context,
                               metrics: Metrics): Unit = {
-
+  try {
     val userResponse: Map[String, AnyRef] = getUserDetails(metaData.userId)(metrics) // call user Service
     if (null != userResponse && userResponse.nonEmpty) {
       val primaryFields = Map(config.courseId.toLowerCase() -> metaData.courseId,
@@ -78,7 +78,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
           logger.info("email response status {} :: {}", response.status, response.body)
         }
         else {
-          metrics.incCounter(config.failedEventCount)
+          metrics.incCounter(config.failedNotifyUserCount)
           logger.error(s"Error response from email notification for request :: ${request} :: response is :: ${response.status} ::  ${response.body}")
           throw new InvalidEventException(s"Error in email notification response : ${response}", Map("partition" -> metaData.partition, "offset" -> metaData.offset), null)
         }
@@ -92,7 +92,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
           if (response.status == 200)
             logger.info("phone response status {} :: {}", response.status, response.body)
           else {
-            metrics.incCounter(config.failedEventCount)
+            metrics.incCounter(config.failedNotifyUserCount)
             logger.error(s"Error response from sms notification for request :: ${request} :: response is :: ${response.status} ::  ${response.body}")
             throw new InvalidEventException(s"Error in sms notification response : ${response}", Map("partition" -> metaData.partition, "offset" -> metaData.offset), null)
           }
@@ -102,6 +102,11 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
         metrics.incCounter(config.skipNotifyUserCount)
       }
     }
+  } catch {
+      case ex: Exception =>
+        logger.error("Failed to send notificaton for course completion. ", ex)
+        metrics.incCounter(config.failedNotifyUserCount)
+  }
 
   }
 
@@ -139,9 +144,9 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
 
   private def getUserDetails(userId: String)(metrics: Metrics): Map[String, AnyRef] = {
     logger.info("getting user info for id {}", userId)
-    val httpResponse = httpUtil.get(config.learnerServiceBaseUrl + "/private/user/v1/read/" + userId)
+    val httpResponse = httpUtil.get(config.learnerServiceBaseUrl + "/private/user/v1/read1/" + userId)
     if (200 == httpResponse.status) {
-      logger.info("user search response status {} :: {} ", httpResponse.status, httpResponse.body)
+      logger.info("user read response status {} :: {} ", httpResponse.status, httpResponse.body)
       val response = ScalaJsonUtil.deserialize[Map[String, AnyRef]](httpResponse.body)
       val result = response.getOrElse("result", Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]].getOrElse("response", Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]]
       result
@@ -153,7 +158,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
   }
 
   override def metricsList(): List[String] = {
-    List(config.courseBatchdbReadCount, config.skipNotifyUserCount, config.notifiedUserCount, config.failedEventCount)
+    List(config.courseBatchdbReadCount, config.skipNotifyUserCount, config.failedNotifyUserCount, config.notifiedUserCount, config.failedEventCount)
   }
 
 
