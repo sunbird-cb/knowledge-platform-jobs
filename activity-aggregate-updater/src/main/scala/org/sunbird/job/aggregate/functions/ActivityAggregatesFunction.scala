@@ -2,7 +2,6 @@ package org.sunbird.job.aggregate.functions
 
 import java.lang.reflect.Type
 import java.util.concurrent.TimeUnit
-
 import com.datastax.driver.core.Row
 import com.datastax.driver.core.querybuilder.{QueryBuilder, Select, Update}
 import com.google.gson.Gson
@@ -19,10 +18,11 @@ import org.slf4j.LoggerFactory
 import org.sunbird.job.cache.{DataCache, RedisConnect}
 import org.sunbird.job.aggregate.domain.{UserContentConsumption, _}
 import org.sunbird.job.aggregate.task.ActivityAggregateUpdaterConfig
-import org.sunbird.job.util.{CassandraUtil, HttpUtil}
+import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil, ScalaJsonUtil}
 import org.sunbird.job.{Metrics, WindowBaseProcessFunction}
 
 import scala.collection.JavaConverters._
+import scala.language.postfixOps
 
 class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUtil: HttpUtil, @transient var cassandraUtil: CassandraUtil = null)
                                 (implicit val stringTypeInfo: TypeInformation[String])
@@ -57,8 +57,9 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
               events: Iterable[Map[String, AnyRef]],
               metrics: Metrics): Unit = {
 
-    logger.debug("Input Events Size: " + events.toList.size)
+    logger.info("Input Events : " + JSONUtil.serialize(events.toList))
     val inputUserConsumptionList: List[UserContentConsumption] = events
+        .filter(event=> verifyPrimaryCategory(event.getOrElse(config.courseId, "").asInstanceOf[String])(metrics, config, httpUtil, cache))
         .groupBy(key => (key.get(config.courseId), key.get(config.batchId), key.get(config.userId)))
         .values.map(value => {
         metrics.incCounter(config.processedEnrolmentCount)
@@ -84,7 +85,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
     val userConsumptionQueries = finalUserConsumptionList.flatMap(userConsumption => getContentConsumptionQueries(userConsumption))
     updateDB(config.thresholdBatchWriteSize, userConsumptionQueries)(metrics)
 
-
+    logger.info("The value for userConsumptionQueries:" + userConsumptionQueries)
     val courseAggregations = finalUserConsumptionList.flatMap(userConsumption => {
 
       // Course Level Agg using the merged data of ContentConsumption per user, course and batch.
@@ -106,13 +107,13 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
 
     // Saving enrolment completion data.
     val collectionProgressList = courseAggregations.filter(agg => agg.collectionProgress.nonEmpty).map(agg => agg.collectionProgress.get)
-
+    logger.info("The value for collectionProgressList:" + collectionProgressList)
     val collectionProgressUpdateList = collectionProgressList.filter(progress => !progress.completed)
     context.output(config.collectionUpdateOutputTag, collectionProgressUpdateList)
-
+    logger.info("The value for collectionProgressUpdateList:" + collectionProgressUpdateList)
     val collectionProgressCompleteList = collectionProgressList.filter(progress => progress.completed)
     context.output(config.collectionCompleteOutputTag, collectionProgressCompleteList)
-
+    logger.info("The value for collectionProgressCompleteList:" + collectionProgressCompleteList)
     // Content AUDIT Event generation and pushing to output tag.
     finalUserConsumptionList.flatMap(userConsumption => contentAuditEvents(userConsumption)).foreach(event => context.output(config.auditEventOutputTag, gson.toJson(event)))
   }
@@ -444,5 +445,133 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
       dbStatus
     } else cacheStatus
   }
-}
 
+  def verifyPrimaryCategory(identifier: String)(
+    metrics: Metrics,
+    config: ActivityAggregateUpdaterConfig,
+    httpUtil: HttpUtil,
+    cache: DataCache
+  ): Boolean = {
+    logger.info(
+      "Verify Program post-publish required for content: " + identifier
+    )
+    // Get the primary Categories for the courses here
+    var isValidProgram = false
+    val contentObj: java.util.Map[String, AnyRef] =
+      getCourseInfo(identifier)(metrics, config, cache, httpUtil)
+    if (!contentObj.isEmpty) {
+      val primaryCategory = contentObj.get("primaryCategory")
+      if (primaryCategory != null &&
+        (primaryCategory != "Program"
+          || primaryCategory != "Curated Program"
+          || primaryCategory != "Blended Program")) {
+        isValidProgram = true
+      }
+      logger.info("PrimaryCategory value is :" + primaryCategory + ", for Id: " + identifier)
+    } else {
+      logger.error("Failed to read content details for Id: " + identifier)
+    }
+    logger.info("is activity aggregator is skipping this event ? " + isValidProgram)
+    isValidProgram
+  }
+
+  def getCourseInfo(courseId: String)(
+    metrics: Metrics,
+    config: ActivityAggregateUpdaterConfig,
+    cache: DataCache,
+    httpUtil: HttpUtil
+  ): java.util.Map[String, AnyRef] = {
+    val courseMetadata = cache.getWithRetry(courseId)
+    if (null == courseMetadata || courseMetadata.isEmpty) {
+      val url =
+        config.contentReadURL + "/" + courseId + "?fields=identifier,name,versionKey,parentCollections,primaryCategory"
+      val response = getAPICall(url, "content")(config, httpUtil, metrics)
+      val courseName = StringContext
+        .processEscapes(
+          response.getOrElse(config.name, "").asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
+      val primaryCategory = StringContext
+        .processEscapes(
+          response.getOrElse(config.primaryCategory, "").asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
+      val versionKey = StringContext
+        .processEscapes(
+          response.getOrElse(config.versionKey, "").asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
+      val parentCollections = response
+        .getOrElse("parentCollections", List.empty[String])
+        .asInstanceOf[List[String]]
+      val courseInfoMap: java.util.Map[String, AnyRef] =
+        new java.util.HashMap[String, AnyRef]()
+      courseInfoMap.put("courseId", courseId)
+      courseInfoMap.put("courseName", courseName)
+      courseInfoMap.put("parentCollections", parentCollections)
+      courseInfoMap.put("primaryCategory", primaryCategory)
+      courseInfoMap.put("versionKey", versionKey)
+      courseInfoMap
+    } else {
+      val courseName = StringContext
+        .processEscapes(
+          courseMetadata.getOrElse(config.name, "").asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
+      val primaryCategory = StringContext
+        .processEscapes(
+          courseMetadata
+            .getOrElse(config.primaryCategory, "")
+            .asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
+      val versionKey = StringContext
+        .processEscapes(
+          courseMetadata.getOrElse(config.versionKey, "").asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
+      val parentCollections = courseMetadata
+        .getOrElse("parentCollections", List.empty[String])
+        .asInstanceOf[List[String]]
+      val courseInfoMap: java.util.Map[String, AnyRef] =
+        new java.util.HashMap[String, AnyRef]()
+      courseInfoMap.put("courseId", courseId)
+      courseInfoMap.put("courseName", courseName)
+      courseInfoMap.put("parentCollections", parentCollections)
+      courseInfoMap.put("primaryCategory", primaryCategory)
+      courseInfoMap.put("versionKey", versionKey)
+      courseInfoMap
+    }
+
+  }
+
+  def getAPICall(url: String, responseParam: String)(
+    config: ActivityAggregateUpdaterConfig,
+    httpUtil: HttpUtil,
+    metrics: Metrics
+  ): Map[String, AnyRef] = {
+    val response = httpUtil.get(url, config.defaultHeaders)
+    if (200 == response.status) {
+      ScalaJsonUtil
+        .deserialize[Map[String, AnyRef]](response.body)
+        .getOrElse("result", Map[String, AnyRef]())
+        .asInstanceOf[Map[String, AnyRef]]
+        .getOrElse(responseParam, Map[String, AnyRef]())
+        .asInstanceOf[Map[String, AnyRef]]
+    } else if (
+      400 == response.status && response.body.contains(
+        config.userAccBlockedErrCode
+      )
+    ) {
+      metrics.incCounter(config.skippedEventCount)
+      logger.error(
+        s"Error while fetching user details for ${url}: " + response.status + " :: " + response.body
+      )
+      Map[String, AnyRef]()
+    } else {
+      throw new Exception(
+        s"Error from get API : ${url}, with response: ${response}"
+      )
+    }
+  }
+}

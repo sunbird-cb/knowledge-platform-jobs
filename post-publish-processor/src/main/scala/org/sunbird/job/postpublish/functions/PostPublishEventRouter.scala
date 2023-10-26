@@ -4,8 +4,9 @@ import com.google.gson.reflect.TypeToken
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
+import org.sunbird.job.cache.{DataCache, RedisConnect}
 import org.sunbird.job.postpublish.domain.Event
-import org.sunbird.job.postpublish.helpers.{BatchCreation, DialHelper, ShallowCopyPublishing}
+import org.sunbird.job.postpublish.helpers.{BatchCreation, DialHelper, PostPublishRelationUpdater, ShallowCopyPublishing}
 import org.sunbird.job.postpublish.task.PostPublishProcessorConfig
 import org.sunbird.job.util.{CassandraUtil, HttpUtil, Neo4JUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
@@ -17,7 +18,7 @@ case class PublishMetadata(identifier: String, contentType: String, mimeType: St
 class PostPublishEventRouter(config: PostPublishProcessorConfig, httpUtil: HttpUtil,
                              @transient var neo4JUtil: Neo4JUtil = null,
                              @transient var cassandraUtil: CassandraUtil = null)
-  extends BaseProcessFunction[Event, String](config) with ShallowCopyPublishing with BatchCreation with DialHelper {
+  extends BaseProcessFunction[Event, String](config) with ShallowCopyPublishing with BatchCreation with DialHelper with PostPublishRelationUpdater {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[PostPublishEventRouter])
   val mapType: Type = new TypeToken[java.util.Map[String, AnyRef]]() {}.getType
@@ -52,6 +53,10 @@ class PostPublishEventRouter(config: PostPublishProcessorConfig, httpUtil: HttpU
       val dialCodeDetails = getDialCodeDetails(identifier, event)(neo4JUtil, config)
       if (!dialCodeDetails.isEmpty)
         context.output(config.linkDIALCodeOutTag, dialCodeDetails)
+
+      //Process Post Publish Relation Update
+      context.output(config.postPublishRelationUpdateOutTag, identifier)
+
     } else {
       metrics.incCounter(config.skippedEventCount)
       logger.info(s"Event not qualified for publishing for Identifier : ${event.collectionId}.")
