@@ -17,9 +17,6 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
     def primaryCategory: String = readOrDefault[String]("edata.primaryCategory", "")
 
-    def parentCollections: List[String] = readOrDefault[List[String]]("edata.parentCollections", List.empty[String])
-
-
     def eData: Map[String, AnyRef] = readOrDefault[Map[String, AnyRef]]("edata", Map[String, AnyRef]())
 
     def isValid()(config: ProgramCertPreProcessorConfig): Boolean = {

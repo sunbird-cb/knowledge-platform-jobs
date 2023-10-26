@@ -12,6 +12,7 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
 
   //Redis config
   val collectionCacheStore: Int = 0
+  val relationCacheStore: Int = config.getInt("redis.database.index")
   val contentCacheStore: Int = 5
   val metaRedisHost: String = config.getString("redis-meta.host")
   val metaRedisPort: Int = config.getInt("redis-meta.port")
@@ -47,6 +48,8 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
   val learnerBasePath = config.getString("service.learner.basePath")
   val userReadApi = config.getString("user_read_api")
   val contentReadApi = "/content/v4/read"
+  val contentServiceBase: String = config.getString("service.content.basePath")
+  val contentReadURL = contentServiceBase + "/content/v3/read/"
 
   // Metric List
   val totalEventsCount = "total-events-count"
@@ -57,6 +60,7 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
   val dbUpdateCount = "db-update-count"
   val cacheHitCount = "cache-hit-cout"
   val programCertIssueEventsCount = "program-cert-issue-events-count"
+  val cacheMissCount = "cache-miss-count"
 
   //Constants
   val status: String = "status"
@@ -72,5 +76,6 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
   val contentStatus: String = "contentstatus"
   val progress: String = "progress"
   val allowedPrimaryCategoryForProgram = List[String]("Course")
+  val childrenCourses: String = "childrenCourses"
 
 }
