@@ -270,16 +270,15 @@ trait IssueCertificateHelper {
     def getCourseInfo(courseId: String)(metrics: Metrics, config: CollectionCertPreProcessorConfig, cache: DataCache, httpUtil: HttpUtil): java.util.Map[String, AnyRef] = {
         val courseMetadata = cache.getWithRetry(courseId)
         if (null == courseMetadata || courseMetadata.isEmpty) {
-            val url = config.contentBasePath + config.contentReadApi + "/" + courseId + "?fields=name,parentCollections,primaryCategory,posterImage"
+            val url = config.contentBasePath + config.contentReadApi + "/" + courseId + "?fields=name,parentCollections,primaryCategory,posterImage,organisation"
             val response = getAPICall(url, "content")(config, httpUtil, metrics)
-            logger.info("content is read from API. response : " + JSONUtil.serialize(response))
             val courseName = StringContext.processEscapes(response.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
             val primaryCategory = StringContext.processEscapes(response.getOrElse(config.primaryCategory, "").asInstanceOf[String]).filter(_ >= ' ')
             val posterImage: String = StringContext.processEscapes(response.getOrElse(config.posterImage, "").asInstanceOf[String]).filter(_ >= ' ')
             val parentCollections = response.getOrElse("parentCollections", List.empty[String]).asInstanceOf[List[String]]
             val orgData = response.get("organisation").toArray
             val pm = orgData(0).toString
-            val providerName = pm.substring(1, pm.length-1)
+            val providerName = pm.substring(1, pm.length - 1)
             val courseInfoMap: java.util.Map[String, AnyRef] = new java.util.HashMap[String, AnyRef]()
             courseInfoMap.put("courseId", courseId)
             courseInfoMap.put("courseName", courseName)
@@ -289,14 +288,13 @@ trait IssueCertificateHelper {
             courseInfoMap.put("providerName", providerName)
             courseInfoMap
         } else {
-            logger.info("content is read from Cache. response : " + JSONUtil.serialize(courseMetadata))
             val courseName = StringContext.processEscapes(courseMetadata.getOrElse(config.name, "").asInstanceOf[String]).filter(_ >= ' ')
             val primaryCategory = StringContext.processEscapes(courseMetadata.getOrElse("primarycategory", "").asInstanceOf[String]).filter(_ >= ' ')
             val parentCollections = courseMetadata.getOrElse("parentcollections", new java.util.ArrayList()).asInstanceOf[java.util.ArrayList[String]]
             val posterImage: String = StringContext.processEscapes(courseMetadata.getOrElse("posterimage", "").asInstanceOf[String]).filter(_ >= ' ')
             val orgData = courseMetadata.get("organisation").toArray
             val pm = orgData(0).toString
-            val providerName = pm.substring(1, pm.length-1)
+            val providerName = pm.substring(1, pm.length - 1)
             val courseInfoMap: java.util.Map[String, AnyRef] = new java.util.HashMap[String, AnyRef]()
             courseInfoMap.put("courseId", courseId)
             courseInfoMap.put("courseName", courseName)

@@ -172,5 +172,6 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
 
   val courseProvider: String ="courseProvider"
   val coursePosterImage :String ="coursePosterImage"
+
   val newEmailTemplateNotificationEndPoint: String = "/v1/notification/email"
 }
