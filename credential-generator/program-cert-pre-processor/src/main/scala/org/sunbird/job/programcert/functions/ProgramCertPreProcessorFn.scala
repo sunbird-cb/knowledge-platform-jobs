@@ -30,6 +30,7 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
 
   private[this] val logger = LoggerFactory.getLogger(classOf[ProgramCertPreProcessorFn])
   private var cache: DataCache = _
+  private var relationCache: DataCache = _
   private var contentCache: DataCache = _
   lazy private val mapper: ObjectMapper = new ObjectMapper()
 
@@ -39,6 +40,11 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
     val redisConnect = new RedisConnect(config)
     cache = new DataCache(config, redisConnect, config.collectionCacheStore, List())
     cache.init()
+
+    // Using LP cache for leafnodes, ancestors cache for the collection.
+    val lpCacheConnect = new RedisConnect(config)
+    relationCache = new DataCache(config, lpCacheConnect, config.relationCacheStore, List())
+    relationCache.init()
 
     val metaRedisConn = new RedisConnect(config, Option(config.metaRedisHost), Option(config.metaRedisPort))
     contentCache = new DataCache(config, metaRedisConn, config.contentCacheStore, List())
@@ -53,97 +59,97 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
 
   override def metricsList(): List[String] = {
     List(config.totalEventsCount, config.dbReadCount, config.dbUpdateCount, config.failedEventCount, config.skippedEventCount, config.successEventCount,
-      config.cacheHitCount, config.programCertIssueEventsCount)
+      config.cacheHitCount, config.programCertIssueEventsCount, config.cacheMissCount)
   }
 
   override def processElement(event: Event,
                               context: KeyedProcessFunction[String, Event, String]#Context,
                               metrics: Metrics): Unit = {
     try {
-      val getParentIdForCourse = event.parentCollections
-      if (!getParentIdForCourse.isEmpty) {
+      val courseParentId = event.courseId
+      if (courseParentId.nonEmpty) {
         val enrolmentRecords = getAllEnrolments(event.userId)(metrics)
-        for (courseParentId <- getParentIdForCourse) {
-          val programEnrollmentRow = getEnrollmentRecord(enrolmentRecords, courseParentId)
-          //if enrolled into program
-          if (programEnrollmentRow.isDefined && programEnrollmentRow.get.getList(config.issuedCertificates, TypeTokens.mapOf(classOf[String], classOf[String])).isEmpty) {
-            val programHierarchy = getProgramChildren(courseParentId)(metrics, config, contentCache, httpUtil)
-            if (!programHierarchy.isEmpty) {
-              val batchId: String = programEnrollmentRow.get.getString(config.dbBatchId)
-              val contentDataForProgram = programHierarchy.get(config.childrens).asInstanceOf[java.util.List[java.util.HashMap[String, AnyRef]]]
-              val leafNodeMap = mutable.Map[String, Int]()
+        val programEnrollmentRow = getEnrollmentRecord(enrolmentRecords, courseParentId)
+        //if enrolled into program
+        if (programEnrollmentRow.isDefined && programEnrollmentRow.get.getList(config.issuedCertificates, TypeTokens.mapOf(classOf[String], classOf[String])).isEmpty) {
+          //programchildrenCourses write private method using readFromCache List<String>
+          val key = s"$courseParentId:$courseParentId:${config.childrenCourses}"
+          val programChildrenCourses = readFromRelationCache(key, metrics).distinct
+          if (programChildrenCourses.nonEmpty) {
+            val batchId: String = programEnrollmentRow.get.getString(config.dbBatchId)
+            val leafNodeMap = mutable.Map[String, Int]()
 
-              var isProgramCertificateToBeGenerated: Boolean = true;
-              var programCompletedOn: Date = null
-              for (childNode <- contentDataForProgram) {
-                val primaryCategory = childNode.get(config.primaryCategory).asInstanceOf[String]
-                if (config.allowedPrimaryCategoryForProgram.contains(primaryCategory)) {
-                  val courseId: String = childNode.get(config.identifier).asInstanceOf[String]
-                  val userId: String = event.userId
-                  val courseEnrollmentRow = getEnrollmentRecord(enrolmentRecords, courseId)
-                  val isCertificateIssued = courseEnrollmentRow.isDefined && !courseEnrollmentRow.get.getList(config.issuedCertificates, TypeTokens.mapOf(classOf[String], classOf[String])).isEmpty
-                  logger.info("Is Certificate Available for courseId: " + courseId + " userId:" + userId + " :" + isCertificateIssued)
-                  var courseCompletedOn: Date = null;
-                  if (isCertificateIssued) {
-                    courseCompletedOn = courseEnrollmentRow.get.getTimestamp("completedon")
-                    if (programCompletedOn == null) {
-                      programCompletedOn = courseCompletedOn
-                    } else if (programCompletedOn.before(courseCompletedOn)) {
-                      programCompletedOn = courseCompletedOn
-                    }
+            var isProgramCertificateToBeGenerated: Boolean = true;
+            var programCompletedOn: Date = null
+            for (courseId <- programChildrenCourses) {
+              val courseMetadata: java.util.Map[String, AnyRef] = getCourseInfo(courseId)(metrics, config, cache, httpUtil)
+              val primaryCategory = courseMetadata.get(config.primaryCategory).asInstanceOf[String]
+              if (config.allowedPrimaryCategoryForProgram.contains(primaryCategory)) {
+                val userId: String = event.userId
+                val courseEnrollmentRow = getEnrollmentRecord(enrolmentRecords, courseId)
+                val isCertificateIssued = courseEnrollmentRow.isDefined && !courseEnrollmentRow.get.getList(config.issuedCertificates, TypeTokens.mapOf(classOf[String], classOf[String])).isEmpty
+                logger.info("Is Certificate Available for courseId: " + courseId + " userId:" + userId + " :" + isCertificateIssued)
+                var courseCompletedOn: Date = null;
+                if (isCertificateIssued) {
+                  courseCompletedOn = courseEnrollmentRow.get.getTimestamp("completedon")
+                  if (programCompletedOn == null) {
+                    programCompletedOn = courseCompletedOn
+                  } else if (programCompletedOn.before(courseCompletedOn)) {
+                    programCompletedOn = courseCompletedOn
                   }
+                }
 
-                  breakable {
-                    if (!isCertificateIssued) {
-                      isProgramCertificateToBeGenerated = false;
-                      break
-                    } else {
-                      val leafNodes = childNode.get(config.leafNodes).asInstanceOf[java.util.List[String]]
-                      for (leafNode <- leafNodes) {
-                        leafNodeMap += (leafNode -> 2)
-                      }
+                breakable {
+                  if (!isCertificateIssued) {
+                    isProgramCertificateToBeGenerated = false;
+                    break
+                  } else {
+                    val leafNodes = courseMetadata.get(config.leafNodes).asInstanceOf[java.util.List[String]]
+                    for (leafNode <- leafNodes) {
+                      leafNodeMap += (leafNode -> 2)
                     }
                   }
                 }
               }
-              if (!leafNodeMap.isEmpty) {
-                val programContentStatus = Option(programEnrollmentRow.get.getMap(
-                  config.contentStatus, TypeToken.of(classOf[String]), TypeToken.of(classOf[Integer]))).head
-                var progressCount: Integer = Option(programEnrollmentRow.get.getInt(config.progress)).head
+            }
+            if (!leafNodeMap.isEmpty) {
+              val programContentStatus = Option(programEnrollmentRow.get.getMap(
+                config.contentStatus, TypeToken.of(classOf[String]), TypeToken.of(classOf[Integer]))).head
+              var progressCount: Integer = Option(programEnrollmentRow.get.getInt(config.progress)).head
 
-                var updateCount = 0
+              var updateCount = 0
 
-                for ((key, value) <- leafNodeMap) {
-                  // Check if the key is present in leafNodeMap
-                  if (programContentStatus.get(key) != null) {
-                    if (programContentStatus.get(key) != 2) {
-                      // Update progress in contentStatus for the matching key
-                      programContentStatus.put(key, value)
-                      updateCount += 1
-                    }
-                  } else {
+              for ((key, value) <- leafNodeMap) {
+                // Check if the key is present in leafNodeMap
+                if (programContentStatus.get(key) != null) {
+                  if (programContentStatus.get(key) != 2) {
+                    // Update progress in contentStatus for the matching key
                     programContentStatus.put(key, value)
                     updateCount += 1
                   }
-                }
-
-                // Update the progress with the total update count
-                progressCount += updateCount
-                var status: Int = 1
-                val leafNodesForProgram = programHierarchy.get(config.leafNodes).asInstanceOf[java.util.List[String]]
-                if (progressCount == leafNodesForProgram.size()) {
-                  status = 2
                 } else {
-                  isProgramCertificateToBeGenerated = false
+                  programContentStatus.put(key, value)
+                  updateCount += 1
                 }
-                updateEnrolment(event.userId, batchId, courseParentId, programContentStatus, status, progressCount, programCompletedOn)(metrics)
               }
 
-              if (isProgramCertificateToBeGenerated) {
-                //Add kafka event to generate Certificate for Program
-                logger.info("Adding the kafka event for programId: " + courseParentId)
-                createIssueCertEventForProgram(courseParentId, event.userId, batchId, context)(metrics)
+              // Update the progress with the total update count
+              progressCount += updateCount
+              var status: Int = 1
+              val keyForLeafNodesForProgram = s"$courseParentId:$courseParentId:${config.leafNodes}"
+              val leafNodesForProgram = readFromRelationCache(keyForLeafNodesForProgram, metrics).distinct
+              if (progressCount == leafNodesForProgram.size()) {
+                status = 2
+              } else {
+                isProgramCertificateToBeGenerated = false
               }
+              updateEnrolment(event.userId, batchId, courseParentId, programContentStatus, status, progressCount, programCompletedOn)(metrics)
+            }
+
+            if (isProgramCertificateToBeGenerated) {
+              //Add kafka event to generate Certificate for Program
+              logger.info("Adding the kafka event for programId: " + courseParentId)
+              createIssueCertEventForProgram(courseParentId, event.userId, batchId, context)(metrics)
             }
           }
         }
@@ -260,14 +266,87 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
   }
 
   def getEnrollmentRecord(enrollList: java.util.List[Row], courseId: String): Option[Row] = {
-    if(null != enrollList) {
+    if (null != enrollList) {
       enrollList.asScala.find { row =>
         val courseid = row.getString("courseid")
         val active = row.getBool("active")
-        courseid == courseId && active
+        (courseid == courseId) && active
       }
     } else {
       None
     }
   }
+
+  def readFromRelationCache(key: String, metrics: Metrics): List[String] = {
+    metrics.incCounter(config.cacheHitCount)
+    val list = relationCache.getKeyMembers(key)
+    if (CollectionUtils.isEmpty(list)) {
+      metrics.incCounter(config.cacheMissCount)
+      logger.info("Redis cache (smembers) not available for key: " + key)
+    }
+    list.asScala.toList
+  }
+
+  def getCourseInfo(courseId: String)(
+    metrics: Metrics,
+    config: ProgramCertPreProcessorConfig,
+    cache: DataCache,
+    httpUtil: HttpUtil
+  ): java.util.Map[String, AnyRef] = {
+    val courseMetadata = cache.getWithRetry(courseId)
+    if (null == courseMetadata || courseMetadata.isEmpty) {
+      val url =
+        config.contentReadURL + courseId + "?fields=identifier,name,primaryCategory,parentCollections,leafNodes"
+      val response = getAPICall(url, "content")(config, httpUtil, metrics)
+      val courseName = StringContext
+        .processEscapes(
+          response.getOrElse(config.name, "").asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
+      val primaryCategory = StringContext
+        .processEscapes(
+          response.getOrElse(config.primaryCategory, "").asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
+      val parentCollections = response
+        .getOrElse(config.parentCollections, List.empty[String]).asInstanceOf[List[String]]
+      val leafNodes = response
+        .getOrElse(config.leafNodes, List.empty[String]).asInstanceOf[List[String]]
+      val courseInfoMap: java.util.Map[String, AnyRef] =
+        new java.util.HashMap[String, AnyRef]()
+      courseInfoMap.put("courseId", courseId)
+      courseInfoMap.put("courseName", courseName)
+      courseInfoMap.put("primaryCategory", primaryCategory)
+      courseInfoMap.put("parentCollections", parentCollections)
+      courseInfoMap.put(config.leafNodes, leafNodes)
+      courseInfoMap
+    } else {
+      val courseName = StringContext
+        .processEscapes(
+          courseMetadata.getOrElse(config.name, "").asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
+      val primaryCategory = StringContext
+        .processEscapes(
+          courseMetadata
+            .getOrElse(config.primaryCategory, "")
+            .asInstanceOf[String]
+        )
+        .filter(_ >= ' ')
+      val parentCollections = courseMetadata
+        .getOrElse(config.parentCollections, List.empty[String]).asInstanceOf[List[String]]
+      val leafNodes = courseMetadata
+        .getOrElse(config.leafNodes, List.empty[String]).asInstanceOf[List[String]]
+      val courseInfoMap: java.util.Map[String, AnyRef] =
+        new java.util.HashMap[String, AnyRef]()
+      courseInfoMap.put("courseId", courseId)
+      courseInfoMap.put("courseName", courseName)
+      courseInfoMap.put("primaryCategory", primaryCategory)
+      courseInfoMap.put("parentCollections", parentCollections)
+      courseInfoMap.put(config.leafNodes, leafNodes)
+      courseInfoMap
+    }
+
+  }
+
 }
