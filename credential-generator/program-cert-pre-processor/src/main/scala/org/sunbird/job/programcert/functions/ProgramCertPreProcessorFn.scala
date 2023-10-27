@@ -67,6 +67,7 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                               metrics: Metrics): Unit = {
     try {
       val courseParentId = event.courseId
+      logger.info("event" + event)
       if (courseParentId.nonEmpty) {
         val enrolmentRecords = getAllEnrolments(event.userId)(metrics)
         val programEnrollmentRow = getEnrollmentRecord(enrolmentRecords, courseParentId)
@@ -75,6 +76,7 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
           //programchildrenCourses write private method using readFromCache List<String>
           val key = s"$courseParentId:$courseParentId:${config.childrenCourses}"
           val programChildrenCourses = readFromRelationCache(key, metrics).distinct
+          logger.info("The programChildrenCollections from Redish:" + programChildrenCourses)
           if (programChildrenCourses.nonEmpty) {
             val batchId: String = programEnrollmentRow.get.getString(config.dbBatchId)
             val leafNodeMap = mutable.Map[String, Int]()
@@ -138,6 +140,7 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
               var status: Int = 1
               val keyForLeafNodesForProgram = s"$courseParentId:$courseParentId:${config.leafNodes}"
               val leafNodesForProgram = readFromRelationCache(keyForLeafNodesForProgram, metrics).distinct
+              logger.info("The keyForLeafNodesForProgram from Redish:" + leafNodesForProgram)
               if (progressCount == leafNodesForProgram.size()) {
                 status = 2
               } else {

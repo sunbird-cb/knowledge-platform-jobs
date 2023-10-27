@@ -70,8 +70,10 @@ class RelationCacheUpdater(config: RelationCacheUpdaterConfig)
                 logger.info("Units cache updating for: "+ unitsMap.size)
                 storeDataInCache("", "", unitsMap, collectionCache)(metrics)
                 val childrenCoursesMap = getOrComposeChildrenCoursesList(hierarchy)
-                storeListDataInCache(rootId, "childrenCourses", childrenCoursesMap, collectionCache)(metrics)
-                logger.info("ChildCourses cache updating for: " + childrenCoursesMap.size)
+                if (childrenCoursesMap.nonEmpty) {
+                    storeListDataInCache(rootId, "childrenCourses", childrenCoursesMap, collectionCache)(metrics)
+                    logger.info("ChildCourses cache updating for: " + childrenCoursesMap.size)
+                }
                 metrics.incCounter(config.successEventCount)
             } else {
                 logger.warn("Hierarchy Empty: " + rootId)
