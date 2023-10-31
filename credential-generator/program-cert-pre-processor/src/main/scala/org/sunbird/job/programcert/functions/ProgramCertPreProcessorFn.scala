@@ -333,8 +333,8 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)
       courseInfoMap.put("courseName", courseName)
-      courseInfoMap.put("primaryCategory", primaryCategory)
-      courseInfoMap.put("parentCollections", parentCollections)
+      courseInfoMap.put(config.primaryCategory, primaryCategory)
+      courseInfoMap.put(config.parentCollections, parentCollections)
       courseInfoMap.put(config.leafNodes, leafNodes)
       courseInfoMap
     } else {
@@ -346,21 +346,21 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
       val primaryCategory = StringContext
         .processEscapes(
           courseMetadata
-            .getOrElse(config.primaryCategory, "")
+            .getOrElse("primarycategory", "")
             .asInstanceOf[String]
         )
         .filter(_ >= ' ')
       val parentCollections = courseMetadata
-        .getOrElse(config.parentCollections, List.empty[String]).asInstanceOf[List[String]]
+        .getOrElse("parentcollections",new java.util.ArrayList()).asInstanceOf[java.util.List[String]]
       val leafNodes = courseMetadata
-        .getOrElse(config.leafNodes, List.empty[String]).asInstanceOf[List[String]]
+        .getOrElse("leafnodes", new java.util.ArrayList()).asInstanceOf[java.util.List[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)
       courseInfoMap.put("courseName", courseName)
-      courseInfoMap.put("primaryCategory", primaryCategory)
-      courseInfoMap.put("parentCollections", parentCollections)
-      courseInfoMap.put(config.leafNodes, leafNodes)
+      courseInfoMap.put(config.primaryCategory, primaryCategory)
+      courseInfoMap.put(config.parentCollections, parentCollections.asScala)
+      courseInfoMap.put(config.leafNodes, leafNodes.asScala)
       courseInfoMap
     }
 
