@@ -152,7 +152,7 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
               // Update the progress with the total update count
               progressCount += updateCount
               var status: Int = 1
-              val keyForLeafNodesForProgram = s"$courseParentId:$courseParentId:${config.leafNodes}"
+              val keyForLeafNodesForProgram = s"$courseParentId:$courseParentId:${config.leafNodesKey}"
               val leafNodesForProgram = readFromRelationCache(keyForLeafNodesForProgram, metrics).distinct
               logger.info("The keyForLeafNodesForProgram from Redish:" + leafNodesForProgram)
               if (progressCount == leafNodesForProgram.size()) {

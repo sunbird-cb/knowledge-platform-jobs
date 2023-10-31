@@ -77,5 +77,6 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
   val progress: String = "progress"
   val allowedPrimaryCategoryForProgram = List[String]("Course")
   val childrenCourses: String = "childrenCourses"
+  val leafNodesKey = "leafnodes"
 
 }
