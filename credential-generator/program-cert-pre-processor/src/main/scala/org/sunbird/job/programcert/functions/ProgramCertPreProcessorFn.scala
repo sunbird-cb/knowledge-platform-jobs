@@ -99,6 +99,20 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                   } else if (programCompletedOn.before(courseCompletedOn)) {
                     programCompletedOn = courseCompletedOn
                   }
+                } else if (courseEnrollmentRow.isDefined) {
+                  val courseContentStatus = Option(courseEnrollmentRow.get.getMap(
+                    config.contentStatus, TypeToken.of(classOf[String]), TypeToken.of(classOf[Integer]))).head.asScala
+                  for ((key, value) <- courseContentStatus) {
+                    // Check if the key is present in leafNodeMap
+                    if (courseContentStatus.get(key) != null) {
+                      if (courseContentStatus.get(key).head.equals(2)) {
+                        val leafNodeKey: String = key
+                        // Update progress in contentStatus for the matching key
+                        leafNodeMap += (leafNodeKey -> value)
+                      }
+                      logger.info("Updated leafNodeMap: " + leafNodeMap + " courseid:" + courseId)
+                    }
+                  }
                 }
 
                 breakable {
