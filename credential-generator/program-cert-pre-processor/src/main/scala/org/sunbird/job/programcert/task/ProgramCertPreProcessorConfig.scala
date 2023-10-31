@@ -12,7 +12,7 @@ class ProgramCertPreProcessorConfig(override val config: Config) extends BaseJob
 
   //Redis config
   val collectionCacheStore: Int = 0
-  val relationCacheStore: Int = config.getInt("redis.database.index")
+  val relationCacheStore: Int = config.getInt("redis-meta.database.collectionIndex")
   val contentCacheStore: Int = 5
   val metaRedisHost: String = config.getString("redis-meta.host")
   val metaRedisPort: Int = config.getInt("redis-meta.port")
