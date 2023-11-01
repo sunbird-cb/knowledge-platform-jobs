@@ -21,7 +21,6 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   // Kafka Topics Configuration
   val kafkaInputTopic: String = config.getString("kafka.input.topic")
   val kafkaAuditEventTopic: String = config.getString("kafka.output.audit.topic")
-  val kafkaProgramCertOutputTopic: String = config.getString("kafka.program.cert.output.topic")
 
   val enableSuppressException: Boolean = if(config.hasPath("enable.suppress.exception")) config.getBoolean("enable.suppress.exception") else false
   val enableRcCertificate: Boolean = if(config.hasPath("enable.rc.certificate")) config.getBoolean("enable.rc.certificate") else false
@@ -32,7 +31,6 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   override val kafkaConsumerParallelism: Int = config.getInt("task.consumer.parallelism")
   val notifierParallelism: Int = if(config.hasPath("task.notifier.parallelism")) config.getInt("task.notifier.parallelism") else 1
   val userFeedParallelism: Int = if(config.hasPath("task.userfeed.parallelism")) config.getInt("task.userfeed.parallelism") else 1
-  val generateProgramCertificateParallelism: Int = if(config.hasPath("task.programcert.parallelism")) config.getInt("task.programcert.parallelism") else 1
 
   //ES configuration
   val esConnection: String = config.getString("es.basePath")
@@ -166,16 +164,11 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val userFeedMsg: String = "You have earned a certificate! Download it from your profile page."
   val priorityValue = 1
   val userFeedCount = "user-feed-count"
-  val generateProgramCertificateOutputTagName: String = "generate-program-certificate-request"
-  val generateProgramCertificateOutputTag: OutputTag[String] = OutputTag[String](generateProgramCertificateOutputTagName)
-
-  val generateProgramCertificateProducer = "generate-program-certificate-sink"
 
   val courseProvider: String ="courseProvider"
   val coursePosterImage :String ="coursePosterImage"
 
   val newEmailTemplateNotificationEndPoint: String = "/v1/notification/email"
 
-  val failedNotifyUserCount = "failed-notify-user-count"
   val enableUserNotification: Boolean = if(config.hasPath("enable.user.email.notification")) config.getBoolean("enable.user.email.notification") else true
 }
