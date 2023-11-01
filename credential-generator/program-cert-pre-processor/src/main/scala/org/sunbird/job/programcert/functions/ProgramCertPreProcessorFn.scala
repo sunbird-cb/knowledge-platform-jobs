@@ -67,7 +67,6 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                               metrics: Metrics): Unit = {
     try {
       val courseParentId = event.courseId
-      logger.info("event" + event)
       if (courseParentId.nonEmpty) {
         val enrolmentRecords = getAllEnrolments(event.userId)(metrics)
         val programEnrollmentRow = getEnrollmentRecord(enrolmentRecords, courseParentId)
