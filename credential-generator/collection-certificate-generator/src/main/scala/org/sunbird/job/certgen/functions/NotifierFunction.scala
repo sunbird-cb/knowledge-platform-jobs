@@ -107,7 +107,6 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
         logger.error("Failed to send notificaton for course completion. ", ex)
         metrics.incCounter(config.failedNotifyUserCount)
   }
-
   }
 
 
