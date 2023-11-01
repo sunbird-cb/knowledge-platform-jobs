@@ -63,6 +63,7 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val dbUpdateCount = "db-update-user-enrollment-count"
   val notifiedUserCount = "notified-user-count"
   val skipNotifyUserCount = "skipped-notify-user-count"
+  val failedNotifyUserCount = "failed-notify-user-count"
   val courseBatchdbReadCount = "db-course-batch-read-count"
 
   // Consumers
