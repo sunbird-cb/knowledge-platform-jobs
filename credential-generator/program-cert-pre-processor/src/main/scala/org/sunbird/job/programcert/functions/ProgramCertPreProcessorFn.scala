@@ -119,7 +119,12 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                     isProgramCertificateToBeGenerated = false;
                     break
                   } else {
-                    val leafNodes = courseMetadata.get(config.leafNodes).asInstanceOf[java.util.List[String]]
+                    val leafNodes = Option(courseMetadata.get(config.leafNodes))
+                      .collect {
+                        case list: java.util.List[_] =>
+                          list.asInstanceOf[java.util.List[String]].asScala.toList
+                      }
+                      .getOrElse(List.empty)
                     for (leafNode <- leafNodes) {
                       leafNodeMap += (leafNode -> 2)
                     }
@@ -312,36 +317,22 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
     val courseMetadata = cache.getWithRetry(courseId)
     if (null == courseMetadata || courseMetadata.isEmpty) {
       val url =
-        config.contentReadURL + courseId + "?fields=identifier,name,primaryCategory,parentCollections,leafNodes"
+        config.contentReadURL + courseId + "?fields=identifier,primaryCategory,leafNodes"
       val response = getAPICall(url, "content")(config, httpUtil, metrics)
-      val courseName = StringContext
-        .processEscapes(
-          response.getOrElse(config.name, "").asInstanceOf[String]
-        )
-        .filter(_ >= ' ')
       val primaryCategory = StringContext
         .processEscapes(
           response.getOrElse(config.primaryCategory, "").asInstanceOf[String]
         )
         .filter(_ >= ' ')
-      val parentCollections = response
-        .getOrElse(config.parentCollections, List.empty[String]).asInstanceOf[List[String]]
       val leafNodes = response
         .getOrElse(config.leafNodes, List.empty[String]).asInstanceOf[List[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)
-      courseInfoMap.put("courseName", courseName)
       courseInfoMap.put(config.primaryCategory, primaryCategory)
-      courseInfoMap.put(config.parentCollections, parentCollections)
-      courseInfoMap.put(config.leafNodes, leafNodes)
+      courseInfoMap.put(config.leafNodes, leafNodes.asJava)
       courseInfoMap
     } else {
-      val courseName = StringContext
-        .processEscapes(
-          courseMetadata.getOrElse(config.name, "").asInstanceOf[String]
-        )
-        .filter(_ >= ' ')
       val primaryCategory = StringContext
         .processEscapes(
           courseMetadata
@@ -349,17 +340,13 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
             .asInstanceOf[String]
         )
         .filter(_ >= ' ')
-      val parentCollections = courseMetadata
-        .getOrElse("parentcollections",new java.util.ArrayList()).asInstanceOf[java.util.List[String]]
       val leafNodes = courseMetadata
         .getOrElse("leafnodes", new java.util.ArrayList()).asInstanceOf[java.util.List[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)
-      courseInfoMap.put("courseName", courseName)
       courseInfoMap.put(config.primaryCategory, primaryCategory)
-      courseInfoMap.put(config.parentCollections, parentCollections.asScala)
-      courseInfoMap.put(config.leafNodes, leafNodes.asScala)
+      courseInfoMap.put(config.leafNodes, leafNodes)
       courseInfoMap
     }
 
