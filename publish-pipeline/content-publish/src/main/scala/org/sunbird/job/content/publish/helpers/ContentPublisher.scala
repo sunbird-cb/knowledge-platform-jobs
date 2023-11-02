@@ -204,6 +204,7 @@ trait ContentPublisher extends ObjectReader with ObjectValidator with ObjectEnri
         case MimeType.ECML_Archive | MimeType.HTML_Archive | MimeType.H5P_Archive =>
           logger.info(s"ContentPublisher ::: updatePreviewUrl ::: calling getCloudStoreUrl...")
           val latestFolderS3Url = ExtractableMimeTypeHelper.getCloudStoreURL(obj, cloudStorageUtil, config)
+          logger.info(s"Constructed cloudStorageUrl is ${latestFolderS3Url}")
           val updatedPreviewUrl = updatedMeta ++ Map("previewUrl" -> latestFolderS3Url, "streamingUrl" -> latestFolderS3Url)
           Some(updatedPreviewUrl)
         case _ =>
