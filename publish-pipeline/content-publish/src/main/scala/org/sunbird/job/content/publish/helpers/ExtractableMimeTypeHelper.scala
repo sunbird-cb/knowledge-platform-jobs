@@ -24,18 +24,7 @@ object ExtractableMimeTypeHelper {
   def getCloudStoreURL(obj: ObjectData, cloudStorageUtil: CloudStorageUtil, config: ContentPublishConfig): String = {
     val path = getExtractionPath(obj, config, "latest")
     logger.info(s"ExtractableMimeTypeHelper ::: path constructed ::: ${path} for Id : ${obj.identifier} for mimeType ${obj.mimeType}")
-    /**
-     * cloudStorageUtil.getURI -- this calls listObjectKeys method internally - which reads all the files in cloud and times out randomly.
-     * we need only the {{cloudStorageHost}}/{{cloudStorageFolder}}/path to be returned.
-     */
-    //cloudStorageUtil.getURI(path, Option.apply(config.extractableMimeTypes.contains(obj.mimeType)))
-    if (StringUtils.isBlank(config.cloudStorageEndPoint) && StringUtils.isBlank(config.cloudStorageContainer)) {
-      throw new Exception("Failed to read cloud storage endpoint and container details.")
-    } else {
-      val cloudStorageUrl = config.cloudStorageEndPoint + File.separator + config.cloudStorageContainer + File.separator + path
-      logger.info(s"Constructed cloudStorageUrl is ${cloudStorageUrl}")
-      cloudStorageUrl
-    }
+    cloudStorageUtil.getURI(path, Option.apply(config.extractableMimeTypes.contains(obj.mimeType)))
   }
 
   private def getExtractionPath(obj: ObjectData, config: ContentPublishConfig, suffix: String): String = {
