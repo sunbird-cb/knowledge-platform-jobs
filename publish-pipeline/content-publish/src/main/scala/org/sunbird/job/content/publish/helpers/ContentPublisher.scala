@@ -64,11 +64,13 @@ trait ContentPublisher extends ObjectReader with ObjectValidator with ObjectEnri
 
     //delete basePath if exists
     Files.deleteIfExists(new File(ExtractableMimeTypeHelper.getBasePath(obj.identifier, contentConfig.bundleLocation)).toPath)
-
+    logger.info(s"ContentPublisher ::: enrichObjectMetadata ::: starting ecar extraction...")
     if (contentConfig.isECARExtractionEnabled && contentConfig.extractableMimeTypes.contains(obj.mimeType)) {
       ExtractableMimeTypeHelper.copyExtractedContentPackage(obj, contentConfig, "version", cloudStorageUtil)
+      logger.info(s"ContentPublisher ::: enrichObjectMetadata ::: ecar extraction completed from snapshot to version...")
       ExtractableMimeTypeHelper.copyExtractedContentPackage(obj, contentConfig, "latest", cloudStorageUtil)
     }
+    logger.info(s"ContentPublisher ::: enrichObjectMetadata ::: ecar extraction completed successfully...")
     val updatedPreviewUrl = updatePreviewUrl(obj, updatedPragma, cloudStorageUtil, contentConfig).getOrElse(updatedPragma)
     Some(new ObjectData(obj.identifier, updatedPreviewUrl, obj.extData, obj.hierarchy))
   }
@@ -195,12 +197,14 @@ trait ContentPublisher extends ObjectReader with ObjectValidator with ObjectEnri
 
   private def updatePreviewUrl(obj: ObjectData, updatedMeta: Map[String, AnyRef], cloudStorageUtil: CloudStorageUtil, config: ContentPublishConfig): Option[Map[String, AnyRef]] = {
     if (StringUtils.isNotBlank(obj.mimeType)) {
-      logger.debug("Checking Required Fields For: " + obj.mimeType)
+      logger.info("Checking Required Fields For: " + obj.mimeType)
       obj.mimeType match {
         case MimeType.Collection | MimeType.Plugin_Archive | MimeType.Android_Package | MimeType.ASSETS =>
           None
         case MimeType.ECML_Archive | MimeType.HTML_Archive | MimeType.H5P_Archive =>
+          logger.info(s"ContentPublisher ::: updatePreviewUrl ::: calling getCloudStoreUrl...")
           val latestFolderS3Url = ExtractableMimeTypeHelper.getCloudStoreURL(obj, cloudStorageUtil, config)
+          logger.info(s"Constructed cloudStorageUrl is ${latestFolderS3Url}")
           val updatedPreviewUrl = updatedMeta ++ Map("previewUrl" -> latestFolderS3Url, "streamingUrl" -> latestFolderS3Url)
           Some(updatedPreviewUrl)
         case _ =>
