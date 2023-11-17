@@ -86,42 +86,52 @@ class PostPublishRelationUpdaterFunction(
             .collect {
               case list: java.util.List[_] =>
                 list.asInstanceOf[java.util.List[String]].asScala.toList
+              case list: List[_] => 
+                list.asInstanceOf[List[String]]
             }
             .getOrElse(List.empty)
+          logger.info("Child course Id: " + childId + ", existing parentCollections: " + JSONUtil.serialize(parentCollections))
           
           // Update parentCollections if identifier is not present
-          val updatedParentCollections = if (!parentCollections.contains(identifier)) {
+          val updatedParentCollections: List[String] = if (!parentCollections.contains(identifier)) {
             parentCollections :+ identifier
           } else {
             parentCollections
           }
 
-          val requestData: Map[String, Any] = Map(
-            "request" -> Map(
-              "content" -> Map(
-                "versionKey" -> versionKey,
-                "parentCollections" -> updatedParentCollections
-              )
-          ))
-          val jsonString: String = JSONUtil.serialize(requestData)
-          logger.info("Calling content update with body: " + jsonString)
-          val patchRequest = new HttpPatch(
-            config.contentSystemUpdatePath + childId
-          )
-          patchRequest.setEntity(
-            new StringEntity(jsonString, ContentType.APPLICATION_JSON)
-          )
-          val httpClient = HttpClients.createDefault()
-          val response: HttpResponse = httpClient.execute(patchRequest)
-          val statusLine: StatusLine = response.getStatusLine
-          val statusCode: Int = statusLine.getStatusCode
-          if (statusCode == 200) {
-            logger.info("Processed the request.")
-          } else {
-            logger.error(
-              "Received error response for system update API. Response: " + JSONUtil
-                .serialize(response)
+          logger.info("Child course Id: " + childId + ", updated parentCollections: " + JSONUtil.serialize(updatedParentCollections))
+          
+          if (updatedParentCollections.size != parentCollections.size) {
+            logger.info("ParentCollections is updated for course, calling system update API.")
+            val requestData: Map[String, Any] = Map(
+              "request" -> Map(
+                "content" -> Map(
+                  "versionKey" -> versionKey,
+                  "parentCollections" -> updatedParentCollections
+                )
+            ))
+            val jsonString: String = JSONUtil.serialize(requestData)
+            logger.info("Calling content update with body: " + jsonString)
+            val patchRequest = new HttpPatch(
+              config.contentSystemUpdatePath + childId
             )
+            patchRequest.setEntity(
+              new StringEntity(jsonString, ContentType.APPLICATION_JSON)
+            )
+            val httpClient = HttpClients.createDefault()
+            val response: HttpResponse = httpClient.execute(patchRequest)
+            val statusLine: StatusLine = response.getStatusLine
+            val statusCode: Int = statusLine.getStatusCode
+            if (statusCode == 200) {
+              logger.info("Processed the request.")
+            } else {
+              logger.error(
+                "Received error response for system update API. Response: " + JSONUtil
+                  .serialize(response)
+              )
+            }
+          } else {
+            logger.info("ParentCollections is not updated. Ignoring system update API.")
           }
         }
     }
