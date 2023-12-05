@@ -82,7 +82,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
           logger.error(s"Error response from email notification for request :: ${request} :: response is :: ${response.status} ::  ${response.body}")
           throw new InvalidEventException(s"Error in email notification response : ${response}", Map("partition" -> metaData.partition, "offset" -> metaData.offset), null)
         }
-        if (StringUtils.isNoneBlank(userResponse.getOrElse("maskedPhone", "").asInstanceOf[String])) {
+      /*  if (StringUtils.isNoneBlank(userResponse.getOrElse("maskedPhone", "").asInstanceOf[String])) {
           request.put(config.body, "sms")
           val smsBody = config.notificationSmsBody.replaceAll("@@TRAINING_NAME@@", metaData.courseName)
             .replaceAll("@@HELD_DATE@@", dateFormatter.format(metaData.issuedOn))
@@ -96,7 +96,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
             logger.error(s"Error response from sms notification for request :: ${request} :: response is :: ${response.status} ::  ${response.body}")
             throw new InvalidEventException(s"Error in sms notification response : ${response}", Map("partition" -> metaData.partition, "offset" -> metaData.offset), null)
           }
-        }
+        }*/
       } else {
         logger.info("notification template is not present in the cert-templates object {}")
         metrics.incCounter(config.skipNotifyUserCount)
