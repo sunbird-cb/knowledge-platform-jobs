@@ -37,6 +37,7 @@
 		<module>metrics-data-transformer</module>
 		<module>qrcode-image-generator</module>
         <module>program-activity-aggregate-updater</module>
+		<module>karma-points-persist-processor</module>
 	</modules>
 
 	<properties>
