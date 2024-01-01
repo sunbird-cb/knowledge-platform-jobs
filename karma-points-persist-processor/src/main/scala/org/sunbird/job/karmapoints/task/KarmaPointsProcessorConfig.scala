@@ -40,18 +40,20 @@ class KarmaPointsProcessorConfig(override val config: Config) extends BaseJobCon
   val USERIDS = "userIds"
 
   val COURSE_ID = "courseId"
+  val BATCH_ID = "batchId"
+
 
   val OPERATION_COURSE_COMPLETION = "COURSE_COMPLETION"
 
   val sunbird_keyspace: String = config.getString("cassandra.sunbird.keyspace")
-  val sunbird_courses_keyspace: String = config.getString("cassandra.sunbird.keyspace")
+  val sunbird_courses_keyspace: String = config.getString("cassandra.sunbird_courses.keyspace")
 
   val content_hierarchy_table: String = config.getString("cassandra.content_hierarchy.table")
   val content_hierarchy_KeySpace: String = config.getString("cassandra.content_hierarchy.keyspace")
  val user_karma_points_table: String = config.getString("cassandra.user_karma_points.table")
  val user_karma_points_credit_lookup_table: String = config.getString("cassandra.user_karma_points_credit_lookup.table")
   val user_enrolment_batch_lookup_table: String = config.getString("cassandra.enrollment_batch_lookup.table")
-
+  val user_table: String = config.getString("cassandra.user.table")
   // Metric List
   val totalEventsCount = "total-events-count"
   val successEventCount = "success-events-count"
@@ -69,10 +71,10 @@ class KarmaPointsProcessorConfig(override val config: Config) extends BaseJobCon
   val primaryCategory: String = "primaryCategory"
   val cbPlanBase: String = config.getString("service.cbplan.basePath")
 
-  val cbPlanReadUser = cbPlanBase + "cbplan/v1/user/list"
+  val cbPlanReadUser = cbPlanBase + "cbplan/v1/private/user/list"
 
   val defaultHeaders = Map[String, String]("Content-Type" -> "application/json"
-    ,"x-authenticated-user-token"->"eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJwMTRYR1lrdHAxUnNScEZZeXZGTnZuekUxVDBMT3hVSHBoNnhHSzUxdGhvIn0.eyJqdGkiOiJlZTU2MzdkZS1jNjdlLTRmNmItODI4OC0xZWQxMGU1MjExMGMiLCJleHAiOjE3MDM1MjI5NjYsIm5iZiI6MCwiaWF0IjoxNzAzNDc5NzY2LCJpc3MiOiJodHRwczovL3BvcnRhbC5rYXJtYXlvZ2kubmljLmluL2F1dGgvcmVhbG1zL3N1bmJpcmQiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiZjpiYWFkYThiMS1lNjJlLTQ0YzQtYTE0ZC02NzAyZWE5MGY0OTY6MzI2NTk1OGEtNjYyOC00M2ViLTlmMWMtMThmZWM4ZTYwNzE0IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiYW5kcm9pZCIsImF1dGhfdGltZSI6MCwic2Vzc2lvbl9zdGF0ZSI6IjQ2MTJjMWFjLTEwZWYtNDNkMS1hNDRjLWY0ZjY1NWM5MjNiYiIsImFjciI6IjEiLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoiIiwibmFtZSI6ImJoYXJhdGgga3VtYXIgUiIsInByZWZlcnJlZF91c2VybmFtZSI6ImJoYXJhdGhrdW1hcnJfd3lmeCIsImdpdmVuX25hbWUiOiJiaGFyYXRoIGt1bWFyIFIiLCJlbWFpbCI6ImJoKioqKioqKipAeW9wbWFpbC5jb20ifQ.R_slZf8vqviKTftg6b23jksPouOzD029FfZ3MoP4wGuVBZjl1WFfTJZ0IGWL3Hdadv1ELNgV7GpPrbUCm1Ou8Un8VTWnX2nhM6E-bIMUxgTsMOG2IWqtGzGq9UE3cWSzDEulbFpLMBZRkE_NPYsbJw9J-CTAAbmBdf_E6fa79PsCk8GXud6XO76Upq6B1WOyFdfv6T_Lx0zZd7pyXTEkGe1ut1kWd90FbYJPOy_fh-AcBeA9P8vh0u8cKDbbpAvCQC_4U5Hxj007dJYSEz_3cu5yHvg7so4IYBPDkSM2WLeMEwkZxuQtBSEYn-oBcPWsq-5PL-_4_iwaf0VNH8XeZQ"
+    ,"x-authenticated-user-token"->"eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJwMTRYR1lrdHAxUnNScEZZeXZGTnZuekUxVDBMT3hVSHBoNnhHSzUxdGhvIn0.eyJqdGkiOiIyNzEyZTU3NC05ODJjLTQwM2ItYmQ3ZC00MmE1MjE3OTI5ODAiLCJleHAiOjE3MDM5ODQ1MzQsIm5iZiI6MCwiaWF0IjoxNzAzOTQxMzM0LCJpc3MiOiJodHRwczovL3BvcnRhbC5rYXJtYXlvZ2kubmljLmluL2F1dGgvcmVhbG1zL3N1bmJpcmQiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiZjpiYWFkYThiMS1lNjJlLTQ0YzQtYTE0ZC02NzAyZWE5MGY0OTY6MzI2NTk1OGEtNjYyOC00M2ViLTlmMWMtMThmZWM4ZTYwNzE0IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiYW5kcm9pZCIsImF1dGhfdGltZSI6MCwic2Vzc2lvbl9zdGF0ZSI6ImVhN2ExMDA3LWEwZWMtNDJmOC1iMWMzLTM0ODQ3ZTIzNzZjZCIsImFjciI6IjEiLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoiIiwibmFtZSI6ImJoYXJhdGgga3VtYXIgUiIsInByZWZlcnJlZF91c2VybmFtZSI6ImJoYXJhdGhrdW1hcnJfd3lmeCIsImdpdmVuX25hbWUiOiJiaGFyYXRoIGt1bWFyIFIiLCJlbWFpbCI6ImJoKioqKioqKipAeW9wbWFpbC5jb20ifQ.cUSurme6qLbvbz0sbdtsd5A6QvYgxUgLP59YRzVuaKuKTrfEbDdRNqF58H7hEY99oiAXrK5E4TxyFnZH7JKZU1iRifNBY3J-Otj9vwSVNyoAIrFh8ODNXtOSe-_tsPh0G1zj1cgNdjtOKxiQYuO67aiJDTpxNZr3fnx6HZ-hJT9deMZd08ZlVfbSDRLFsxCmtJMgH5DY8-YtvBz4s7yWP-3LbAi9X6m3ffNVU8ctUvl2DSUphZWI3XZDdndzShadjWvdgM1c-FS8lZxZcQD9HM0_ncnAlh_aKntBKdrQD2K5x1a5SwvVoJfvI-iZxyNbvpnHoaIyyPzaO9bvsHDcpQ"
     ,"x-authenticated-user-orgid"->"01379305664500531251")
 
   val parentCollections: String = "parentCollections"
@@ -115,7 +117,7 @@ class KarmaPointsProcessorConfig(override val config: Config) extends BaseJobCon
   val OPERATION_TYPE_RATING ="RATING"
   val OPERATION_TYPE_FIRST_LOGIN ="FIRST_LOGIN"
   val OPERATION_TYPE_ENROLMENT:String ="FIRST_ENROLMENT"
-
   val ACTIVITY_ID = "activity_id"
+  val ID = "id"
 }
 

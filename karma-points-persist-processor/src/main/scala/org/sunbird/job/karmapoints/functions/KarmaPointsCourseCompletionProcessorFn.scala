@@ -63,7 +63,12 @@ class KarmaPointsCourseCompletionProcessorFn(config: KarmaPointsProcessorConfig,
       points = points+config.assessmentQuotaKarmaPoints
       addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.TRUE)
     }
-    if(Utility.isACBP(contextId,httpUtil,config)(metrics)){
+    val headers = Map[String, String](
+       "Content-Type" -> "application/json"
+      ,"x-authenticated-user-orgid"->Utility.userRootOrgId(userId,config, cassandraUtil)
+      ,"x-authenticated-userid"->userId)
+
+    if(Utility.isACBP(contextId,httpUtil,config,headers)(metrics)){
       points = points+config.acbpQuotaKarmaPoints
       addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.TRUE)
     }
