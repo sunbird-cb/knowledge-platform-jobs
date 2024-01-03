@@ -33,7 +33,7 @@ class KarmaPointsFirstLoginProcessorFn(config: KarmaPointsProcessorConfig, httpU
                               context: ProcessFunction[Event, String]#Context,
                               metrics: Metrics): Unit = {
     val eData = event.getMap().get(config.EDATA).asInstanceOf[scala.collection.immutable.Map[String, Any]]
-    val userIdSome : Option[Any] = eData.get(config.USER_ID_CAMEL)
+    val userIdSome : Option[Any] = eData.get(config.ID)
     val usrId: String = userIdSome match {
       case Some(value) => value.asInstanceOf[String]
       case None => ""
