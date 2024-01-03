@@ -58,6 +58,15 @@ object Utility {
     result_.size() > 0
   }
 
+  def courseQuota(userId: String, contextType: String, operationType: String, contextId: String,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil): Boolean = {
+    val karmaPointsLookUp = karmaPointslookup(userId, contextType, operationType, contextId,config, cassandraUtil)
+    if(karmaPointsLookUp.size() < 1)
+      return false
+    val credit_date = karmaPointsLookUp.get(0).getObject(config.DB_COLUMN_CREDIT_DATE).asInstanceOf[Date]
+    val result_ = karmaPointsEntry(credit_date,userId, contextType, operationType, contextId,config, cassandraUtil)
+    result_.size() > 0
+  }
+
   def karmaPointsEntry(credit_date:Date ,userId: String, contextType: String, operationType: String, contextId: String
                           ,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil):  util.List[Row] = {
     val karma_query: Select = QueryBuilder.select().from(config.sunbird_keyspace, config.user_karma_points_table)
@@ -66,6 +75,16 @@ object Utility {
     karma_query.where(QueryBuilder.eq(config.DB_COLUMN_CONTEXT_TYPE, contextType))
     karma_query.where(QueryBuilder.eq(config.DB_COLUMN_OPERATION_TYPE, operationType))
     karma_query.where(QueryBuilder.eq(config.DB_COLUMN_CONTEXT_ID, contextId))
+    cassandraUtil.find(karma_query.toString)
+  }
+
+  def fetchKarmaPointsByCreditDateRange(credit_date:Long ,userId: String, contextType: String, operationType: String
+                       ,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil):  util.List[Row] = {
+    val karma_query: Select = QueryBuilder.select().from(config.sunbird_keyspace, config.user_karma_points_table)
+    karma_query.where(QueryBuilder.eq(config.DB_COLUMN_USERID, userId))
+    karma_query.where(QueryBuilder.gt(config.DB_COLUMN_CREDIT_DATE, credit_date))
+     //karma_query.where(QueryBuilder.eq(config.DB_COLUMN_CONTEXT_TYPE, contextType))
+    //karma_query.where(QueryBuilder.eq(config.DB_COLUMN_OPERATION_TYPE, operationType))
     cassandraUtil.find(karma_query.toString)
   }
 
@@ -185,9 +204,10 @@ object Utility {
                                httpUtil: HttpUtil,cassandraUtil: CassandraUtil)(metrics: Metrics) :Unit = {
     var points : Int = config.courseCompletionPoints
     val addInfoMap = new util.HashMap[String, AnyRef]
-    addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.FALSE)
-    addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.FALSE)
-    addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
+     addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.FALSE)
+     addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.FALSE)
+     addInfoMap.put(config.OPERATION_COURSE_COMPLETION, java.lang.Boolean.TRUE)
+     addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
     if(Utility.isAssessmentExist(hierarchy,config)(metrics)) {
       points = points+config.assessmentQuotaKarmaPoints
       addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.TRUE)
@@ -208,33 +228,5 @@ object Utility {
     }
     Utility.insertKarmaPoints(userId, contextType,operationType,contextId,points, addInfo,config, cassandraUtil)(metrics)
   }
-  def claimACBPWithoutCourseCompletion(userId : String, contextType : String,operationType:String,
-                       contextId:String,hierarchy:java.util.Map[String, AnyRef],
-                       config: KarmaPointsProcessorConfig,
-                       httpUtil: HttpUtil,cassandraUtil: CassandraUtil)(metrics: Metrics) :Unit = {
-    var points : Int = config.courseCompletionPoints
-    val addInfoMap = new util.HashMap[String, AnyRef]
-    addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.FALSE)
-    addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.FALSE)
-    addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
-    if(Utility.isAssessmentExist(hierarchy,config)(metrics)) {
-      points = points+config.assessmentQuotaKarmaPoints
-      addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.TRUE)
-    }
-    val headers = Map[String, String](
-      "Content-Type" -> "application/json"
-      ,"x-authenticated-user-orgid"->Utility.userRootOrgId(userId,config, cassandraUtil)
-      ,"x-authenticated-userid"->userId)
-    if(Utility.isACBP(contextId,httpUtil,config,headers)(metrics)){
-      points = points+config.acbpQuotaKarmaPoints
-      addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.TRUE)
-    }
-    var addInfo = ""
-    try addInfo = mapper.writeValueAsString(addInfoMap)
-    catch {
-      case e: JsonProcessingException =>
-        throw new RuntimeException(e)
-    }
-    Utility.insertKarmaPoints(userId, contextType,operationType,contextId,points, addInfo,config, cassandraUtil)(metrics)
-  }
+
 }
