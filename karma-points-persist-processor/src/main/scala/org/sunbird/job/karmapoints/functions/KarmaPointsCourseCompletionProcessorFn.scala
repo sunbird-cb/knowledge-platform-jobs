@@ -11,7 +11,6 @@ import org.sunbird.job.karmapoints.task.KarmaPointsProcessorConfig
 import org.sunbird.job.karmapoints.util.Utility
 import org.sunbird.job.util.{CassandraUtil, HttpUtil}
 import org.sunbird.job.{BaseProcessFunction,  Metrics}
-
 import java.util
 
 class KarmaPointsCourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
@@ -51,7 +50,7 @@ class KarmaPointsCourseCompletionProcessorFn(config: KarmaPointsProcessorConfig,
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String] // Replace YourTypeForPrimaryCategory with the actual type
     if (Utility.isEntryAlreadyExist(usrIdOption, contextType, config.OPERATION_COURSE_COMPLETION, contextId, config, cassandraUtil))
       return
-    courseCompletion(usrIdOption, contextType,config.OPERATION_COURSE_COMPLETION,contextId, hierarchy)(metrics)
+    Utility.courseCompletion(usrIdOption, contextType,config.OPERATION_COURSE_COMPLETION,contextId, hierarchy,config, httpUtil, cassandraUtil)(metrics)
   }
   private def courseCompletion(userId : String, contextType : String,operationType:String,contextId:String,hierarchy:java.util.Map[String, AnyRef])(metrics: Metrics) :Unit = {
     var points : Int = config.courseCompletionPoints
@@ -67,7 +66,6 @@ class KarmaPointsCourseCompletionProcessorFn(config: KarmaPointsProcessorConfig,
        "Content-Type" -> "application/json"
       ,"x-authenticated-user-orgid"->Utility.userRootOrgId(userId,config, cassandraUtil)
       ,"x-authenticated-userid"->userId)
-
     if(Utility.isACBP(contextId,httpUtil,config,headers)(metrics)){
       points = points+config.acbpQuotaKarmaPoints
       addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.TRUE)

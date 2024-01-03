@@ -2,6 +2,7 @@ package org.sunbird.job.karmapoints.util
 
 import com.datastax.driver.core.Row
 import com.datastax.driver.core.querybuilder.{Insert, QueryBuilder, Select}
+import com.fasterxml.jackson.core.JsonProcessingException
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.sunbird.job.karmapoints.task.KarmaPointsProcessorConfig
@@ -9,7 +10,7 @@ import org.sunbird.job.util.{CassandraUtil, HttpUtil, ScalaJsonUtil}
 import org.sunbird.job.Metrics
 
 import java.util
-import java.util.{Date}
+import java.util.Date
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.immutable.Map
 
@@ -68,9 +69,8 @@ object Utility {
     cassandraUtil.find(karma_query.toString)
   }
 
-  def isFirstEnrolment(batchid: String, userid: String, config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil): Boolean = {
-    val enrol_lookup_query: Select = QueryBuilder.select().from(config.sunbird_courses_keyspace, config.user_enrolment_batch_lookup_table)
-    enrol_lookup_query.where(QueryBuilder.eq(config.DB_COLUMN_BATCH_ID, batchid))
+  def isFirstEnrolment( userid: String, config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil): Boolean = {
+    val enrol_lookup_query: Select = QueryBuilder.select().from(config.sunbird_courses_keyspace, config.user_enrolments_lookup_table)
     enrol_lookup_query.where(QueryBuilder.eq(config.DB_COLUMN_USERID, userid))
     cassandraUtil.find(enrol_lookup_query.toString).size() < 2
   }
@@ -177,5 +177,35 @@ object Utility {
         s"Error from get API : ${url}, with response: ${response}"
       )
     }
+  }
+
+   def courseCompletion(userId : String, contextType : String,operationType:String,
+                               contextId:String,hierarchy:java.util.Map[String, AnyRef],
+                               config: KarmaPointsProcessorConfig,
+                               httpUtil: HttpUtil,cassandraUtil: CassandraUtil)(metrics: Metrics) :Unit = {
+    var points : Int = config.courseCompletionPoints
+    val addInfoMap = new util.HashMap[String, AnyRef]
+    addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.FALSE)
+    addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.FALSE)
+    addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
+    if(Utility.isAssessmentExist(hierarchy,config)(metrics)) {
+      points = points+config.assessmentQuotaKarmaPoints
+      addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.TRUE)
+    }
+    val headers = Map[String, String](
+      "Content-Type" -> "application/json"
+      ,"x-authenticated-user-orgid"->Utility.userRootOrgId(userId,config, cassandraUtil)
+      ,"x-authenticated-userid"->userId)
+    if(Utility.isACBP(contextId,httpUtil,config,headers)(metrics)){
+      points = points+config.acbpQuotaKarmaPoints
+      addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.TRUE)
+    }
+    var addInfo = ""
+    try addInfo = mapper.writeValueAsString(addInfoMap)
+    catch {
+      case e: JsonProcessingException =>
+        throw new RuntimeException(e)
+    }
+    Utility.insertKarmaPoints(userId, contextType,operationType,contextId,points, addInfo,config, cassandraUtil)(metrics)
   }
 }

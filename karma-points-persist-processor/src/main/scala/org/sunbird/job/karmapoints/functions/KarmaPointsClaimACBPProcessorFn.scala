@@ -1,5 +1,6 @@
 package org.sunbird.job.karmapoints.functions
 
+import com.datastax.driver.core.Row
 import com.fasterxml.jackson.core.JsonProcessingException
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
@@ -10,6 +11,8 @@ import org.sunbird.job.karmapoints.task.KarmaPointsProcessorConfig
 import org.sunbird.job.karmapoints.util.Utility
 import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil}
 import org.sunbird.job.{BaseProcessFunction, BaseProcessKeyedFunction, Metrics}
+
+import java.util
 import java.util.Date
 
 class KarmaPointsClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
@@ -50,6 +53,18 @@ class KarmaPointsClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUt
       case Some(value) => value.asInstanceOf[String]
       case None => ""
     }
+
+    val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
+    val res = Utility.karmaPointslookup(usrId,contextType,config.OPERATION_COURSE_COMPLETION,contextId,config,cassandraUtil)
+    if(res == null || res.isEmpty)
+      Utility.courseCompletion(usrId, contextType,config.OPERATION_COURSE_COMPLETION,contextId, hierarchy,config,httpUtil,cassandraUtil)(metrics)
+    else
+      claimACBP(usrId , config.OPERATION_COURSE_COMPLETION,contextId,config,cassandraUtil,res,contextType)(metrics)
+  }
+
+  private def claimACBP(  usrId : String,operationType:String,contextId:String
+                        ,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil,res:util.List[Row],contextType:String) (metrics: Metrics):Unit = {
     val headers = Map[String, String](
       "Content-Type" -> "application/json"
       , "x-authenticated-user-orgid" -> Utility.userRootOrgId(usrId, config, cassandraUtil)
@@ -57,9 +72,6 @@ class KarmaPointsClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUt
 
     if(!Utility.isACBP(contextId,httpUtil,config,headers)(metrics))
       return
-    val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
-    val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
-    val res = Utility.karmaPointslookup(usrId,contextType,config.OPERATION_COURSE_COMPLETION,contextId,config,cassandraUtil)
     val credit_date = res.get(0).getObject(config.DB_COLUMN_CREDIT_DATE).asInstanceOf[Date]
     val entry = Utility.karmaPointsEntry(credit_date,usrId,contextType,config.OPERATION_COURSE_COMPLETION,contextId,config,cassandraUtil)
     var points= entry.get(0).getInt(config.POINTS)
@@ -73,11 +85,6 @@ class KarmaPointsClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUt
         throw new RuntimeException(e)
     }
     points = points+config.acbpQuotaKarmaPoints
-    claimACBP(credit_date,points,usrId , contextType ,config.OPERATION_COURSE_COMPLETION,contextId,addInfoStr,config,cassandraUtil)
-  }
-
-  private def claimACBP(credit_date: Date, points:Int, userId : String, contextType : String,operationType:String,contextId:String, addInfo:String
-                        ,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil) :Unit = {
-    Utility.upsertKarmaPoints(userId, contextType ,operationType,contextId,points,addInfo,credit_date.getTime,config, cassandraUtil)
+    Utility.upsertKarmaPoints(usrId, contextType ,operationType,contextId,points,addInfo,credit_date.getTime,config, cassandraUtil)
   }
 }

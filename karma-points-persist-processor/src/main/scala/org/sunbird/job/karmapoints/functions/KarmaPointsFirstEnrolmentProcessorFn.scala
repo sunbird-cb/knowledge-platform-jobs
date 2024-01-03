@@ -1,18 +1,23 @@
 package org.sunbird.job.karmapoints.functions
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
-import org.apache.flink.streaming.api.functions.{ProcessFunction}
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper
+import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.sunbird.job.karmapoints.domain.Event
 import org.sunbird.job.karmapoints.task.KarmaPointsProcessorConfig
 import org.sunbird.job.karmapoints.util.Utility
 import org.sunbird.job.util.{CassandraUtil, HttpUtil}
-import org.sunbird.job.{BaseProcessFunction,  Metrics}
+import org.sunbird.job.{BaseProcessFunction, Metrics}
+
+import java.util
 
 class KarmaPointsFirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
                                           (implicit val stringTypeInfo: TypeInformation[String],
                                 @transient var cassandraUtil: CassandraUtil = null)
   extends BaseProcessFunction[Event, String](config)   {
+  lazy private val mapper: ObjectMapper = new ObjectMapper()
 
   override def open(parameters: Configuration): Unit = {
     super.open(parameters)
@@ -52,12 +57,21 @@ class KarmaPointsFirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, h
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
 
     if(Utility.isEntryAlreadyExist(usrId,contextType,config.OPERATION_TYPE_ENROLMENT,contextId,config, cassandraUtil)
-      && !Utility.isFirstEnrolment(batchId_str,usrId,config,cassandraUtil))
+      || !Utility.isFirstEnrolment(usrId,config,cassandraUtil))
       return
     firstEnrolment(usrId, contextType,config.OPERATION_TYPE_ENROLMENT,contextId,cassandraUtil)(metrics)
   }
   private def firstEnrolment(userId : String, contextType : String,operationType:String,contextId:String, cassandraUtil: CassandraUtil)(metrics: Metrics) :Unit = {
     val points: Int = config.firstEnrolmentQuotaKarmaPoints
-    Utility.insertKarmaPoints(userId, contextType,operationType,contextId,points,config,cassandraUtil)(metrics)
+    val addInfoMap = new util.HashMap[String, AnyRef]
+    val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
+    var addInfo = ""
+    try addInfo = mapper.writeValueAsString(addInfoMap)
+    catch {
+      case e: JsonProcessingException =>
+        throw new RuntimeException(e)
+    }
+    Utility.insertKarmaPoints(userId, contextType,operationType,contextId,points,addInfo,config,cassandraUtil)(metrics)
   }
 }
