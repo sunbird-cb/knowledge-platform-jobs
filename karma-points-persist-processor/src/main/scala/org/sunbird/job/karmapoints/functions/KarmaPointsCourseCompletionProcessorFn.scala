@@ -40,7 +40,7 @@ class KarmaPointsCourseCompletionProcessorFn(config: KarmaPointsProcessorConfig,
   override def processElement(event: Event,
                               context: ProcessFunction[Event, String]#Context,
                               metrics: Metrics): Unit = {
-    val usrIdOption = event.getMap().get(config.EDATA).asInstanceOf[scala.collection.immutable.HashMap[String, Any]]
+    val userId = event.getMap().get(config.EDATA).asInstanceOf[scala.collection.immutable.HashMap[String, Any]]
       .get(config.USERIDS).asInstanceOf[Option[List[Any]]].get(0).asInstanceOf[String]
     val courseId : Option[Any] = event.getMap().get(config.EDATA).asInstanceOf[scala.collection.immutable.HashMap[String, Any]]
       .get(config.COURSE_ID)
@@ -51,15 +51,15 @@ class KarmaPointsCourseCompletionProcessorFn(config: KarmaPointsProcessorConfig,
     val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String] // Replace YourTypeForPrimaryCategory with the actual type
 
-    if(!currentCutOffAvbl(usrIdOption, contextType, config, cassandraUtil)(metrics))
+    if(!nonACBPCourseMonthCutOffAvbl(userId, contextType, config, cassandraUtil)(metrics))
       return
-    if (Utility.isEntryAlreadyExist(usrIdOption, contextType, config.OPERATION_COURSE_COMPLETION, contextId, config, cassandraUtil))
+    if (Utility.isEntryAlreadyExist(userId, contextType, config.OPERATION_COURSE_COMPLETION, contextId, config, cassandraUtil))
       return
-    Utility.courseCompletion(usrIdOption, contextType,config.OPERATION_COURSE_COMPLETION,contextId, hierarchy,config, httpUtil, cassandraUtil)(metrics)
+    Utility.courseCompletion(userId, contextType,config.OPERATION_COURSE_COMPLETION,contextId, hierarchy,config, httpUtil, cassandraUtil)(metrics)
   }
 
-  def currentCutOffAvbl(userId: String, contextType: String,
-                        config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil)(metrics: Metrics): Boolean = {
+  def nonACBPCourseMonthCutOffAvbl(userId: String, contextType: String,
+                                   config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil)(metrics: Metrics): Boolean = {
     val currentDate = LocalDate.now
     val firstDateOfMonth = currentDate.withDayOfMonth(1)
     val milliseconds = firstDateOfMonth.atStartOfDay.toInstant(ZoneOffset.UTC).toEpochMilli
@@ -78,7 +78,7 @@ class KarmaPointsCourseCompletionProcessorFn(config: KarmaPointsProcessorConfig,
       }
       index += 1
     }
-    currentMonthCourseQuota < 4
+    currentMonthCourseQuota < config.nonAcbpCourseQuota
   }
 
 }

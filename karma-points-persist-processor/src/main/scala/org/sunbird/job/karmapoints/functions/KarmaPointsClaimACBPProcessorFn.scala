@@ -61,9 +61,9 @@ class KarmaPointsClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUt
                         ,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil) (metrics: Metrics):Unit = {
 
     val headers = Map[String, String](
-      "Content-Type" -> "application/json"
-      , "x-authenticated-user-orgid" -> Utility.userRootOrgId(usrId, config, cassandraUtil)
-      , "x-authenticated-userid" -> usrId)
+      config.HEADER_CONTENT_TYPE_KEY -> config.HEADER_CONTENT_TYPE_JSON
+      , config.X_AUTHENTICATED_USER_ORGID-> Utility.userRootOrgId(usrId, config, cassandraUtil)
+      , config.X_AUTHENTICATED_USER_ID -> usrId)
 
     if(!Utility.isACBP(contextId,httpUtil,config,headers)(metrics)) {
       logger.info("Request is not part of ACBP for userId :-"+usrId + ",courseId :- "+contextId)
@@ -96,6 +96,7 @@ class KarmaPointsClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUt
       var points= entry.get(0).getInt(config.POINTS)
       val addInfo= entry.get(0).getString(config.ADD_INFO)
       val addInfoMap = JSONUtil.deserialize[java.util.Map[String, Any]](addInfo)
+      if(addInfoMap.get(config.ADDINFO_ACBP) == java.lang.Boolean.TRUE) return
       addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.TRUE)
       var addInfoStr = ""
       try addInfoStr = mapper.writeValueAsString(addInfoMap)
