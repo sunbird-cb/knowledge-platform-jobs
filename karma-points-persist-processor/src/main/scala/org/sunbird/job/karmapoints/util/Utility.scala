@@ -257,11 +257,12 @@ object Utility {
     if(userKarmaSummary.size() > 0) {
       total_points = userKarmaSummary.get(0).getInt("total_points")
       val info = userKarmaSummary.get(0).getString(config.ADD_INFO)
+      if (!StringUtils.isEmpty(info)) {
       infoMap = JSONUtil.deserialize[java.util.HashMap[String, Any]](info)
       val currStr = infoMap.get("currentMonth")
       if(currentDateStr.equals(currStr)){
         nonACBPCourseQuotaCount = infoMap.get("nonACBPCourseKarmaQuotaClaimed").asInstanceOf[Int]
-      }
+      } }
     }
     if (!isACBP) {
       nonACBPCourseQuotaCount = nonACBPCourseQuotaCount+1
@@ -297,10 +298,12 @@ object Utility {
     if(userKarmaSummary.size() > 0) {
       total_points = userKarmaSummary.get(0).getInt("total_points")
       val info = userKarmaSummary.get(0).getString(config.ADD_INFO)
-      infoMap = JSONUtil.deserialize[java.util.HashMap[String, Any]](info)
-      val currStr = infoMap.get("currentMonth")
-      if(currentDateStr.equals(currStr)){
-        nonACBPCourseQuotaCount = infoMap.get("nonACBPCourseKarmaQuotaClaimed").asInstanceOf[Int]
+      if (!StringUtils.isEmpty(info)) {
+        infoMap = JSONUtil.deserialize[java.util.HashMap[String, Any]](info)
+        val currStr = infoMap.get("currentMonth")
+        if (currentDateStr.equals(currStr)) {
+          nonACBPCourseQuotaCount = infoMap.get("nonACBPCourseKarmaQuotaClaimed").asInstanceOf[Int]
+        }
       }
     }
     if (nonACBPCourseQuotaCount > 0) {
