@@ -50,9 +50,10 @@ class KarmaPointsCourseCompletionProcessorFn(config: KarmaPointsProcessorConfig,
     }
     val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String] // Replace YourTypeForPrimaryCategory with the actual type
-
-   // if(!nonACBPCourseMonthCutOffAvbl(userId, contextType, config, cassandraUtil)(metrics))
-   //   return
+    if(!"Course".equals(contextType))
+      return
+    if(!nonACBPCourseMonthCutOffAvbl(userId, contextType, config, cassandraUtil)(metrics))
+      return
     if (Utility.isEntryAlreadyExist(userId, contextType, config.OPERATION_COURSE_COMPLETION, contextId, config, cassandraUtil))
       return
     Utility.courseCompletion(userId, contextType,config.OPERATION_COURSE_COMPLETION,contextId, hierarchy,config, httpUtil, cassandraUtil)(metrics)

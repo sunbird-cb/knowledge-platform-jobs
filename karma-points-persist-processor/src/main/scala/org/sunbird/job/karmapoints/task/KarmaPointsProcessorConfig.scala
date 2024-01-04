@@ -93,6 +93,8 @@ class KarmaPointsProcessorConfig(override val config: Config) extends BaseJobCon
   val USER_ID_CAMEL ="userId"
 
   val UNDER_SCORE= "_"
+  val PIPE= "|"
+
   val DB_COLUMN_USER_KARMA_POINTS_KEY= "user_karma_points_key"
   val DB_COLUMN_OPERATION_TYPE= "operation_type"
   val DB_COLUMN_USERID= "userid"

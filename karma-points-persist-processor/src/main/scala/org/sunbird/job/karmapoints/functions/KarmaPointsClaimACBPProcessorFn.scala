@@ -72,6 +72,8 @@ class KarmaPointsClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUt
 
     val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
+    if(!"Course".equals(contextType))
+      return
     val courseName = hierarchy.get(config.name).asInstanceOf[String]
     val res = Utility.karmaPointslookup(usrId,contextType,config.OPERATION_COURSE_COMPLETION,contextId,config,cassandraUtil)
 

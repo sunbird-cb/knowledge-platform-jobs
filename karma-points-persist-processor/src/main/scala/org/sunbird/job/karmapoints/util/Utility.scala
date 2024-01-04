@@ -117,14 +117,14 @@ object Utility {
   def karmaPointslookup(userId: String, contextType: String, operationType: String, contextId: String,
                         config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil): util.List[Row] = {
     val query: Select = QueryBuilder.select().from(config.sunbird_keyspace, config.user_karma_points_credit_lookup_table)
-    query.where(QueryBuilder.eq(config.DB_COLUMN_USER_KARMA_POINTS_KEY, userId + config.UNDER_SCORE + contextType + config.UNDER_SCORE  + contextId))
+    query.where(QueryBuilder.eq(config.DB_COLUMN_USER_KARMA_POINTS_KEY, userId + config.PIPE + contextType + config.PIPE  + contextId))
     query.where(QueryBuilder.eq(config.DB_COLUMN_OPERATION_TYPE, operationType))
     cassandraUtil.find(query.toString)
   }
 
    def insertKarmaCreditLookUp(userId : String, contextType : String,operationType:String,contextId:String, credit_date: Long,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil): Boolean = {
     val query: Insert = QueryBuilder.insertInto(config.sunbird_keyspace, config.user_karma_points_credit_lookup_table)
-    query.value(config.DB_COLUMN_USER_KARMA_POINTS_KEY, userId + "_"+contextType+"_"+ contextId)
+    query.value(config.DB_COLUMN_USER_KARMA_POINTS_KEY, userId + config.PIPE+contextType+config.PIPE+ contextId)
     query.value(config.DB_COLUMN_OPERATION_TYPE, operationType)
     query.value(config.DB_COLUMN_CREDIT_DATE, credit_date)
     cassandraUtil.upsert(query.toString)
