@@ -3,12 +3,15 @@ package org.sunbird.job.karmapoints.util
 import com.datastax.driver.core.Row
 import com.datastax.driver.core.querybuilder.{Insert, QueryBuilder, Select}
 import com.fasterxml.jackson.core.JsonProcessingException
+import org.apache.commons.lang3.StringUtils
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.sunbird.job.karmapoints.task.KarmaPointsProcessorConfig
-import org.sunbird.job.util.{CassandraUtil, HttpUtil, ScalaJsonUtil}
+import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil, ScalaJsonUtil}
 import org.sunbird.job.Metrics
 
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util
 import java.util.Date
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
@@ -48,6 +51,23 @@ object Utility {
       throw new Exception(msg)
     }
   }
+
+
+
+  def getUserKarmaSummary(userId: String,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil) :util.List[Row] = {
+    val karma_query: Select = QueryBuilder.select().from(config.sunbird_keyspace, config.user_karma_summary_table)
+    karma_query.where(QueryBuilder.eq(config.DB_COLUMN_USERID, userId))
+    cassandraUtil.find(karma_query.toString)
+  }
+
+  def updateUserKarmaSummary(userId:String,points:Int, addinfo:String,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil) : Unit = {
+    val query: Insert = QueryBuilder.insertInto(config.sunbird_keyspace, config.user_karma_summary_table)
+    query.value(config.USER_ID, userId)
+    query.value("total_points",  points)
+    if(addinfo != null)
+    query.value("addinfo", addinfo)
+    cassandraUtil.upsert(query.toString)
+ }
 
    def isEntryAlreadyExist(userId: String, contextType: String, operationType: String, contextId: String,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil): Boolean = {
      val karmaPointsLookUp = karmaPointslookup(userId, contextType, operationType, contextId,config, cassandraUtil)
@@ -109,6 +129,8 @@ object Utility {
     query.value(config.DB_COLUMN_CREDIT_DATE, credit_date)
     cassandraUtil.upsert(query.toString)
   }
+
+
 
    def isAssessmentExist(hierarchy:java.util.Map[String, AnyRef],config: KarmaPointsProcessorConfig)(implicit metrics: Metrics):Boolean = {
     var result:Boolean = false;
@@ -209,7 +231,8 @@ object Utility {
        , config.X_AUTHENTICATED_USER_ORGID-> Utility.userRootOrgId(userId, config, cassandraUtil)
        , config.X_AUTHENTICATED_USER_ID -> userId)
 
-    if(Utility.isACBP(contextId,httpUtil,config,headers)(metrics)){
+     val isACBP = Utility.isACBP(contextId, httpUtil, config, headers)(metrics)
+    if(isACBP){
       points = points+config.acbpQuotaKarmaPoints
       addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.TRUE)
     }
@@ -219,7 +242,79 @@ object Utility {
       case e: JsonProcessingException =>
         throw new RuntimeException(e)
     }
-    Utility.insertKarmaPoints(userId, contextType,operationType,contextId,points, addInfo,config, cassandraUtil)(metrics)
+       Utility.insertKarmaPoints(userId, contextType,operationType,contextId,points, addInfo,config, cassandraUtil)(metrics)
+       updateKarmaSummaryForCourseCompletion(userId, points, isACBP,config, cassandraUtil)
+   }
+
+  def updateKarmaSummaryForCourseCompletion (userId:String,points:Int,isACBP:Boolean,config:KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil): Unit = {
+    var total_points:Int = 0
+    var infoMap = new util.HashMap[String, Any]
+    var nonACBPCourseQuotaCount : Int= 0
+    val currentDate = LocalDate.now
+    val formatter = DateTimeFormatter.ofPattern("yyyy|MM")
+    val currentDateStr = currentDate.format(formatter)
+    val userKarmaSummary = Utility.getUserKarmaSummary(userId, config, cassandraUtil)
+    if(userKarmaSummary.size() > 0) {
+      total_points = userKarmaSummary.get(0).getInt("total_points")
+      val info = userKarmaSummary.get(0).getString(config.ADD_INFO)
+      infoMap = JSONUtil.deserialize[java.util.HashMap[String, Any]](info)
+      val currStr = infoMap.get("currentMonth")
+      if(currentDateStr.equals(currStr)){
+        nonACBPCourseQuotaCount = infoMap.get("nonACBPCourseKarmaQuotaClaimed").asInstanceOf[Int]
+      }
+    }
+    if (!isACBP) {
+      nonACBPCourseQuotaCount = nonACBPCourseQuotaCount+1
+    }
+    infoMap.put("nonACBPCourseKarmaQuotaClaimed", nonACBPCourseQuotaCount)
+    infoMap.put("currentMonth",currentDateStr)
+    var info = ""
+    try info = mapper.writeValueAsString(infoMap)
+    catch {
+      case e: JsonProcessingException =>
+        throw new RuntimeException(e)
+    }
+    Utility.updateUserKarmaSummary(userId: String, total_points + points, info, config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil)
+  }
+
+  def updateKarmaSummary(userId:String,points:Int,config:KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil): Unit = {
+    var total_points:Int = 0
+    val userKarmaSummary = Utility.getUserKarmaSummary(userId, config, cassandraUtil)
+    if(userKarmaSummary.size() > 0) {
+      total_points = userKarmaSummary.get(0).getInt("total_points")
+    }
+    Utility.updateUserKarmaSummary(userId: String, total_points + points,null, config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil)
+  }
+
+  def updateKarmaSummaryForClaimACBP (userId:String,points:Int,config:KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil): Unit = {
+    var total_points:Int = 0
+    var infoMap = new util.HashMap[String, Any]
+    var nonACBPCourseQuotaCount : Int= 0
+    val currentDate = LocalDate.now
+    val formatter = DateTimeFormatter.ofPattern("yyyy|MM")
+    val currentDateStr = currentDate.format(formatter)
+    val userKarmaSummary = Utility.getUserKarmaSummary(userId, config, cassandraUtil)
+    if(userKarmaSummary.size() > 0) {
+      total_points = userKarmaSummary.get(0).getInt("total_points")
+      val info = userKarmaSummary.get(0).getString(config.ADD_INFO)
+      infoMap = JSONUtil.deserialize[java.util.HashMap[String, Any]](info)
+      val currStr = infoMap.get("currentMonth")
+      if(currentDateStr.equals(currStr)){
+        nonACBPCourseQuotaCount = infoMap.get("nonACBPCourseKarmaQuotaClaimed").asInstanceOf[Int]
+      }
+    }
+    if (nonACBPCourseQuotaCount > 0) {
+      nonACBPCourseQuotaCount = nonACBPCourseQuotaCount-1
+    }
+    infoMap.put("nonACBPCourseKarmaQuotaClaimed", nonACBPCourseQuotaCount)
+    infoMap.put("currentMonth",currentDateStr)
+    var info = ""
+    try info = mapper.writeValueAsString(infoMap)
+    catch {
+      case e: JsonProcessingException =>
+        throw new RuntimeException(e)
+    }
+    Utility.updateUserKarmaSummary(userId: String, total_points + points, info, config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil)
   }
 
 }

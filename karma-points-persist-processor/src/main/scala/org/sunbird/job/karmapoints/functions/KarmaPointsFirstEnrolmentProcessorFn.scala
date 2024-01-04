@@ -73,5 +73,7 @@ class KarmaPointsFirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, h
         throw new RuntimeException(e)
     }
     Utility.insertKarmaPoints(userId, contextType,operationType,contextId,points,addInfo,config,cassandraUtil)(metrics)
+    Utility.updateKarmaSummary(userId, points, config, cassandraUtil)
+
   }
 }

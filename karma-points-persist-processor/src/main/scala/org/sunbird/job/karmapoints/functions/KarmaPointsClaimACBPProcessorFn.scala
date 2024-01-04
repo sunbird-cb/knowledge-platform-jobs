@@ -106,6 +106,7 @@ class KarmaPointsClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUt
       }
       points = points+config.acbpQuotaKarmaPoints
       Utility.upsertKarmaPoints(usrId, contextType ,operationType,contextId,points,addInfoStr,credit_date.getTime,config, cassandraUtil)
+      Utility.updateKarmaSummaryForClaimACBP(usrId,points, config, cassandraUtil)
     }
   }
 }

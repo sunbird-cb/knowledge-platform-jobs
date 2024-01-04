@@ -45,5 +45,6 @@ class KarmaPointsFirstLoginProcessorFn(config: KarmaPointsProcessorConfig, httpU
   private def firstLogin(userId : String, contextType : String,operationType:String,contextId:String,config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil)(metrics: Metrics) :Unit = {
     val points: Int = config.firstLoginQuotaKarmaPoints
     Utility.insertKarmaPoints(userId, contextType,operationType,contextId,points,config,cassandraUtil)(metrics)
+    Utility.updateKarmaSummary(userId, points, config, cassandraUtil)
   }
 }

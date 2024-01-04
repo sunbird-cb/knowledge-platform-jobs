@@ -50,6 +50,7 @@ class KarmaPointsProcessorConfig(override val config: Config) extends BaseJobCon
   val user_karma_points_credit_lookup_table: String = config.getString("cassandra.user_karma_points_credit_lookup.table")
   val user_enrolments_lookup_table: String = config.getString("cassandra.user_enrolments.table")
   val user_table: String = config.getString("cassandra.user.table")
+  val user_karma_summary_table: String = config.getString("cassandra.user_karma_points_summary.table")
 
   // Metric List
   val totalEventsCount = "total-events-count"
