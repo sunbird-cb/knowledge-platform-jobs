@@ -50,7 +50,7 @@ class KarmaPointsRatingProcessorFn(config: KarmaPointsProcessorConfig, httpUtil:
     val addInfoMap = new util.HashMap[String, AnyRef]
     val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
     addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
-    var addInfo = ""
+    var addInfo = config.EMPTY
     try addInfo = mapper.writeValueAsString(addInfoMap)
     catch {
       case e: JsonProcessingException =>

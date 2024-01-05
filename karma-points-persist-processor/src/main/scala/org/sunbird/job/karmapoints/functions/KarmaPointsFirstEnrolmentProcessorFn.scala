@@ -41,17 +41,17 @@ class KarmaPointsFirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, h
     val userIdSome : Option[Any] = eData.get(config.USER_ID_CAMEL)
     val usrId: String = userIdSome match {
       case Some(value) => value.asInstanceOf[String]
-      case None => ""
+      case None => config.EMPTY
     }
     val courseId : Option[Any] = eData.get(config.COURSE_ID)
     val contextId: String = courseId match {
       case Some(value) => value.asInstanceOf[String]
-      case None => ""
+      case None => config.EMPTY
     }
     val batchId : Option[Any] = eData.get(config.BATCH_ID)
     val batchId_str: String = batchId match {
       case Some(value) => value.asInstanceOf[String]
-      case None => ""
+      case None => config.EMPTY
     }
     val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
@@ -66,7 +66,7 @@ class KarmaPointsFirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, h
     val addInfoMap = new util.HashMap[String, AnyRef]
     val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
     addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
-    var addInfo = ""
+    var addInfo = config.EMPTY
     try addInfo = mapper.writeValueAsString(addInfoMap)
     catch {
       case e: JsonProcessingException =>
