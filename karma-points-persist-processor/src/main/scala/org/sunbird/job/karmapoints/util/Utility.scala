@@ -259,16 +259,16 @@ object Utility {
       val info = userKarmaSummary.get(0).getString(config.ADD_INFO)
       if (!StringUtils.isEmpty(info)) {
       infoMap = JSONUtil.deserialize[java.util.HashMap[String, Any]](info)
-      val currStr = infoMap.get("currentMonth")
+      val currStr = infoMap.get("formattedMonth")
       if(currentDateStr.equals(currStr)){
-        nonACBPCourseQuotaCount = infoMap.get("nonACBPCourseKarmaQuotaClaimed").asInstanceOf[Int]
+        nonACBPCourseQuotaCount = infoMap.get("claimedNonACBPCourseKarmaQuota").asInstanceOf[Int]
       } }
     }
     if (!isACBP) {
       nonACBPCourseQuotaCount = nonACBPCourseQuotaCount+1
     }
-    infoMap.put("nonACBPCourseKarmaQuotaClaimed", nonACBPCourseQuotaCount)
-    infoMap.put("currentMonth",currentDateStr)
+    infoMap.put("claimedNonACBPCourseKarmaQuota", nonACBPCourseQuotaCount)
+    infoMap.put("formattedMonth",currentDateStr)
     var info = ""
     try info = mapper.writeValueAsString(infoMap)
     catch {
@@ -300,17 +300,17 @@ object Utility {
       val info = userKarmaSummary.get(0).getString(config.ADD_INFO)
       if (!StringUtils.isEmpty(info)) {
         infoMap = JSONUtil.deserialize[java.util.HashMap[String, Any]](info)
-        val currStr = infoMap.get("currentMonth")
+        val currStr = infoMap.get("formattedMonth")
         if (currentDateStr.equals(currStr)) {
-          nonACBPCourseQuotaCount = infoMap.get("nonACBPCourseKarmaQuotaClaimed").asInstanceOf[Int]
+          nonACBPCourseQuotaCount = infoMap.get("claimedNonACBPCourseKarmaQuota").asInstanceOf[Int]
         }
       }
     }
     if (nonACBPCourseQuotaCount > 0) {
       nonACBPCourseQuotaCount = nonACBPCourseQuotaCount-1
     }
-    infoMap.put("nonACBPCourseKarmaQuotaClaimed", nonACBPCourseQuotaCount)
-    infoMap.put("currentMonth",currentDateStr)
+    infoMap.put("claimedNonACBPCourseKarmaQuota", nonACBPCourseQuotaCount)
+    infoMap.put("formattedMonth",currentDateStr)
     var info = ""
     try info = mapper.writeValueAsString(infoMap)
     catch {
