@@ -151,7 +151,7 @@ object Utility {
     selectWhere.and(QueryBuilder.eq(config.identifier, courseId))
     metrics.incCounter(config.dbReadCount)
     val courseList = cassandraUtil.find(selectWhere.toString)
-    if (null != courseList) {
+    if (null != courseList && courseList.size() > 0 ) {
       val hierarchy = courseList.get(0).getString("hierarchy")
       mapper.readValue(hierarchy, classOf[java.util.Map[String, AnyRef]]).asInstanceOf[util.HashMap[String, AnyRef]]
     }else

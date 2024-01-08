@@ -54,6 +54,8 @@ class KarmaPointsFirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, h
       case None => config.EMPTY
     }
     val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    if(null == hierarchy || hierarchy.size() < 1)
+      return
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
 
     if(Utility.isEntryAlreadyExist(usrId,contextType,config.OPERATION_TYPE_ENROLMENT,contextId,config, cassandraUtil)
@@ -65,6 +67,8 @@ class KarmaPointsFirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, h
     val points: Int = config.firstEnrolmentQuotaKarmaPoints
     val addInfoMap = new util.HashMap[String, AnyRef]
     val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    if(null == hierarchy || hierarchy.size() < 1)
+      return
     addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
     var addInfo = config.EMPTY
     try addInfo = mapper.writeValueAsString(addInfoMap)

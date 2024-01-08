@@ -50,6 +50,8 @@ class KarmaPointsCourseCompletionProcessorFn(config: KarmaPointsProcessorConfig,
       case None => ""
     }
     val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    if(null == hierarchy || hierarchy.size() < 1)
+      return
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String] // Replace YourTypeForPrimaryCategory with the actual type
     if(!config.COURSE.equals(contextType))
       return
