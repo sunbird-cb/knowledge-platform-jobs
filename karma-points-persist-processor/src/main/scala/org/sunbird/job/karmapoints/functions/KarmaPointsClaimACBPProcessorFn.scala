@@ -71,8 +71,10 @@ class KarmaPointsClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUt
     }
 
     val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    if(null == hierarchy || hierarchy.size() < 1)
+      return
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
-    if(!"Course".equals(contextType))
+    if(!config.COURSE.equals(contextType))
       return
     val courseName = hierarchy.get(config.name).asInstanceOf[String]
     val res = Utility.karmaPointslookup(usrId,contextType,config.OPERATION_COURSE_COMPLETION,contextId,config,cassandraUtil)
@@ -90,6 +92,7 @@ class KarmaPointsClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUt
           throw new RuntimeException(e)
       }
       Utility.insertKarmaPoints(usrId, contextType,operationType,contextId,config.acbpQuotaKarmaPoints, addInfo,config, cassandraUtil)(metrics)
+      Utility.updateKarmaSummaryForClaimACBP(usrId,config.acbpQuotaKarmaPoints, config, cassandraUtil)
     }
     else  {
       logger.info("Updating entry for ACBP with userId :-"+usrId + ",courseId :- "+contextId)

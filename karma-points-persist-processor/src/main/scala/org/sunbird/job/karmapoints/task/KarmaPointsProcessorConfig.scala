@@ -127,5 +127,11 @@ class KarmaPointsProcessorConfig(override val config: Config) extends BaseJobCon
   val X_AUTHENTICATED_USER_ORGID = "x-authenticated-user-orgid"
   val X_AUTHENTICATED_USER_ID = "x-authenticated-userid"
 
+  val CLAIMED_NON_ACBP_COURSE_KARMA_QUOTA =  "claimedNonACBPCourseKarmaQuota"
+  val FORMATTED_MONTH = "formattedMonth"
+  val TOTAL_POINTS="total_points"
+  val YYYY_PIPE_MM = "yyyy|MM"
+  val EMPTY =""
+  val COURSE = "Course"
 }
 

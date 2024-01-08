@@ -63,9 +63,9 @@ object Utility {
   def updateUserKarmaSummary(userId:String,points:Int, addinfo:String,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil) : Unit = {
     val query: Insert = QueryBuilder.insertInto(config.sunbird_keyspace, config.user_karma_summary_table)
     query.value(config.USER_ID, userId)
-    query.value("total_points",  points)
+    query.value(config.TOTAL_POINTS,  points)
     if(addinfo != null)
-    query.value("addinfo", addinfo)
+    query.value(config.ADD_INFO, addinfo)
     cassandraUtil.upsert(query.toString)
  }
 
@@ -151,7 +151,7 @@ object Utility {
     selectWhere.and(QueryBuilder.eq(config.identifier, courseId))
     metrics.incCounter(config.dbReadCount)
     val courseList = cassandraUtil.find(selectWhere.toString)
-    if (null != courseList) {
+    if (null != courseList && courseList.size() > 0 ) {
       val hierarchy = courseList.get(0).getString("hierarchy")
       mapper.readValue(hierarchy, classOf[java.util.Map[String, AnyRef]]).asInstanceOf[util.HashMap[String, AnyRef]]
     }else
@@ -236,7 +236,7 @@ object Utility {
       points = points+config.acbpQuotaKarmaPoints
       addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.TRUE)
     }
-    var addInfo = ""
+    var addInfo = config.EMPTY
     try addInfo = mapper.writeValueAsString(addInfoMap)
     catch {
       case e: JsonProcessingException =>
@@ -251,25 +251,25 @@ object Utility {
     var infoMap = new util.HashMap[String, Any]
     var nonACBPCourseQuotaCount : Int= 0
     val currentDate = LocalDate.now
-    val formatter = DateTimeFormatter.ofPattern("yyyy|MM")
+    val formatter = DateTimeFormatter.ofPattern(config.YYYY_PIPE_MM)
     val currentDateStr = currentDate.format(formatter)
     val userKarmaSummary = Utility.getUserKarmaSummary(userId, config, cassandraUtil)
     if(userKarmaSummary.size() > 0) {
-      total_points = userKarmaSummary.get(0).getInt("total_points")
+      total_points = userKarmaSummary.get(0).getInt(config.TOTAL_POINTS)
       val info = userKarmaSummary.get(0).getString(config.ADD_INFO)
       if (!StringUtils.isEmpty(info)) {
       infoMap = JSONUtil.deserialize[java.util.HashMap[String, Any]](info)
-      val currStr = infoMap.get("currentMonth")
+      val currStr = infoMap.get(config.FORMATTED_MONTH)
       if(currentDateStr.equals(currStr)){
-        nonACBPCourseQuotaCount = infoMap.get("nonACBPCourseKarmaQuotaClaimed").asInstanceOf[Int]
+        nonACBPCourseQuotaCount = infoMap.get(config.CLAIMED_NON_ACBP_COURSE_KARMA_QUOTA).asInstanceOf[Int]
       } }
     }
     if (!isACBP) {
       nonACBPCourseQuotaCount = nonACBPCourseQuotaCount+1
     }
-    infoMap.put("nonACBPCourseKarmaQuotaClaimed", nonACBPCourseQuotaCount)
-    infoMap.put("currentMonth",currentDateStr)
-    var info = ""
+    infoMap.put(config.CLAIMED_NON_ACBP_COURSE_KARMA_QUOTA, nonACBPCourseQuotaCount)
+    infoMap.put(config.FORMATTED_MONTH,currentDateStr)
+    var info = config.EMPTY
     try info = mapper.writeValueAsString(infoMap)
     catch {
       case e: JsonProcessingException =>
@@ -282,7 +282,7 @@ object Utility {
     var total_points:Int = 0
     val userKarmaSummary = Utility.getUserKarmaSummary(userId, config, cassandraUtil)
     if(userKarmaSummary.size() > 0) {
-      total_points = userKarmaSummary.get(0).getInt("total_points")
+      total_points = userKarmaSummary.get(0).getInt(config.TOTAL_POINTS)
     }
     Utility.updateUserKarmaSummary(userId: String, total_points + points,null, config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil)
   }
@@ -292,26 +292,26 @@ object Utility {
     var infoMap = new util.HashMap[String, Any]
     var nonACBPCourseQuotaCount : Int= 0
     val currentDate = LocalDate.now
-    val formatter = DateTimeFormatter.ofPattern("yyyy|MM")
+    val formatter = DateTimeFormatter.ofPattern(config.YYYY_PIPE_MM)
     val currentDateStr = currentDate.format(formatter)
     val userKarmaSummary = Utility.getUserKarmaSummary(userId, config, cassandraUtil)
     if(userKarmaSummary.size() > 0) {
-      total_points = userKarmaSummary.get(0).getInt("total_points")
+      total_points = userKarmaSummary.get(0).getInt(config.TOTAL_POINTS)
       val info = userKarmaSummary.get(0).getString(config.ADD_INFO)
       if (!StringUtils.isEmpty(info)) {
         infoMap = JSONUtil.deserialize[java.util.HashMap[String, Any]](info)
-        val currStr = infoMap.get("currentMonth")
+        val currStr = infoMap.get(config.FORMATTED_MONTH)
         if (currentDateStr.equals(currStr)) {
-          nonACBPCourseQuotaCount = infoMap.get("nonACBPCourseKarmaQuotaClaimed").asInstanceOf[Int]
+          nonACBPCourseQuotaCount = infoMap.get(config.CLAIMED_NON_ACBP_COURSE_KARMA_QUOTA).asInstanceOf[Int]
         }
       }
     }
     if (nonACBPCourseQuotaCount > 0) {
       nonACBPCourseQuotaCount = nonACBPCourseQuotaCount-1
     }
-    infoMap.put("nonACBPCourseKarmaQuotaClaimed", nonACBPCourseQuotaCount)
-    infoMap.put("currentMonth",currentDateStr)
-    var info = ""
+    infoMap.put(config.CLAIMED_NON_ACBP_COURSE_KARMA_QUOTA, nonACBPCourseQuotaCount)
+    infoMap.put(config.FORMATTED_MONTH,currentDateStr)
+    var info = config.EMPTY
     try info = mapper.writeValueAsString(infoMap)
     catch {
       case e: JsonProcessingException =>
