@@ -57,7 +57,7 @@ class KarmaPointsProcessorTask(config: KarmaPointsProcessorConfig, kafkaConnecto
       .uid(config.karmaPointsClaimACBPPersistProcessorConsumer)
       .setParallelism(config.kafkaConsumerParallelism)
       .rebalance
-      .process(new KarmaPointsClaimACBPProcessorFn_V2(config, httpUtil))
+      .process(new KarmaPointsClaimACBPProcessorFn(config, httpUtil))
       .setParallelism(config.parallelism)
 
      env.execute(config.jobName)
