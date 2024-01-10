@@ -7,14 +7,14 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMap
 import org.apache.flink.streaming.api.functions.{KeyedProcessFunction, ProcessFunction}
 import org.sunbird.job.karmapoints.domain.Event
 import org.sunbird.job.karmapoints.task.KarmaPointsProcessorConfig
-import org.sunbird.job.karmapoints.util.Utility
+import org.sunbird.job.karmapoints.util.Utility._
 import org.sunbird.job.util.{CassandraUtil, HttpUtil}
 import org.sunbird.job.{BaseProcessFunction, BaseProcessKeyedFunction, Metrics}
 
 import java.util
 
-class KarmaPointsRatingProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
-                                  (implicit val stringTypeInfo: TypeInformation[String],
+class RatingProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
+                       (implicit val stringTypeInfo: TypeInformation[String],
                                 @transient var cassandraUtil: CassandraUtil = null)
   extends BaseProcessFunction[Event, String](config)   {
 
@@ -38,17 +38,17 @@ class KarmaPointsRatingProcessorFn(config: KarmaPointsProcessorConfig, httpUtil:
   override def processElement(event: Event,
                               context: ProcessFunction[Event, String]#Context,
                               metrics: Metrics): Unit = {
-    val usrId = event.getMap().get("user_id").asInstanceOf[String]
+    val usrId = event.getMap().get(config.USER_UNDERSCORE_ID).asInstanceOf[String]
     val activity_id = event.getMap().get(config.ACTIVITY_ID).asInstanceOf[String]
-    if(Utility.isEntryAlreadyExist(usrId,config.OPERATION_TYPE_RATING,config.OPERATION_TYPE_RATING,activity_id,config, cassandraUtil))
+    if(doesEntryExist(usrId,config.OPERATION_TYPE_RATING,config.OPERATION_TYPE_RATING,activity_id,config, cassandraUtil))
       return
-    rating(usrId , config.OPERATION_TYPE_RATING ,config.OPERATION_TYPE_RATING,activity_id)(metrics)
+    kpOnUserRating(usrId , config.OPERATION_TYPE_RATING ,config.OPERATION_TYPE_RATING,activity_id)(metrics)
   }
 
-  private def rating(userId : String, contextType : String,operationType:String,contextId:String)(metrics: Metrics) :Unit = {
+  private def kpOnUserRating(userId : String, contextType : String, operationType:String, contextId:String)(metrics: Metrics) :Unit = {
     val points: Int = config.ratingQuotaKarmaPoints
     val addInfoMap = new util.HashMap[String, AnyRef]
-    val hierarchy: java.util.Map[String, AnyRef] = Utility.fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
     if(null == hierarchy || hierarchy.size() < 1)
       return
     addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
@@ -58,7 +58,7 @@ class KarmaPointsRatingProcessorFn(config: KarmaPointsProcessorConfig, httpUtil:
       case e: JsonProcessingException =>
         throw new RuntimeException(e)
     }
-    Utility.insertKarmaPoints(userId, contextType ,operationType,contextId,points,addInfo,config, cassandraUtil)(metrics)
-    Utility.updateKarmaSummary(userId, points, config, cassandraUtil)
+    insertKarmaPoints(userId, contextType ,operationType,contextId,points,addInfo,config, cassandraUtil)(metrics)
+    updateKarmaSummary(userId, points, config, cassandraUtil)
   }
 }

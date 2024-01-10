@@ -24,22 +24,17 @@ class KarmaPointsProcessorConfig(override val config: Config) extends BaseJobCon
 
   override val kafkaConsumerParallelism: Int = config.getInt("task.consumer.parallelism")
 
-  //Tags
-
   //Cassandra config
   val dbHost: String = config.getString("lms-cassandra.host")
   val dbPort: Int = config.getInt("lms-cassandra.port")
 
-  val Hierarchy: String = "hierarchy"
+  val HIERARCHY: String = "hierarchy"
 
 
   val EDATA="edata"
   val USERIDS = "userIds"
 
   val COURSE_ID = "courseId"
-  val BATCH_ID = "batchId"
-
-
 
   val sunbird_keyspace: String = config.getString("cassandra.sunbird.keyspace")
   val sunbird_courses_keyspace: String = config.getString("cassandra.sunbird_courses.keyspace")
@@ -48,7 +43,7 @@ class KarmaPointsProcessorConfig(override val config: Config) extends BaseJobCon
   val content_hierarchy_table: String = config.getString("cassandra.content_hierarchy.table")
   val user_karma_points_table: String = config.getString("cassandra.user_karma_points.table")
   val user_karma_points_credit_lookup_table: String = config.getString("cassandra.user_karma_points_credit_lookup.table")
-  val user_enrolments_lookup_table: String = config.getString("cassandra.user_enrolments.table")
+  val user_enrollments_lookup_table: String = config.getString("cassandra.user_enrolments.table")
   val user_table: String = config.getString("cassandra.user.table")
   val user_karma_summary_table: String = config.getString("cassandra.user_karma_points_summary.table")
 
@@ -101,7 +96,6 @@ class KarmaPointsProcessorConfig(override val config: Config) extends BaseJobCon
   val DB_COLUMN_CREDIT_DATE= "credit_date"
   val DB_COLUMN_CONTEXT_TYPE= "context_type"
   val DB_COLUMN_CONTEXT_ID= "context_id"
-  val DB_COLUMN_BATCH_ID= "batchid"
 
   val CHILDREN = "children"
   val COURSE_ASSESSMENT="Course Assessment"
@@ -133,5 +127,7 @@ class KarmaPointsProcessorConfig(override val config: Config) extends BaseJobCon
   val YYYY_PIPE_MM = "yyyy|MM"
   val EMPTY =""
   val COURSE = "Course"
+  val ROOT_ORG_ID ="rootorgid"
+  val USER_UNDERSCORE_ID ="user_id"
 }
 

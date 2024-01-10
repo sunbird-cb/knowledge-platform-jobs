@@ -8,7 +8,7 @@ import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.slf4j.LoggerFactory
 import org.sunbird.job.connector.FlinkKafkaConnector
 import org.sunbird.job.karmapoints.domain.Event
-import org.sunbird.job.karmapoints.functions.{KarmaPointsClaimACBPProcessorFn, KarmaPointsCourseCompletionProcessorFn, KarmaPointsFirstEnrolmentProcessorFn, KarmaPointsFirstLoginProcessorFn, KarmaPointsRatingProcessorFn}
+import org.sunbird.job.karmapoints.functions.{ClaimACBPProcessorFn, CourseCompletionProcessorFn, FirstEnrolmentProcessorFn, FirstLoginProcessorFn, RatingProcessorFn}
 import org.sunbird.job.util.{FlinkUtil, HttpUtil}
 
 class KarmaPointsProcessorTask(config: KarmaPointsProcessorConfig, kafkaConnector: FlinkKafkaConnector, httpUtil: HttpUtil) {
@@ -25,7 +25,7 @@ class KarmaPointsProcessorTask(config: KarmaPointsProcessorConfig, kafkaConnecto
       .uid(config.karmaPointsCourseCompletionPersistProcessorConsumer)
       .setParallelism(config.kafkaConsumerParallelism)
       .rebalance
-      .process(new KarmaPointsCourseCompletionProcessorFn(config, httpUtil))
+      .process(new CourseCompletionProcessorFn(config, httpUtil))
       .setParallelism(config.parallelism)
 
     env.addSource(kafkaConnector.kafkaJobRequestSource[Event](config.kafkaInputRatingTopic))
@@ -33,7 +33,7 @@ class KarmaPointsProcessorTask(config: KarmaPointsProcessorConfig, kafkaConnecto
       .uid(config.karmaPointsRatingPersistProcessorConsumer)
       .setParallelism(config.kafkaConsumerParallelism)
       .rebalance
-      .process(new KarmaPointsRatingProcessorFn(config, httpUtil))
+      .process(new RatingProcessorFn(config, httpUtil))
       .setParallelism(config.parallelism)
 
     env.addSource(kafkaConnector.kafkaJobRequestSource[Event](config.kafkaInputFirstEnrolmentTopic))
@@ -41,7 +41,7 @@ class KarmaPointsProcessorTask(config: KarmaPointsProcessorConfig, kafkaConnecto
       .uid(config.karmaPointsFirstEnrolmentPersistProcessorConsumer)
       .setParallelism(config.kafkaConsumerParallelism)
       .rebalance
-      .process(new KarmaPointsFirstEnrolmentProcessorFn(config, httpUtil))
+      .process(new FirstEnrolmentProcessorFn(config, httpUtil))
       .setParallelism(config.parallelism)
 
     env.addSource(kafkaConnector.kafkaJobRequestSource[Event](config.kafkaInputFirstLoginTopic))
@@ -49,7 +49,7 @@ class KarmaPointsProcessorTask(config: KarmaPointsProcessorConfig, kafkaConnecto
       .uid(config.karmaPointsFirstLoginPersistProcessorConsumer)
       .setParallelism(config.kafkaConsumerParallelism)
       .rebalance
-      .process(new KarmaPointsFirstLoginProcessorFn(config, httpUtil))
+      .process(new FirstLoginProcessorFn(config, httpUtil))
       .setParallelism(config.parallelism)
 
     env.addSource(kafkaConnector.kafkaJobRequestSource[Event](config.kafkaInputClaimACBPTopic))
@@ -57,7 +57,7 @@ class KarmaPointsProcessorTask(config: KarmaPointsProcessorConfig, kafkaConnecto
       .uid(config.karmaPointsClaimACBPPersistProcessorConsumer)
       .setParallelism(config.kafkaConsumerParallelism)
       .rebalance
-      .process(new KarmaPointsClaimACBPProcessorFn(config, httpUtil))
+      .process(new ClaimACBPProcessorFn(config, httpUtil))
       .setParallelism(config.parallelism)
 
      env.execute(config.jobName)
