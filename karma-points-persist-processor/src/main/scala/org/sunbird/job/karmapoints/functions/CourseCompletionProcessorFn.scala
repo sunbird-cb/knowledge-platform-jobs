@@ -1,6 +1,7 @@
 package org.sunbird.job.karmapoints.functions
 
 import com.fasterxml.jackson.core.JsonProcessingException
+import org.apache.commons.lang3.StringUtils
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper
@@ -12,6 +13,8 @@ import org.sunbird.job.karmapoints.util.Utility._
 import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
 
+import java.time.{LocalDateTime, Period}
+import java.time.format.DateTimeFormatter
 import java.util
 
 class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
@@ -68,11 +71,21 @@ class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: 
       config.HEADER_CONTENT_TYPE_KEY -> config.HEADER_CONTENT_TYPE_JSON
       , config.X_AUTHENTICATED_USER_ORGID-> fetchUserRootOrgId(userId)(config, cassandraUtil)
       , config.X_AUTHENTICATED_USER_ID -> userId)
-    if(doesCourseBelongsToACBPPlan(contextId, headers)(metrics, config, httpUtil)){
+    val result = doesCourseBelongsToACBPPlan(headers)(metrics, config, httpUtil).get(contextId) match { case Some(value) => value case _ => "" }
+    if(!StringUtils.isEmpty(result)){
       nonACBPCount = 0
       points = points+config.acbpQuotaKarmaPoints
+      val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+      val inputDate = LocalDateTime.parse(result, formatter)
+      val currentDate = LocalDateTime.now
+      if(currentDate.isAfter(inputDate)) {
+        val period = Period.between(currentDate.toLocalDate, inputDate.toLocalDate)
+        val monthsDifference = period.getYears * 12 + period.getMonths + 1
+        points = points-monthsDifference
+      }
       addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.TRUE)
     }
+
     var addInfo = config.EMPTY
     try addInfo = mapper.writeValueAsString(addInfoMap)
     catch {

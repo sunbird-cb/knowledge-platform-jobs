@@ -245,6 +245,30 @@ object Utility {
     }
     identifiers.contains(courseId)
   }
+
+  def doesCourseBelongsToACBPPlan(headers: Map[String, String])(
+    metrics: Metrics,
+    config: KarmaPointsProcessorConfig,
+    httpUtil: HttpUtil
+  ): Map[String, String] = {
+    val apiUrl = config.cbPlanReadUser
+    val response = executeHttpGetRequest(apiUrl, headers)(config, httpUtil, metrics)
+    response.getOrElse(config.CONTENT, List.empty[AnyRef]) match {
+      case content: List[Map[String, AnyRef]] =>
+        content.flatMap { contentItem =>
+          contentItem.getOrElse(config.CONTENT_LIST, List.empty[AnyRef]) match {
+            case contentList: List[Map[String, AnyRef]] =>
+              contentList
+                .flatMap(item => item.get(config.IDENTIFIER).map(identifier => (identifier.toString, contentItem.getOrElse("endDate", "").toString)))
+            case _ =>
+              List.empty[(String, String)] // or handle the case when "contentList" is not present in the response
+          }
+        }.toMap
+      case _ =>
+        Map.empty[String, String] // or handle the case when "content" is not present in the response
+    }
+  }
+
   private def insertKarmaCreditLookup(
                                        userId: String,
                                        contextType: String,
