@@ -37,13 +37,13 @@ class FirstLoginProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUt
       case Some(value) => value.asInstanceOf[String]
       case None => ""
     }
-    if(doesEntryExist(usrId,config.OPERATION_TYPE_FIRST_LOGIN,config.OPERATION_TYPE_FIRST_LOGIN,usrId,config,cassandraUtil))
+    if(doesEntryExist(usrId,config.OPERATION_TYPE_FIRST_LOGIN,config.OPERATION_TYPE_FIRST_LOGIN,usrId)( metrics,config, cassandraUtil))
       return
      kpOnFirstLogin(usrId,config.OPERATION_TYPE_FIRST_LOGIN,config.OPERATION_TYPE_FIRST_LOGIN,usrId,config, cassandraUtil)(metrics)
   }
   private def kpOnFirstLogin(userId : String, contextType : String, operationType:String, contextId:String, config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil)(metrics: Metrics) :Unit = {
     val points: Int = config.firstLoginQuotaKarmaPoints
     insertKarmaPoints(userId, contextType,operationType,contextId,points,config,cassandraUtil)(metrics)
-    updateKarmaSummary(userId, points, config, cassandraUtil)
+    updateKarmaSummary(userId, points) ( config, cassandraUtil)
   }
 }

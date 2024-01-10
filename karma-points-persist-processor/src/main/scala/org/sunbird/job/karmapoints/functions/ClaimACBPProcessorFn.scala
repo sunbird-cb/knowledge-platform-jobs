@@ -52,14 +52,14 @@ class ClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUti
                         config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil)(metrics: Metrics): Unit = {
     val headers = Map(
       config.HEADER_CONTENT_TYPE_KEY -> config.HEADER_CONTENT_TYPE_JSON,
-      config.X_AUTHENTICATED_USER_ORGID -> fetchUserRootOrgId(userId, config, cassandraUtil),
+      config.X_AUTHENTICATED_USER_ORGID -> fetchUserRootOrgId(userId)(config, cassandraUtil),
       config.X_AUTHENTICATED_USER_ID -> userId
     )
     if (!doesCourseBelongsToACBPPlan(contextId, headers)(metrics, config, httpUtil)) {
       logger.info(s"Request is not part of ACBP for userId: $userId, courseId: $contextId")
       return
     }
-    val hierarchy : java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    val hierarchy : java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId) (metrics,config, cassandraUtil)
     if (hierarchy == null || hierarchy.size() < 1) {
       return
     }
@@ -68,7 +68,7 @@ class ClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUti
       return
     }
     val courseName = hierarchy.get(config.name).asInstanceOf[String]
-    val res = fetchUserKarmaPointsCreditLookup(userId, contextType, config.OPERATION_COURSE_COMPLETION, contextId, config, cassandraUtil)
+    val res = fetchUserKarmaPointsCreditLookup(userId, contextType, config.OPERATION_COURSE_COMPLETION, contextId)(config, cassandraUtil)
     if (res == null || res.isEmpty) {
       logger.info(s"Making new entry for ACBP with userId: $userId, courseId: $contextId")
       val addInfoMap = Map(
@@ -81,12 +81,12 @@ class ClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUti
           logger.error("Error serializing addInfoMap", e)
           return
       }
-      insertKarmaPoints(userId, contextType, operationType, contextId, config.acbpQuotaKarmaPoints, addInfo, config, cassandraUtil)(metrics)
-      processUserKarmaSummaryUpdate(userId, config.acbpQuotaKarmaPoints, -1,config, cassandraUtil)
+      insertKarmaPoints(userId, contextType, operationType, contextId, config.acbpQuotaKarmaPoints, addInfo)(metrics, config, cassandraUtil)
+      processUserKarmaSummaryUpdate(userId, config.acbpQuotaKarmaPoints, -1)(config, cassandraUtil)
     } else {
       logger.info(s"Updating entry for ACBP with userId: $userId, courseId: $contextId")
       val creditDate = res.get(0).getObject(config.DB_COLUMN_CREDIT_DATE).asInstanceOf[Date]
-      val entry = fetchUserKarmaPoints(creditDate, userId, contextType, config.OPERATION_COURSE_COMPLETION, contextId, config, cassandraUtil)
+      val entry = fetchUserKarmaPoints(creditDate, userId, contextType, config.OPERATION_COURSE_COMPLETION, contextId)(config, cassandraUtil)
       var points = entry.get(0).getInt(config.POINTS)
       val addInfo = entry.get(0).getString(config.ADD_INFO)
       val addInfoMap = JSONUtil.deserialize[java.util.Map[String, Any]](addInfo)
@@ -100,8 +100,8 @@ class ClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUti
           return
       }
       points = points + config.acbpQuotaKarmaPoints
-      updatePoints(userId, contextType, operationType, contextId, points, addInfoStr, creditDate.getTime, config, cassandraUtil)
-      processUserKarmaSummaryUpdate(userId, points, -1,config, cassandraUtil)
+      updatePoints(userId, contextType, operationType, contextId, points, addInfoStr, creditDate.getTime)(config, cassandraUtil)
+      processUserKarmaSummaryUpdate(userId, points, -1)(config, cassandraUtil)
     }
   }
 }

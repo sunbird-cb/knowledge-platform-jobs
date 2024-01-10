@@ -40,7 +40,7 @@ class RatingProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
                               metrics: Metrics): Unit = {
     val usrId = event.getMap().get(config.USER_UNDERSCORE_ID).asInstanceOf[String]
     val activity_id = event.getMap().get(config.ACTIVITY_ID).asInstanceOf[String]
-    if(doesEntryExist(usrId,config.OPERATION_TYPE_RATING,config.OPERATION_TYPE_RATING,activity_id,config, cassandraUtil))
+    if(doesEntryExist(usrId,config.OPERATION_TYPE_RATING,config.OPERATION_TYPE_RATING,activity_id)(metrics,config, cassandraUtil))
       return
     kpOnUserRating(usrId , config.OPERATION_TYPE_RATING ,config.OPERATION_TYPE_RATING,activity_id)(metrics)
   }
@@ -48,7 +48,7 @@ class RatingProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
   private def kpOnUserRating(userId : String, contextType : String, operationType:String, contextId:String)(metrics: Metrics) :Unit = {
     val points: Int = config.ratingQuotaKarmaPoints
     val addInfoMap = new util.HashMap[String, AnyRef]
-    val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId)( metrics,config, cassandraUtil)
     if(null == hierarchy || hierarchy.size() < 1)
       return
     addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
@@ -58,7 +58,7 @@ class RatingProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
       case e: JsonProcessingException =>
         throw new RuntimeException(e)
     }
-    insertKarmaPoints(userId, contextType ,operationType,contextId,points,addInfo,config, cassandraUtil)(metrics)
-    updateKarmaSummary(userId, points, config, cassandraUtil)
+    insertKarmaPoints(userId, contextType ,operationType,contextId,points,addInfo)(metrics,config, cassandraUtil)
+    updateKarmaSummary(userId, points)( config, cassandraUtil)
   }
 }

@@ -44,12 +44,12 @@ class FirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: Ht
       case Some(value) => value.asInstanceOf[String]
       case None => config.EMPTY
     }
-    val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId)(metrics, config, cassandraUtil)
     if(null == hierarchy || hierarchy.size() < 1)
       return
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
-    if(doesEntryExist(usrId,contextType,config.OPERATION_TYPE_ENROLMENT,contextId,config, cassandraUtil)
-      || !isUserFirstEnrollment(usrId,config,cassandraUtil))
+    if(doesEntryExist(usrId,contextType,config.OPERATION_TYPE_ENROLMENT,contextId)( metrics,config, cassandraUtil)
+      || !isUserFirstEnrollment(usrId)(config,cassandraUtil))
       return
     kpOnFirstEnrollment(usrId, contextType,config.OPERATION_TYPE_ENROLMENT,contextId,cassandraUtil)(metrics)
   }
@@ -59,7 +59,7 @@ class FirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: Ht
                                   cassandraUtil: CassandraUtil)(implicit metrics: Metrics): Unit = {
     val points: Int = config.firstEnrolmentQuotaKarmaPoints
     val addInfoMap = new util.HashMap[String, AnyRef]()
-    val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId) (metrics,config, cassandraUtil)
     if (hierarchy == null || hierarchy.size() < 1)
       return
     addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
@@ -70,7 +70,7 @@ class FirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: Ht
       case e: JsonProcessingException =>
         throw new RuntimeException(e)
     }
-    insertKarmaPoints(userId, contextType, operationType, contextId, points, addInfo, config, cassandraUtil)(metrics)
-    updateKarmaSummary(userId, points, config, cassandraUtil)
+    insertKarmaPoints(userId, contextType, operationType, contextId, points, addInfo)(metrics, config, cassandraUtil)
+    updateKarmaSummary(userId, points)( config, cassandraUtil)
   }
 }

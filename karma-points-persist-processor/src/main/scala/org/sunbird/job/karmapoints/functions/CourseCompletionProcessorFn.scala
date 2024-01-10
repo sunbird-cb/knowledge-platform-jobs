@@ -40,7 +40,7 @@ class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: 
     val eventData = event.getMap().get(config.EDATA).asInstanceOf[scala.collection.immutable.Map[String, Any]]
     val userId = eventData.get(config.USERIDS).asInstanceOf[Option[List[Any]]].get(0).asInstanceOf[String]
     val contextId: String = eventData.get(config.COURSE_ID) match { case Some(value) => value.asInstanceOf[String] case _ => "" }
-    val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId, config, cassandraUtil)(metrics)
+    val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId) ( metrics,config, cassandraUtil)
     if (Option(hierarchy).isEmpty || hierarchy.isEmpty) {
       return
     }
@@ -60,13 +60,13 @@ class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: 
     addInfoMap.put(config.OPERATION_COURSE_COMPLETION, java.lang.Boolean.TRUE)
     addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
     var points : Int = config.courseCompletionQuotaKarmaPoints
-    if(doesAssessmentExistInHierarchy(hierarchy,config)(metrics)) {
+    if(doesAssessmentExistInHierarchy(hierarchy)(metrics,config)) {
       points = points+config.assessmentQuotaKarmaPoints
       addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.TRUE)
     }
     val headers = Map[String, String](
       config.HEADER_CONTENT_TYPE_KEY -> config.HEADER_CONTENT_TYPE_JSON
-      , config.X_AUTHENTICATED_USER_ORGID-> fetchUserRootOrgId(userId, config, cassandraUtil)
+      , config.X_AUTHENTICATED_USER_ORGID-> fetchUserRootOrgId(userId)(config, cassandraUtil)
       , config.X_AUTHENTICATED_USER_ID -> userId)
     if(doesCourseBelongsToACBPPlan(contextId, headers)(metrics, config, httpUtil)){
       nonACBPCount = 0
@@ -79,15 +79,15 @@ class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: 
       case e: JsonProcessingException =>
         throw new RuntimeException(e)
     }
-    insertKarmaPoints(userId, contextType,operationType,contextId,points, addInfo,config, cassandraUtil)(metrics)
-    processUserKarmaSummaryUpdate(userId, points, nonACBPCount,config, cassandraUtil)
+    insertKarmaPoints(userId, contextType,operationType,contextId,points, addInfo)(metrics,config, cassandraUtil)
+    processUserKarmaSummaryUpdate(userId, points, nonACBPCount)(config, cassandraUtil)
   }
   private def passThroughValidation(contextType:String, contextId : String, userId: String,
                                     config: KarmaPointsProcessorConfig,
                                     cassandraUtil: CassandraUtil, metrics: Metrics): Boolean = {
     if(!config.COURSE.equals(contextType) ||
-      hasReachedNonACBPMonthlyCutOff(userId, config, cassandraUtil)(metrics) ||
-      doesEntryExist(userId, contextType, config.OPERATION_COURSE_COMPLETION, contextId, config, cassandraUtil))
+      hasReachedNonACBPMonthlyCutOff(userId)(metrics, config, cassandraUtil) ||
+      doesEntryExist(userId, contextType, config.OPERATION_COURSE_COMPLETION, contextId)( metrics,config, cassandraUtil))
       return java.lang.Boolean.FALSE
     else
       return java.lang.Boolean.TRUE
