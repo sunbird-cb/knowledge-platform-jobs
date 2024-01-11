@@ -63,9 +63,24 @@ class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: 
     addInfoMap.put(config.OPERATION_COURSE_COMPLETION, java.lang.Boolean.TRUE)
     addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
     var points : Int = config.courseCompletionQuotaKarmaPoints
-    if(doesAssessmentExistInHierarchy(hierarchy)(metrics,config)) {
-      points = points+config.assessmentQuotaKarmaPoints
-      addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.TRUE)
+    val assessmentIdentifier = doesAssessmentExistInHierarchy(hierarchy)(metrics, config)
+    if(!StringUtils.isEmpty(assessmentIdentifier)) {
+      val assessmentResponse = fetchUserAssessmentResult(userId,assessmentIdentifier)(config, cassandraUtil)
+      if(assessmentResponse != null && assessmentResponse.size() >0){
+       val result = assessmentResponse.get(0).getString(config.DB_COLUMN_SUBMIT_ASSESSMENT_RESPONSE)
+        var pass = java.lang.Boolean.FALSE
+        if(!StringUtils.isEmpty(result)){
+          val resultMap = JSONUtil.deserialize[java.util.Map[String, Any]](result)
+           pass =  resultMap.getOrDefault(config.PASS,java.lang.Boolean.FALSE).asInstanceOf[Boolean]
+        }
+        if(pass) {
+        points = points+config.assessmentQuotaKarmaPoints
+        addInfoMap.put(config.ADDINFO_ASSESSMENT_PASS, java.lang.Boolean.TRUE)
+       }else {
+        addInfoMap.put(config.ADDINFO_ASSESSMENT_PASS, java.lang.Boolean.FALSE)
+       }
+      }
+        addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.TRUE)
     }
     val headers = Map[String, String](
       config.HEADER_CONTENT_TYPE_KEY -> config.HEADER_CONTENT_TYPE_JSON
@@ -79,7 +94,7 @@ class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: 
       val inputDate = LocalDateTime.parse(result, formatter)
       val currentDate = LocalDateTime.now
       if(currentDate.isAfter(inputDate)) {
-        val period = Period.between(currentDate.toLocalDate, inputDate.toLocalDate)
+        val period = Period.between(inputDate.toLocalDate,currentDate.toLocalDate)
         val monthsDifference = period.getYears * 12 + period.getMonths + 1
         points = points-monthsDifference
       }

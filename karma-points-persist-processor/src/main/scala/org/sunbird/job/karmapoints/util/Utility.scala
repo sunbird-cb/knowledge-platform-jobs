@@ -135,16 +135,15 @@ object Utility {
     cassandraUtil.find(karmaPointsLookupQuery.toString)
   }
 
-  def doesAssessmentExistInHierarchy(hierarchy: java.util.Map[String, AnyRef])(implicit metrics: Metrics, config: KarmaPointsProcessorConfig): Boolean = {
-    var result: Boolean = false
+  def doesAssessmentExistInHierarchy(hierarchy: java.util.Map[String, AnyRef])(implicit metrics: Metrics, config: KarmaPointsProcessorConfig): String = {
     val childrenMap = hierarchy.get(config.CHILDREN).asInstanceOf[util.ArrayList[util.HashMap[String, AnyRef]]]
     for (children <- childrenMap) {
       val primaryCategory = children.get(config.PRIMARY_CATEGORY)
       if (primaryCategory == config.COURSE_ASSESSMENT) {
-        result = true
+         return children.get(config.IDENTIFIER).asInstanceOf[String]
       }
     }
-    result
+    config.EMPTY
   }
   def fetchContentHierarchy(courseId: String)(implicit metrics: Metrics,config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil): util.HashMap[String, AnyRef] = {
     val selectWhere: Select.Where = QueryBuilder
@@ -318,5 +317,11 @@ object Utility {
         throw new RuntimeException(e)
     }
     updateUserKarmaPointsSummary(userId, totalPoints + points, info)( config, cassandraUtil)
+  }
+   def fetchUserAssessmentResult(userId: String,assessmentId : String)(implicit config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil): util.List[Row] = {
+    val query: Select = QueryBuilder.select(config.DB_COLUMN_SUBMIT_ASSESSMENT_RESPONSE).from(config.sunbird_keyspace, config.user_assessment_data_table)
+    query.where(QueryBuilder.eq(config.DB_COLUMN_USERID, userId)).and(QueryBuilder.eq(config.DB_COLUMN_ASSESSMENT_ID, assessmentId))
+      .limit(1)
+    cassandraUtil.find(query.toString)
   }
 }

@@ -37,7 +37,12 @@ class FirstLoginProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUt
       case Some(value) => value.asInstanceOf[String]
       case None => ""
     }
-    if(doesEntryExist(usrId,config.OPERATION_TYPE_FIRST_LOGIN,config.OPERATION_TYPE_FIRST_LOGIN,usrId)( metrics,config, cassandraUtil))
+    val selfRegistration: Boolean = eData.get(config.SELF_REGISTRATION) match {
+      case Some(value) => value.asInstanceOf[Boolean]
+      case None => java.lang.Boolean.FALSE
+    }
+
+    if(!selfRegistration||doesEntryExist(usrId,config.OPERATION_TYPE_FIRST_LOGIN,config.OPERATION_TYPE_FIRST_LOGIN,usrId)( metrics,config, cassandraUtil))
       return
      kpOnFirstLogin(usrId,config.OPERATION_TYPE_FIRST_LOGIN,config.OPERATION_TYPE_FIRST_LOGIN,usrId,config, cassandraUtil)(metrics)
   }
