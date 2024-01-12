@@ -96,7 +96,10 @@ class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: 
       if(currentDate.isAfter(inputDate)) {
         val period = Period.between(inputDate.toLocalDate,currentDate.toLocalDate)
         val monthsDifference = period.getYears * 12 + period.getMonths + 1
-        points = points-monthsDifference
+        if(monthsDifference > config.acbpQuotaKarmaPoints)
+          points = points-config.acbpQuotaKarmaPoints
+        else
+          points = points-monthsDifference
       }
       addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.TRUE)
     }
