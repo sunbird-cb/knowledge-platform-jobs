@@ -57,6 +57,7 @@ object Utility {
     val creditDate = System.currentTimeMillis()
     val result = updatePoints(userId, contextType, operationType, contextId, points, addInfo, creditDate)( config, cassandraUtil)
     if (result) {
+      logger.info(s"Karma points successfully updated for user $userId, contextId $contextId, points: $points")
       insertKarmaCreditLookup(userId, contextType, operationType, contextId, creditDate)(config, cassandraUtil)
       metrics.incCounter(config.dbUpdateCount)
     } else {
@@ -67,11 +68,21 @@ object Utility {
   }
 
   def doesEntryExist(userId: String, contextType: String, operationType: String, contextId: String)(implicit metrics: Metrics, config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil): Boolean = {
+    logger.info(s"Checking if entry exists for user $userId, contextType $contextType, operationType $operationType, contextId $contextId")
     val karmaPointsLookUp = fetchUserKarmaPointsCreditLookup(userId, contextType, operationType, contextId)(config, cassandraUtil)
-    if (karmaPointsLookUp.size() < 1)
+
+    if (karmaPointsLookUp.size() < 1) {
+      logger.info(s"No karma points lookup found for user $userId, contextType $contextType, operationType $operationType, contextId $contextId")
       return false
+    }
     val creditDate = karmaPointsLookUp.get(0).getObject(config.DB_COLUMN_CREDIT_DATE).asInstanceOf[Date]
+    logger.info(s"Credit date retrieved for user $userId, contextType $contextType, operationType $operationType, contextId $contextId: $creditDate")
     val result = fetchUserKarmaPoints(creditDate, userId, contextType, operationType, contextId)( config, cassandraUtil)
+    if(result.size() > 0){
+      logger.info(s"Karma points found for user $userId, contextType $contextType, operationType $operationType, contextId $contextId")
+    }else{
+      logger.info(s"No karma points found for user $userId, contextType $contextType, operationType $operationType, contextId $contextId")
+    }
     result.size() > 0
   }
   def fetchUserKarmaPoints( creditDate: Date,
@@ -80,25 +91,38 @@ object Utility {
                             operationType: String,
                             contextId: String
                           )(implicit config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil): util.List[Row] = {
+    logger.info(s"Fetching Karma Points for user $userId, contextType $contextType, operationType $operationType, contextId $contextId, creditDate $creditDate")
     val karmaQuery: Select = QueryBuilder
       .select()
       .from(config.sunbird_keyspace, config.user_karma_points_table)
+    logger.info(s"Executing Karma Points select query: ${karmaQuery.toString}")
     karmaQuery.where(
         QueryBuilder.eq(config.DB_COLUMN_USERID, userId))
-        .and(QueryBuilder.eq(config.DB_COLUMN_CREDIT_DATE, creditDate))
-        .and(QueryBuilder.eq(config.DB_COLUMN_CONTEXT_TYPE, contextType))
-        .and(QueryBuilder.eq(config.DB_COLUMN_OPERATION_TYPE, operationType))
-        .and(QueryBuilder.eq(config.DB_COLUMN_CONTEXT_ID, contextId))
-    cassandraUtil.find(karmaQuery.toString)
+      .and(QueryBuilder.eq(config.DB_COLUMN_CREDIT_DATE, creditDate))
+      .and(QueryBuilder.eq(config.DB_COLUMN_CONTEXT_TYPE, contextType))
+      .and(QueryBuilder.eq(config.DB_COLUMN_OPERATION_TYPE, operationType))
+      .and(QueryBuilder.eq(config.DB_COLUMN_CONTEXT_ID, contextId))
+    val karmaPointsResult = cassandraUtil.find(karmaQuery.toString)
+    logger.info(s"Karma Points result for user $userId, contextType $contextType, operationType $operationType, contextId $contextId, creditDate $creditDate: ${karmaPointsResult.size()} rows")
+    karmaPointsResult
   }
 
   def isUserFirstEnrollment(userId: String)(implicit config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil): Boolean = {
+    logger.info(s"Checking if user $userId is on their first enrollment")
     val enrollmentLookupQuery: Select = QueryBuilder.select()
       .from(config.sunbird_courses_keyspace, config.user_enrollments_lookup_table)
-       enrollmentLookupQuery.where(QueryBuilder.eq(config.DB_COLUMN_USERID, userId))
-       cassandraUtil.find(enrollmentLookupQuery.toString).size() < 2
-  }
+    enrollmentLookupQuery.where(QueryBuilder.eq(config.DB_COLUMN_USERID, userId))
+    logger.info(s"Executing Enrollment Lookup select query: ${enrollmentLookupQuery.toString}")
+    val enrollmentLookupResult = cassandraUtil.find(enrollmentLookupQuery.toString)
+    val isFirstEnrollment = enrollmentLookupResult.size() < 2
 
+    if (isFirstEnrollment) {
+      logger.info(s"User $userId is on their first enrollment")
+    } else {
+      logger.info(s"User $userId has more than one enrollment")
+    }
+    isFirstEnrollment
+  }
   def fetchUserRootOrgId(userId: String)(implicit config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil): String = {
     val userLookupQuery: Select = QueryBuilder
       .select(config.ROOT_ORG_ID)
@@ -114,12 +138,16 @@ object Utility {
                                         config: KarmaPointsProcessorConfig,
                                         cassandraUtil: CassandraUtil
                                       ): util.List[Row] = {
+    logger.info(s"Fetching Karma Points Credit Lookup for user $userId, contextType $contextType, operationType $operationType, contextId $contextId")
     val karmaPointsLookupQuery: Select = QueryBuilder
       .select()
       .from(config.sunbird_keyspace, config.user_karma_points_credit_lookup_table)
        karmaPointsLookupQuery.where(QueryBuilder.eq(config.DB_COLUMN_USER_KARMA_POINTS_KEY, userId + config.PIPE + contextType + config.PIPE + contextId)
       ).and(QueryBuilder.eq(config.DB_COLUMN_OPERATION_TYPE, operationType))
-    cassandraUtil.find(karmaPointsLookupQuery.toString)
+    logger.info(s"Executing Karma Points Credit Lookup select query: ${karmaPointsLookupQuery.toString}")
+    val karmaPointsLookupResult = cassandraUtil.find(karmaPointsLookupQuery.toString)
+    logger.info(s"Karma Points Credit Lookup result for user $userId, contextType $contextType, operationType $operationType, contextId $contextId: ${karmaPointsLookupResult.size()} rows")
+    karmaPointsLookupResult
   }
 
   def countUserKarmaPointsCreditLookup(userId: String, contextType: String,
@@ -150,23 +178,32 @@ object Utility {
       .select(config.HIERARCHY)
       .from(config.content_hierarchy_KeySpace, config.content_hierarchy_table)
       .where(QueryBuilder.eq(config.IDENTIFIER, courseId))
+    logger.info(s"Executing Content Hierarchy select query: ${selectWhere.toString}")
     metrics.incCounter(config.dbReadCount)
     val courseList = cassandraUtil.find(selectWhere.toString)
     if (courseList != null && courseList.size() > 0) {
       val hierarchy = courseList.get(0).getString(config.HIERARCHY)
+      logger.info(s"Content Hierarchy: $hierarchy successfully retrieved for courseId: $courseId")
       mapper.readValue(hierarchy, classOf[java.util.Map[String, AnyRef]]).asInstanceOf[util.HashMap[String, AnyRef]]
     } else {
+      logger.info(s"No Content Hierarchy found for courseId: $courseId")
       new util.HashMap[String, AnyRef]()
     }
   }
 
   def updateKarmaSummary(userId:String,points:Int)(implicit config:KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil): Unit = {
+    logger.info(s"Updating Karma Summary for user $userId with points: $points")
     var total_points:Int = 0
     val userKarmaSummary = fetchUserKpSummary(userId)(config, cassandraUtil)
     if(userKarmaSummary.size() > 0) {
       total_points = userKarmaSummary.get(0).getInt(config.TOTAL_POINTS)
+      logger.info(s"Existing Karma Summary found for user $userId. Total points: $total_points")
+    }else {
+      logger.info(s"No existing Karma Summary found for user $userId")
     }
+
     updateUserKarmaPointsSummary(userId: String, total_points + points,null)(config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil)
+    logger.info(s"Karma Summary updated successfully for user $userId. New total points: ${total_points + points}")
   }
   def hasReachedNonACBPMonthlyCutOff(userId: String )(implicit metrics: Metrics,config: KarmaPointsProcessorConfig,cassandraUtil: CassandraUtil): Boolean = {
     var infoMap = new util.HashMap[String, Any]()
@@ -193,13 +230,17 @@ object Utility {
     cassandraUtil.find(karmaQuery.toString)
   }
   private def updateUserKarmaPointsSummary(userId: String, points: Int, addInfo: String)(implicit  config: KarmaPointsProcessorConfig, cassandraUtil: CassandraUtil): Unit = {
+    logger.info(s"Updating Karma Points Summary for user $userId with total points: $points")
     val query: Insert = QueryBuilder
       .insertInto(config.sunbird_keyspace, config.user_karma_summary_table)
       .value(config.USER_ID, userId)
       .value(config.TOTAL_POINTS, points)
-    if (addInfo != null)
+    if (addInfo != null) {
+      logger.info(s"Adding additional information to Karma Points Summary for user $userId: $addInfo")
       query.value(config.ADD_INFO, addInfo)
+    }
     cassandraUtil.upsert(query.toString)
+    logger.info(s"Karma Points Summary updated successfully for user $userId. New total points: $points")
   }
 
   private def executeHttpGetRequest(url: String, headers: Map[String, String])(
@@ -281,7 +322,14 @@ object Utility {
       .value(config.DB_COLUMN_USER_KARMA_POINTS_KEY, userId + config.PIPE + contextType + config.PIPE + contextId)
       .value(config.DB_COLUMN_OPERATION_TYPE, operationType)
       .value(config.DB_COLUMN_CREDIT_DATE, creditDate)
-    cassandraUtil.upsert(karmaCreditLookupQuery.toString)
+    logger.info(s"Executing Karma Credit Lookup insert query: ${karmaCreditLookupQuery.toString}")
+    val result = cassandraUtil.upsert(karmaCreditLookupQuery.toString)
+    if (result) {
+      logger.info(s"Karma Credit Lookup inserted successfully for user $userId, contextType $contextType, contextId $contextId, operationType $operationType")
+    } else {
+      logger.error(s"Failed to insert Karma Credit Lookup for user $userId, contextType $contextType, contextId $contextId, operationType $operationType")
+    }
+    result
   }
 
   def processUserKarmaSummaryUpdate(userId: String, points: Int, nonACBPQuota : Int)( implicit
