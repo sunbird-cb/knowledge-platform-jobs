@@ -218,8 +218,12 @@ class DataCache(val config: BaseJobConfig, val redisConnect: RedisConnect, val d
     }
   }
 
-  def getDBIndex(): Int = {
+  def getDBConfigIndex(): Int = {
     dbIndex 
+  }
+
+  def getDBIndex(): Long = {
+    this.redisConnection.getDB()
   }
 }
 
