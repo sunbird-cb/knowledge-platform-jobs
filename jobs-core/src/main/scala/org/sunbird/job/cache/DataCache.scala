@@ -217,6 +217,14 @@ class DataCache(val config: BaseJobConfig, val redisConnect: RedisConnect, val d
         del(key)
     }
   }
+
+  def getDBConfigIndex(): Int = {
+    dbIndex 
+  }
+
+  def getDBIndex(): Long = {
+    this.redisConnection.getDB()
+  }
 }
 
 // $COVERAGE-ON$

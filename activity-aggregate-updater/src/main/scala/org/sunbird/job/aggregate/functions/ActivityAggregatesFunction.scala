@@ -481,8 +481,14 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
     cache: DataCache,
     httpUtil: HttpUtil
   ): java.util.Map[String, AnyRef] = {
+    logger.info(
+      s"Fetching course details from Redis for Id: ${courseId}, Configured Index: " + cache.getDBConfigIndex() + ", Current Index: " + cache.getDBIndex()
+    )
     val courseMetadata = cache.getWithRetry(courseId)
     if (null == courseMetadata || courseMetadata.isEmpty) {
+      logger.error(
+        s"Fetching course details from Content Service for Id: ${courseId}"
+      )
       val url =
         config.contentReadURL + "/" + courseId + "?fields=identifier,name,versionKey,parentCollections,primaryCategory"
       val response = getAPICall(url, "content")(config, httpUtil, metrics)
