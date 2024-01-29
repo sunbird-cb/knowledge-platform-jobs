@@ -53,6 +53,7 @@ class ActivityAggregateUpdaterConfig(override val config: Config) extends BaseJo
 
   // Redis Configurations
   val nodeStore: Int = config.getInt("redis.database.relationCache.id") // Both LeafNodes And Ancestor nodes
+  val contentStoreIndex: Int = if (config.hasPath("redis.database.contentCache.id")) config.getInt("redis.database.contentCache.id") else 0
   val deDupRedisHost: String = config.getString("dedup-redis.host")
   val deDupRedisPort: Int = config.getInt("dedup-redis.port")
   val deDupStore: Int = config.getInt("dedup-redis.database.index")
