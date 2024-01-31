@@ -61,7 +61,6 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
         logger.info("Sending notification email. URL: {}", url)
         val notifyTemplate = getNotifyTemplateFromRes(certTemplate.get(metaData.templateId))
         val ratingUrl = config.domainUrl + config.ratingMidPoint + metaData.courseId + config.ratingEndPoint + metaData.batchId
-        val profileUpdateLink =  config.webPortalUrl + config.profileUpdateUrl
         val request = mutable.Map[String, AnyRef]("request" -> (notifyTemplate ++ mutable.Map[String, AnyRef](
           config.firstName -> userResponse.getOrElse(config.firstName, "").asInstanceOf[String],
           config.trainingName -> metaData.courseName,
@@ -72,7 +71,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
           config.courseName -> metaData.courseName,
           config.courseProvider -> metaData.courseProvider,
           config.coursePosterImage -> metaData.coursePosterImage,
-          config.profileUpdateLink -> profileUpdateLink
+          config.profileUpdateLink -> (config.webPortalUrl + config.profileUpdateUrl)
         )))
         val response = httpUtil.post(url, ScalaJsonUtil.serialize(request))
         if (response.status == 200) {
