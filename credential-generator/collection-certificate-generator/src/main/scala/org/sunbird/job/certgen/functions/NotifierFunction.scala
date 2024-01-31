@@ -72,7 +72,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
           config.courseName -> metaData.courseName,
           config.courseProvider -> metaData.courseProvider,
           config.coursePosterImage -> metaData.coursePosterImage,
-          config.profileUpdateLink-> profileUpdateLink
+          config.profileUpdateLink -> profileUpdateLink
         )))
         val response = httpUtil.post(url, ScalaJsonUtil.serialize(request))
         if (response.status == 200) {
