@@ -167,8 +167,10 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
 
   val courseProvider: String ="courseProvider"
   val coursePosterImage :String ="coursePosterImage"
+  val profileUpdateLink : String ="profileUpdateLink"
 
   val newEmailTemplateNotificationEndPoint: String = "/v1/notification/email"
+  val profileUpdateUrl: String = "/app/user-profile/details"
 
   val enableUserNotification: Boolean = if(config.hasPath("enable.user.email.notification")) config.getBoolean("enable.user.email.notification") else true
 }
