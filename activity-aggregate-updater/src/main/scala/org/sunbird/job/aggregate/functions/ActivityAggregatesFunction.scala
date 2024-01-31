@@ -31,6 +31,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
   val mapType: Type = new TypeToken[Map[String, AnyRef]]() {}.getType
   private[this] val logger = LoggerFactory.getLogger(classOf[ActivityAggregatesFunction])
   private var cache: DataCache = _
+  private var contentCache: DataCache = _
   private var collectionStatusCache: TTLCache[String, String] = _
   lazy private val gson = new Gson()
 
@@ -43,12 +44,15 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
     cassandraUtil = new CassandraUtil(config.dbHost, config.dbPort)
     cache = new DataCache(config, new RedisConnect(config), config.nodeStore, List())
     cache.init()
+    contentCache = new DataCache(config, new RedisConnect(config), config.contentStoreIndex, List())
+    contentCache.init()
     collectionStatusCache = TTLCache[String, String](Duration.apply(config.statusCacheExpirySec, TimeUnit.SECONDS))
   }
 
   override def close(): Unit = {
     cassandraUtil.close()
     cache.close()
+    contentCache.close()
     super.close()
   }
 
@@ -59,7 +63,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
 
     logger.info("Input Events : " + JSONUtil.serialize(events.toList))
     val inputUserConsumptionList: List[UserContentConsumption] = events
-        .filter(event=> verifyPrimaryCategory(event.getOrElse(config.courseId, "").asInstanceOf[String])(metrics, config, httpUtil, cache))
+        .filter(event=> verifyPrimaryCategory(event.getOrElse(config.courseId, "").asInstanceOf[String])(metrics, config, httpUtil, contentCache))
         .groupBy(key => (key.get(config.courseId), key.get(config.batchId), key.get(config.userId)))
         .values.map(value => {
         metrics.incCounter(config.processedEnrolmentCount)
@@ -450,7 +454,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
     metrics: Metrics,
     config: ActivityAggregateUpdaterConfig,
     httpUtil: HttpUtil,
-    cache: DataCache
+    contentCache: DataCache
   ): Boolean = {
     logger.info(
       "Verify Program post-publish required for content: " + identifier
@@ -458,7 +462,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
     // Get the primary Categories for the courses here
     var isValidProgram = false
     val contentObj: java.util.Map[String, AnyRef] =
-      getCourseInfo(identifier)(metrics, config, cache, httpUtil)
+      getCourseInfo(identifier)(metrics, config, contentCache, httpUtil)
     if (!contentObj.isEmpty) {
       val primaryCategory = contentObj.get("primaryCategory")
       if (primaryCategory != null &&
@@ -478,13 +482,13 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
   def getCourseInfo(courseId: String)(
     metrics: Metrics,
     config: ActivityAggregateUpdaterConfig,
-    cache: DataCache,
+    contentCache: DataCache,
     httpUtil: HttpUtil
   ): java.util.Map[String, AnyRef] = {
     logger.info(
-      s"Fetching course details from Redis for Id: ${courseId}, Configured Index: " + cache.getDBConfigIndex() + ", Current Index: " + cache.getDBIndex()
+      s"Fetching course details from Redis for Id: ${courseId}, Configured Index: " + contentCache.getDBConfigIndex() + ", Current Index: " + contentCache.getDBIndex()
     )
-    val courseMetadata = cache.getWithRetry(courseId)
+    val courseMetadata = contentCache.getWithRetry(courseId)
     if (null == courseMetadata || courseMetadata.isEmpty) {
       logger.error(
         s"Fetching course details from Content Service for Id: ${courseId}"
