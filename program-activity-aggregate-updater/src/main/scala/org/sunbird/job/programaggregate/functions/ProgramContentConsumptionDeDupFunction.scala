@@ -28,15 +28,15 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
   val mapType: Type = new TypeToken[Map[String, AnyRef]]() {}.getType
   private[this] val logger = LoggerFactory.getLogger(classOf[ProgramContentConsumptionDeDupFunction])
   var deDupEngine: DeDupEngine = _
-  private var cache: DataCache = _
+  private var contentCache: DataCache = _
   private var collectionStatusCache: TTLCache[String, String] = _
   lazy private val gson = new Gson()
 
   override def open(parameters: Configuration): Unit = {
     super.open(parameters)
     cassandraUtil = new CassandraUtil(config.dbHost, config.dbPort)
-    cache = new DataCache(config, new RedisConnect(config), config.nodeStore, List())
-    cache.init()
+    contentCache = new DataCache(config, new RedisConnect(config), config.contentStoreIndex, List())
+    contentCache.init()
     collectionStatusCache = TTLCache[String, String](Duration.apply(config.statusCacheExpirySec, TimeUnit.SECONDS))
     deDupEngine = new DeDupEngine(config, new RedisConnect(config, Option(config.deDupRedisHost), Option(config.deDupRedisPort)), config.deDupStore, config.deDupExpirySec)
     deDupEngine.init()
@@ -46,8 +46,8 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
     if (cassandraUtil != null) {
       cassandraUtil.close()
     }
-    if (cache != null) {
-      cache.close()
+    if (contentCache != null) {
+      contentCache.close()
     }
     deDupEngine.close()
     super.close()
@@ -61,7 +61,7 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
       val contents = eData.getOrElse(config.contents, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.List[java.util.Map[String, AnyRef]]].asScala
       logger.info("Input Event: " + contents)
       var updatedEventInfo: mutable.ListBuffer[Map[String, AnyRef]] = mutable.ListBuffer.empty[Map[String, AnyRef]]
-      var eventInfoMap: mutable.Iterable[Map[String, AnyRef]] = getProgramEvent(eData.toMap)(metrics, config, httpUtil, cache)
+      var eventInfoMap: mutable.Iterable[Map[String, AnyRef]] = getProgramEvent(eData.toMap)(metrics, config, httpUtil, contentCache)
       logger.info("EventInfoMap: " + eventInfoMap)
       if (eventInfoMap.nonEmpty) {
         updatedEventInfo ++= eventInfoMap
@@ -98,14 +98,14 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
     metrics: Metrics,
     config: ProgramActivityAggregateUpdaterConfig,
     httpUtil: HttpUtil,
-    cache: DataCache
+    contentCache: DataCache
   ): mutable.Iterable[Map[String, AnyRef]] = {
     logger.info("EventInfo" + eventData)
     var eventInfoMap: mutable.ListBuffer[Map[String, AnyRef]] = mutable.ListBuffer.empty[Map[String, AnyRef]]
     val userId: String = eventData.getOrElse(config.userId, "").asInstanceOf[String]
     val courseId: String = eventData.getOrElse(config.courseId, "").asInstanceOf[String]
     val batchId: String = eventData.getOrElse(config.batchId, "").asInstanceOf[String]
-    val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(courseId)(metrics, config, cache, httpUtil)
+    val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(courseId)(metrics, config, contentCache, httpUtil)
     val primaryCategory: String = contentObj.get(config.primaryCategory).asInstanceOf[String]
     val parentCollections: List[String] = contentObj.get(config.parentCollections).asInstanceOf[List[String]]
     logger.info("Inside Process Method" + primaryCategory + " ParentCollections: " + parentCollections)
@@ -155,11 +155,17 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
   def getCourseInfo(courseId: String)(
     metrics: Metrics,
     config: ProgramActivityAggregateUpdaterConfig,
-    cache: DataCache,
+    contentCache: DataCache,
     httpUtil: HttpUtil
   ): java.util.Map[String, AnyRef] = {
-    val courseMetadata = cache.getWithRetry(courseId)
+    logger.info(
+      s"Fetching course details from Redis for Id: ${courseId}, Configured Index: " + contentCache.getDBConfigIndex() + ", Current Index: " + contentCache.getDBIndex()
+    )
+    val courseMetadata = contentCache.getWithRetry(courseId)
     if (null == courseMetadata || courseMetadata.isEmpty) {
+      logger.error(
+        s"Fetching course details from Content Service for Id: ${courseId}"
+      )
       val url =
         config.contentReadURL + courseId + "?fields=identifier,name,primaryCategory,parentCollections"
       val response = getAPICall(url, "content")(config, httpUtil, metrics)
