@@ -266,13 +266,13 @@ trait CollectionPublisher extends ObjectReader with SyncMessagesGenerator with O
     enrichedObject
   }
 
-  private def processChildren(children: List[Map[String, AnyRef]]): mutable.Map[String, AnyRef] = {
+  private def processChildren(children: List[Map[String, AnyRef]])(implicit config: PublishConfig): mutable.Map[String, AnyRef] = {
     val dataMap: mutable.Map[String, AnyRef] = mutable.Map.empty
     processChildren(children, dataMap)
     dataMap
   }
 
-  private def processChildren(children: List[Map[String, AnyRef]], dataMap: mutable.Map[String, AnyRef]): Unit = {
+  private def processChildren(children: List[Map[String, AnyRef]], dataMap: mutable.Map[String, AnyRef])(implicit config: PublishConfig): Unit = {
     if (null != children && children.nonEmpty) {
       for (child <- children) {
         mergeMap(dataMap, processChild(child))
@@ -281,8 +281,9 @@ trait CollectionPublisher extends ObjectReader with SyncMessagesGenerator with O
     }
   }
 
-  private def processChild(childMetadata: Map[String, AnyRef]): Map[String, AnyRef] = {
-    val taggingProperties = List("language", "domain", "ageGroup", "genre", "theme", "keywords")
+  private def processChild(childMetadata: Map[String, AnyRef])(implicit config: PublishConfig): Map[String, AnyRef] = {
+    val contentConfig = config.asInstanceOf[ContentPublishConfig]
+    val taggingProperties = contentConfig.taggingProperties.asScala.toList
     val result: Map[String, AnyRef] = childMetadata.flatMap(prop => {
       if (taggingProperties.contains(prop._1)) {
         childMetadata(prop._1) match {
