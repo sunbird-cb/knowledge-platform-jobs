@@ -489,7 +489,7 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
       s"Fetching course details from Redis for Id: ${courseId}, Configured Index: " + contentCache.getDBConfigIndex() + ", Current Index: " + contentCache.getDBIndex()
     )
     val courseMetadata = contentCache.getWithRetry(courseId)
-    logger.info("Course MetaData from Redis: ", courseMetadata)
+    logger.info("Course MetaData from Redis: " + courseMetadata)
     if (null == courseMetadata || courseMetadata.isEmpty) {
       logger.error(
         s"Fetching course details from Content Service for Id: ${courseId}"
@@ -542,8 +542,8 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
         )
         .filter(_ >= ' ')
       val parentCollections = courseMetadata
-        .getOrElse("parentcollections", List.empty[String])
-        .asInstanceOf[List[String]]
+        .getOrElse("parentcollections", new java.util.ArrayList())
+        .asInstanceOf[java.util.ArrayList[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)

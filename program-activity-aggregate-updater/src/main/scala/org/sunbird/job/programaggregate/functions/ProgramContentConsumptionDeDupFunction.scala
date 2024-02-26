@@ -107,7 +107,12 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
     val batchId: String = eventData.getOrElse(config.batchId, "").asInstanceOf[String]
     val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(courseId)(metrics, config, contentCache, httpUtil)
     val primaryCategory: String = contentObj.get(config.primaryCategory).asInstanceOf[String]
-    val parentCollections: List[String] = contentObj.get(config.parentCollections).asInstanceOf[List[String]]
+    val parentCollections:  List[String] = Option(contentObj.get(config.parentCollections))
+      .collect {
+        case list: java.util.List[_] =>
+          list.asInstanceOf[java.util.List[String]].asScala.toList
+      }
+      .getOrElse(List.empty)
     logger.info("Inside Process Method" + primaryCategory + " ParentCollections: " + parentCollections)
     if (config.validProgramPrimaryCategory.contains(primaryCategory)) {
       val contentConsumption = eventData.getOrElse(config.contents, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.List[java.util.Map[String, AnyRef]]].asScala.map(_.asScala.toMap).toList
@@ -162,7 +167,7 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
       s"Fetching course details from Redis for Id: ${courseId}, Configured Index: " + contentCache.getDBConfigIndex() + ", Current Index: " + contentCache.getDBIndex()
     )
     val courseMetadata = contentCache.getWithRetry(courseId)
-    logger.info("Course MetaData from Redis: ", courseMetadata)
+    logger.info("Course MetaData from Redis: " + courseMetadata)
     if (null == courseMetadata || courseMetadata.isEmpty) {
       logger.error(
         s"Fetching course details from Content Service for Id: ${courseId}"
@@ -203,7 +208,8 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
         )
         .filter(_ >= ' ')
       val parentCollections = courseMetadata
-        .getOrElse("parentcollections", List.empty[String]).asInstanceOf[List[String]]
+        .getOrElse("parentcollections", new java.util.ArrayList())
+        .asInstanceOf[java.util.ArrayList[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)
