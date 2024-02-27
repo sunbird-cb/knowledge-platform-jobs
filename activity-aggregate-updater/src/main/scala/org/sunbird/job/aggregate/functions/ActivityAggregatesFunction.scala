@@ -531,18 +531,18 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
       val primaryCategory = StringContext
         .processEscapes(
           courseMetadata
-            .getOrElse(config.primaryCategory, "")
+            .getOrElse("primarycategory", "")
             .asInstanceOf[String]
         )
         .filter(_ >= ' ')
       val versionKey = StringContext
         .processEscapes(
-          courseMetadata.getOrElse(config.versionKey, "").asInstanceOf[String]
+          courseMetadata.getOrElse("versionkey", "").asInstanceOf[String]
         )
         .filter(_ >= ' ')
       val parentCollections = courseMetadata
-        .getOrElse("parentCollections", List.empty[String])
-        .asInstanceOf[List[String]]
+        .getOrElse("parentcollections", new java.util.ArrayList())
+        .asInstanceOf[java.util.ArrayList[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)

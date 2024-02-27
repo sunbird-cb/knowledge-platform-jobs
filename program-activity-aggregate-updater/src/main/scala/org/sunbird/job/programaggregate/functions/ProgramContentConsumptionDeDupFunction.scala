@@ -107,7 +107,14 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
     val batchId: String = eventData.getOrElse(config.batchId, "").asInstanceOf[String]
     val contentObj: java.util.Map[String, AnyRef] = getCourseInfo(courseId)(metrics, config, contentCache, httpUtil)
     val primaryCategory: String = contentObj.get(config.primaryCategory).asInstanceOf[String]
-    val parentCollections: List[String] = contentObj.get(config.parentCollections).asInstanceOf[List[String]]
+    val parentCollections:  List[String] = Option(contentObj.get(config.parentCollections))
+      .collect {
+        case list: java.util.List[_] =>
+          list.asInstanceOf[java.util.List[String]].asScala.toList
+        case scalaList: scala.collection.immutable.List[_] =>
+          scalaList.asInstanceOf[scala.collection.immutable.List[String]]
+      }
+      .getOrElse(List.empty)
     logger.info("Inside Process Method" + primaryCategory + " ParentCollections: " + parentCollections)
     if (config.validProgramPrimaryCategory.contains(primaryCategory)) {
       val contentConsumption = eventData.getOrElse(config.contents, new util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[util.List[java.util.Map[String, AnyRef]]].asScala.map(_.asScala.toMap).toList
@@ -197,12 +204,13 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
       val primaryCategory = StringContext
         .processEscapes(
           courseMetadata
-            .getOrElse(config.primaryCategory, "")
+            .getOrElse("primarycategory", "")
             .asInstanceOf[String]
         )
         .filter(_ >= ' ')
       val parentCollections = courseMetadata
-        .getOrElse(config.parentCollections, List.empty[String]).asInstanceOf[List[String]]
+        .getOrElse("parentcollections", new java.util.ArrayList())
+        .asInstanceOf[java.util.ArrayList[String]]
       val courseInfoMap: java.util.Map[String, AnyRef] =
         new java.util.HashMap[String, AnyRef]()
       courseInfoMap.put("courseId", courseId)
