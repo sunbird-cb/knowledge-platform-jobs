@@ -489,7 +489,6 @@ class ActivityAggregatesFunction(config: ActivityAggregateUpdaterConfig, httpUti
       s"Fetching course details from Redis for Id: ${courseId}, Configured Index: " + contentCache.getDBConfigIndex() + ", Current Index: " + contentCache.getDBIndex()
     )
     val courseMetadata = contentCache.getWithRetry(courseId)
-    logger.info("Course MetaData from Redis: " + courseMetadata)
     if (null == courseMetadata || courseMetadata.isEmpty) {
       logger.error(
         s"Fetching course details from Content Service for Id: ${courseId}"
