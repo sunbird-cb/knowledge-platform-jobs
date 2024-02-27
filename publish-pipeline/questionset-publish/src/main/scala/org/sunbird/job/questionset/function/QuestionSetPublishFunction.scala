@@ -90,16 +90,18 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
       QuestionPublishUtil.publishQuestions(obj.identifier, childQuestions, data.pkgVersion)(ec, neo4JUtil, cassandraUtil, qReaderConfig, cloudStorageUtil, definitionCache, definitionConfig, config, httpUtil)
       val pubMsgs: List[String] = isChildrenPublished(childQuestions, data.publishType, qReaderConfig)
       if (pubMsgs.isEmpty) {
-        // Enrich Object as well as hierarchy
-        val enrichedObj = enrichObject(obj)(neo4JUtil, cassandraUtil, readerConfig, cloudStorageUtil, config, definitionCache, definitionConfig)
-        logger.info(s"processElement ::: object enrichment done for ${obj.identifier}")
-        logger.info("processElement :::  obj metadata post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.metadata))
-        logger.info("processElement :::  obj hierarchy post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.hierarchy.get))
-        // Generate ECAR
-        val objWithEcar = generateECAR(enrichedObj, pkgTypes)(ec, neo4JUtil, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil)
-        // Generate PDF URL
-        val updatedObj = generatePreviewUrl(objWithEcar, qList)(httpUtil, cloudStorageUtil)
-        saveOnSuccess(updatedObj)(neo4JUtil, cassandraUtil, readerConfig, definitionCache, definitionConfig)
+        if (config.enableEcarGeneration) {
+          // Enrich Object as well as hierarchy
+          val enrichedObj = enrichObject(obj)(neo4JUtil, cassandraUtil, readerConfig, cloudStorageUtil, config, definitionCache, definitionConfig)
+          logger.info(s"processElement ::: object enrichment done for ${obj.identifier}")
+          logger.info("processElement :::  obj metadata post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.metadata))
+          logger.info("processElement :::  obj hierarchy post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.hierarchy.get))
+          // Generate ECAR
+          val objWithEcar = generateECAR(enrichedObj, pkgTypes)(ec, neo4JUtil, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil)
+          // Generate PDF URL
+          val updatedObj = generatePreviewUrl(objWithEcar, qList)(httpUtil, cloudStorageUtil)
+          saveOnSuccess(updatedObj)(neo4JUtil, cassandraUtil, readerConfig, definitionCache, definitionConfig)
+        }
         logger.info("QuestionSet publishing completed successfully for : " + data.identifier)
         metrics.incCounter(config.questionSetPublishSuccessEventCount)
       } else {

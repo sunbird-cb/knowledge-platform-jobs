@@ -62,4 +62,8 @@ class QuestionSetPublishConfig(override val config: Config) extends PublishConfi
 
 	val definitionBasePath: String = if (config.hasPath("schema.basePath")) config.getString("schema.basePath") else "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/schemas/local"
 	val schemaSupportVersionMap = if (config.hasPath("schema.supportedVersion")) config.getObject("schema.supportedVersion").unwrapped().asScala.toMap else Map[String, AnyRef]()
+
+	// Generating Ecar file
+	val enableEcarGeneration: Boolean =  if (config.hasPath("enable.ecar.generation")) config.getBoolean("enable.ecar.generation") else false
+
 }
