@@ -111,6 +111,8 @@ class ProgramContentConsumptionDeDupFunction(config: ProgramActivityAggregateUpd
       .collect {
         case list: java.util.List[_] =>
           list.asInstanceOf[java.util.List[String]].asScala.toList
+        case scalaList: scala.collection.immutable.List[_] =>
+          scalaList.asInstanceOf[scala.collection.immutable.List[String]]
       }
       .getOrElse(List.empty)
     logger.info("Inside Process Method" + primaryCategory + " ParentCollections: " + parentCollections)
