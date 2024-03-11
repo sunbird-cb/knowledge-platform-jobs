@@ -48,14 +48,19 @@ class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: 
       return
     }
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
-    if(!passThroughValidation(contextType, contextId, userId, config, cassandraUtil, metrics))
+    val headers = Map[String, String](
+      config.HEADER_CONTENT_TYPE_KEY -> config.HEADER_CONTENT_TYPE_JSON
+      , config.X_AUTHENTICATED_USER_ORGID-> fetchUserRootOrgId(userId)(config, cassandraUtil)
+      , config.X_AUTHENTICATED_USER_ID -> userId)
+    val acbpExpiry = doesCourseBelongsToACBPPlan(headers)(metrics, config, httpUtil).get(contextId) match { case Some(value) => value case _ => "" }
+    if(!passThroughValidation(contextType, contextId, userId, config, cassandraUtil, metrics,acbpExpiry))
       return
-    kpOnCourseCompletion(userId, contextType,config.OPERATION_COURSE_COMPLETION,contextId, hierarchy,config, httpUtil, cassandraUtil)(metrics)
+    kpOnCourseCompletion(userId, contextType,config.OPERATION_COURSE_COMPLETION,contextId, hierarchy,config, httpUtil, cassandraUtil,acbpExpiry)(metrics)
   }
   private def kpOnCourseCompletion(userId : String, contextType : String, operationType:String,
                            contextId:String, hierarchy:java.util.Map[String, AnyRef],
                            config: KarmaPointsProcessorConfig,
-                           httpUtil: HttpUtil, cassandraUtil: CassandraUtil)(metrics: Metrics) :Unit = {
+                           httpUtil: HttpUtil, cassandraUtil: CassandraUtil,acbpExpiry:String)(metrics: Metrics) :Unit = {
     var nonACBPCount = 1
     val addInfoMap = new util.HashMap[String, AnyRef]
     addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.FALSE)
@@ -82,16 +87,12 @@ class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: 
       }
         addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.TRUE)
     }
-    val headers = Map[String, String](
-      config.HEADER_CONTENT_TYPE_KEY -> config.HEADER_CONTENT_TYPE_JSON
-      , config.X_AUTHENTICATED_USER_ORGID-> fetchUserRootOrgId(userId)(config, cassandraUtil)
-      , config.X_AUTHENTICATED_USER_ID -> userId)
-    val result = doesCourseBelongsToACBPPlan(headers)(metrics, config, httpUtil).get(contextId) match { case Some(value) => value case _ => "" }
-    if(!StringUtils.isEmpty(result)){
+
+    if(!StringUtils.isEmpty(acbpExpiry)){
       nonACBPCount = 0
       points = points+config.acbpQuotaKarmaPoints
       val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-      val inputDate = LocalDateTime.parse(result, formatter)
+      val inputDate = LocalDateTime.parse(acbpExpiry, formatter)
       val currentDate = LocalDateTime.now
       if(currentDate.isAfter(inputDate)) {
         val period = Period.between(inputDate.toLocalDate,currentDate.toLocalDate)
@@ -115,9 +116,9 @@ class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: 
   }
   private def passThroughValidation(contextType:String, contextId : String, userId: String,
                                     config: KarmaPointsProcessorConfig,
-                                    cassandraUtil: CassandraUtil, metrics: Metrics): Boolean = {
+                                    cassandraUtil: CassandraUtil, metrics: Metrics,acbpExpiry:String): Boolean = {
     if(!config.COURSE.equals(contextType) ||
-      hasReachedNonACBPMonthlyCutOff(userId)(metrics, config, cassandraUtil) ||
+      (StringUtils.isEmpty(acbpExpiry) && hasReachedNonACBPMonthlyCutOff(userId)(metrics, config, cassandraUtil)) ||
       doesEntryExist(userId, contextType, config.OPERATION_COURSE_COMPLETION, contextId)( metrics,config, cassandraUtil))
       return java.lang.Boolean.FALSE
     else

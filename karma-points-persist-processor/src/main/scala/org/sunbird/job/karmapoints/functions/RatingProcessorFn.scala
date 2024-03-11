@@ -40,18 +40,20 @@ class RatingProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
                               metrics: Metrics): Unit = {
     val usrId = event.getMap().get(config.USER_UNDERSCORE_ID).asInstanceOf[String]
     val activity_id = event.getMap().get(config.ACTIVITY_ID).asInstanceOf[String]
-    if(doesEntryExist(usrId,config.OPERATION_TYPE_RATING,config.OPERATION_TYPE_RATING,activity_id)(metrics,config, cassandraUtil))
-      return
-    kpOnUserRating(usrId , config.OPERATION_TYPE_RATING ,config.OPERATION_TYPE_RATING,activity_id)(metrics)
-  }
-
-  private def kpOnUserRating(userId : String, contextType : String, operationType:String, contextId:String)(metrics: Metrics) :Unit = {
-    val points: Int = config.ratingQuotaKarmaPoints
-    val addInfoMap = new util.HashMap[String, AnyRef]
-    val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId)( metrics,config, cassandraUtil)
+    val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(activity_id)( metrics,config, cassandraUtil)
     if(null == hierarchy || hierarchy.size() < 1)
       return
-    addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
+    val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
+    val courseName  = hierarchy.get(config.name).asInstanceOf[String]
+    if(doesEntryExist(usrId,contextType,config.OPERATION_TYPE_RATING,activity_id)(metrics,config, cassandraUtil))
+      return
+    kpOnUserRating(usrId , contextType ,config.OPERATION_TYPE_RATING,activity_id,courseName)(metrics)
+  }
+
+  private def kpOnUserRating(userId : String, contextType : String, operationType:String, contextId:String,courseName:String)(metrics: Metrics) :Unit = {
+    val points: Int = config.ratingQuotaKarmaPoints
+    val addInfoMap = new util.HashMap[String, AnyRef]
+    addInfoMap.put(config.ADDINFO_COURSENAME, courseName)
     var addInfo = config.EMPTY
     try addInfo = mapper.writeValueAsString(addInfoMap)
     catch {
