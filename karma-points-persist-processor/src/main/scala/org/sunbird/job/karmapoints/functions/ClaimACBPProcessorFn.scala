@@ -101,7 +101,7 @@ class ClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUti
       }
       points = points + config.acbpQuotaKarmaPoints
       updatePoints(userId, contextType, operationType, contextId, points, addInfoStr, creditDate.getTime)(config, cassandraUtil)
-      processUserKarmaSummaryUpdate(userId, points, -1)(config, cassandraUtil)
+      processUserKarmaSummaryUpdate(userId, config.acbpQuotaKarmaPoints, -1)(config, cassandraUtil)
     }
   }
 }
