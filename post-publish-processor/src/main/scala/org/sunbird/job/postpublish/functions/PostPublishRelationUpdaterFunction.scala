@@ -15,11 +15,12 @@ import org.sunbird.job.cache.{DataCache, RedisConnect}
 import org.sunbird.job.exception.APIException
 import org.sunbird.job.postpublish.helpers.PostPublishRelationUpdater
 import org.sunbird.job.postpublish.task.PostPublishProcessorConfig
-import org.sunbird.job.util.{CassandraUtil, HTTPResponse, HttpUtil, JSONUtil}
+import org.sunbird.job.util.{CassandraUtil, HTTPResponse, HttpUtil, JSONUtil, ScalaJsonUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
 
 import java.time.format.DateTimeFormatter
 import java.time.{ZoneId, ZonedDateTime}
+import java.util
 import scala.collection.JavaConverters._
 import scala.collection.convert.ImplicitConversions.{`collection AsScalaIterable`, `seq AsJavaList`}
 import scala.collection.mutable.ListBuffer
@@ -71,7 +72,7 @@ class PostPublishRelationUpdaterFunction(
       )
       return
     }
-
+    addFirstChildId(identifier, programHierarchy) (config, httpUtil, metrics)
     val childrenList = programHierarchy.get(config.children).asInstanceOf[java.util.List[java.util.HashMap[String, AnyRef]]]
     for (childNode <- childrenList) {
       val primaryCategory: String = childNode.get(config.primaryCategory).asInstanceOf[String]
@@ -201,4 +202,66 @@ class PostPublishRelationUpdaterFunction(
         config.postPublishRelationUpdateSuccessCount, 
         config.postPublishRelationUpdateFailureCount)
   }
+
+  private def addFirstChildId(identifier: String, programHierarchy: java.util.Map[String, AnyRef])(
+    config: PostPublishProcessorConfig,
+    httpUtil: HttpUtil,
+    metrics: Metrics
+  ): Map[String, AnyRef] = {
+    val headers = Map[String, String](
+      config.HEADER_CONTENT_TYPE_KEY -> config.HEADER_CONTENT_TYPE_JSON
+    )
+    val res = executeHttpRequest(config.chRead.replace(":id", identifier), "", headers, "GET")(config, httpUtil, metrics)
+    val versionKey = res.get("content").asInstanceOf[Some[Map[String, AnyRef]]].get("versionKey").asInstanceOf[String]
+    val firstChild = findFirstLearningResourceIdentifier(programHierarchy.asInstanceOf[util.HashMap[String, AnyRef]]).asInstanceOf[Some[String]].get
+    var body = "{\"request\":{\"content\":{\"versionKey\":\"$version\",\"firstChildId\":\"$firstChildId\"}}}"
+    body = body.replace("$version", versionKey)
+    body = body.replace("$firstChildId", firstChild)
+    executeHttpRequest(config.chUpdate.replace(":id", identifier), body, headers, "PATCH")(config, httpUtil, metrics)
+  }
+
+  def findFirstLearningResourceIdentifier(data: java.util.HashMap[String, AnyRef]): Option[String] = {
+    val scalaMap: Map[String, AnyRef] = data.asScala.toMap
+    findFirstLearningResourceIdentifierHelper(scalaMap)
+  }
+
+  private def findFirstLearningResourceIdentifierHelper(data: Map[String, AnyRef]): Option[String] = {
+    data.get("primaryCategory") match {
+      case Some(category: String) if category == "Learning Resource" =>
+        Some(data("identifier").asInstanceOf[String])
+      case _ =>
+        val children = data.getOrElse("children", new java.util.ArrayList[java.util.HashMap[String, AnyRef]]())
+          .asInstanceOf[java.util.List[java.util.HashMap[String, AnyRef]]]
+          .asScala.toList
+        children
+          .view
+          .flatMap(child => findFirstLearningResourceIdentifierHelper(child.asScala.toMap))
+          .headOption
+    }
+  }
+
+  private def executeHttpRequest(url: String, body: String, headers: Map[String, String], method: String)(
+    config: PostPublishProcessorConfig,
+    httpUtil: HttpUtil,
+    metrics: Metrics
+  ): Map[String, AnyRef] = {
+    val response: HTTPResponse = method.toUpperCase match {
+      case "GET" => httpUtil.get(url, headers)
+      case "PATCH" => httpUtil.patch(url, body, headers)
+      case _ => throw new Exception()
+    }
+    if (response.status == 200) {
+      ScalaJsonUtil
+        .deserialize[Map[String, AnyRef]](response.body)
+        .getOrElse(config.RESULT, Map.empty[String, AnyRef])
+        .asInstanceOf[Map[String, AnyRef]]
+    } else if (response.status == 400 && response.body.contains(config.userAccBlockedErrCode)) {
+      metrics.incCounter(config.skippedEventCount)
+      logger.error(s"Error while fetching user details for $url: ${response.status} :: ${response.body}")
+      Map.empty[String, AnyRef]
+    } else {
+      throw new Exception(s"Error from get API: $url, with response: $response")
+    }
+  }
+
 }

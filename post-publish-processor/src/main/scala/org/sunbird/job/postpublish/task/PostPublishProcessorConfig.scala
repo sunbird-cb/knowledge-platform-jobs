@@ -107,5 +107,9 @@ class PostPublishProcessorConfig(override val config: Config) extends BaseJobCon
 
   val contentCacheStore: Int = 0
 
-
+  val RESULT = "result"
+  val chRead = contentServiceBase + "/v3/read/:id"
+  val chUpdate = contentServiceBase + "/v3/update/:id"
+  val HEADER_CONTENT_TYPE_KEY = "Content-Type"
+  val HEADER_CONTENT_TYPE_JSON = "application/json"
 }
