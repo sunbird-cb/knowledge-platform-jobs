@@ -191,9 +191,19 @@ class PostPublishRelationUpdaterFunction(
           throw ex
       }
     } else {
-      logger.info(
+      val courseHierarchy = getProgramHierarchy(
+        identifier
+      )(metrics, config, cache, httpUtil)
+      if (courseHierarchy.isEmpty) {
+        logger.info(
+          "PostPublishRelationUpdaterFunction :: Failed to get program Hierarchy."
+        )
+        return
+      }
+      addFirstChildId(identifier, courseHierarchy) (config, httpUtil, metrics)
+      /*logger.info(
         "PostPublishRelationUpdaterFunction:: Nothing to do for ContentId : " + identifier
-      )
+      )*/
     }
   }
 
@@ -219,7 +229,7 @@ class PostPublishRelationUpdaterFunction(
     body = body.replace("$version", versionKey)
     body = body.replace("$firstChildId", firstChild)
     logger.info("Adding body:" + body + " for ContentId : " + identifier)
-    executeHttpRequest(config.chUpdate.replace(":id", identifier), body, headers, "PATCH")(config, httpUtil, metrics)
+    executeHttpRequest(config.contentSystemUpdatePath.replace(":id", identifier), body, headers, "PATCH")(config, httpUtil, metrics)
   }
 
   def findFirstLearningResourceIdentifier(data: java.util.HashMap[String, AnyRef]): Option[String] = {
