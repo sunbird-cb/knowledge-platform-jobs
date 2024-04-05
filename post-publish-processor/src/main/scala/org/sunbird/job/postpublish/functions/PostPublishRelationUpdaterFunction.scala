@@ -214,9 +214,11 @@ class PostPublishRelationUpdaterFunction(
     val res = executeHttpRequest(config.chRead.replace(":id", identifier), "", headers, "GET")(config, httpUtil, metrics)
     val versionKey = res.get("content").asInstanceOf[Some[Map[String, AnyRef]]].get("versionKey").asInstanceOf[String]
     val firstChild = findFirstLearningResourceIdentifier(programHierarchy.asInstanceOf[util.HashMap[String, AnyRef]]).asInstanceOf[Some[String]].get
+    logger.info("Adding FirstChild:" + firstChild + " for ContentId : " + identifier)
     var body = "{\"request\":{\"content\":{\"versionKey\":\"$version\",\"firstChildId\":\"$firstChildId\"}}}"
     body = body.replace("$version", versionKey)
     body = body.replace("$firstChildId", firstChild)
+    logger.info("Adding body:" + body + " for ContentId : " + identifier)
     executeHttpRequest(config.chUpdate.replace(":id", identifier), body, headers, "PATCH")(config, httpUtil, metrics)
   }
 
