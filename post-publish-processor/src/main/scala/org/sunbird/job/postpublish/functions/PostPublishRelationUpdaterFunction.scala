@@ -229,7 +229,7 @@ class PostPublishRelationUpdaterFunction(
     body = body.replace("$version", versionKey)
     body = body.replace("$firstChildId", firstChild)
     logger.info("Adding body:" + body + " for ContentId : " + identifier)
-    executeHttpRequest(config.contentSystemUpdatePath.replace(":id", identifier), body, headers, "PATCH")(config, httpUtil, metrics)
+    executeHttpRequest(config.contentSystemUpdatePath + identifier, body, headers, "PATCH")(config, httpUtil, metrics)
   }
 
   def findFirstLearningResourceIdentifier(data: java.util.HashMap[String, AnyRef]): Option[String] = {
