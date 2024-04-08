@@ -103,7 +103,7 @@ object Utility {
     val userLookupQuery: Select = QueryBuilder
       .select(config.ROOT_ORG_ID)
       .from(config.sunbird_keyspace, config.user_table)
-    userLookupQuery.where(QueryBuilder.eq(config.ID, userId))
+    userLookupQuery.where(QueryBuilder.eq(config.ID, userId.trim))
    val rowList: util.List[Row] = cassandraUtil.find(userLookupQuery.toString)
     if(rowList ==null || rowList.size() < 1)
       {
