@@ -73,9 +73,8 @@ trait BatchCreation {
       val courseCategory = metadata.getOrDefault("courseCategory", "").asInstanceOf[String]
       if (trackable) {
         if (StringUtils.containsIgnoreCase(courseCategory, "Invite-Only")) {
-          logger.info("CourseCategory for " + identifier + " : " + courseCategory)
           trackable = false
-          logger.info("Trackable for " + identifier + " : " + trackable)
+          logger.info("CourseCategory for " + identifier + " : " + courseCategory + ", setting trackable to false")
         }
       }
       logger.info("Trackable for " + identifier + " : " + trackable)
