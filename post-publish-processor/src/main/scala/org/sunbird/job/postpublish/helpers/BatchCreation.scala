@@ -75,6 +75,7 @@ trait BatchCreation {
         if (StringUtils.containsIgnoreCase(courseCategory, "Invite-Only")) {
           logger.info("CourseCategory for " + identifier + " : " + courseCategory)
           trackable = false
+          logger.info("Trackable for " + identifier + " : " + trackable)
         }
       }
       logger.info("Trackable for " + identifier + " : " + trackable)
