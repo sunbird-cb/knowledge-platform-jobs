@@ -69,7 +69,14 @@ trait BatchCreation {
       val trackableObj = JSONUtil.deserialize[java.util.Map[String, AnyRef]](trackableStr)
       val trackingEnabled = trackableObj.getOrDefault("enabled", "No").asInstanceOf[String]
       val autoBatchCreateEnabled = trackableObj.getOrDefault("autoBatch", "No").asInstanceOf[String]
-      val trackable = (StringUtils.equalsIgnoreCase(trackingEnabled, "Yes") && StringUtils.equalsIgnoreCase(autoBatchCreateEnabled, "Yes"))
+      var trackable = (StringUtils.equalsIgnoreCase(trackingEnabled, "Yes") && StringUtils.equalsIgnoreCase(autoBatchCreateEnabled, "Yes"))
+      val courseCategory = metadata.getOrDefault("courseCategory", "").asInstanceOf[String]
+      if (trackable) {
+        if (StringUtils.containsIgnoreCase(courseCategory, "Invite-Only")) {
+          logger.info("CourseCategory for " + identifier + " : " + courseCategory)
+          trackable = false
+        }
+      }
       logger.info("Trackable for " + identifier + " : " + trackable)
       trackable
     } else {
