@@ -57,7 +57,14 @@ trait BatchCreation {
 
 
   def batchRequired(metadata: java.util.Map[String, AnyRef], identifier: String)(implicit config: PostPublishProcessorConfig, cassandraUtil: CassandraUtil): Boolean = {
-    val trackable = isTrackable(metadata, identifier)
+    var trackable = isTrackable(metadata, identifier)
+    val courseCategory = metadata.getOrDefault("courseCategory", "").asInstanceOf[String]
+    if (trackable) {
+      if (StringUtils.containsIgnoreCase(courseCategory, "Invite-Only")) {
+        trackable = false
+        logger.info("CourseCategory for " + identifier + " : " + courseCategory + ", setting trackable to false")
+      }
+    }
     if (trackable) {
       !isBatchExists(identifier)
     } else false
