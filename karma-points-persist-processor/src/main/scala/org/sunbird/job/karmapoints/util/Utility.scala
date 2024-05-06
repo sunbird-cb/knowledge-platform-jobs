@@ -103,9 +103,16 @@ object Utility {
     val userLookupQuery: Select = QueryBuilder
       .select(config.ROOT_ORG_ID)
       .from(config.sunbird_keyspace, config.user_table)
-    userLookupQuery.where(QueryBuilder.eq(config.ID, userId))
-    val userRow: Row = cassandraUtil.find(userLookupQuery.toString).get(0)
-    userRow.getString(config.ROOT_ORG_ID)
+    userLookupQuery.where(QueryBuilder.eq(config.ID, userId.trim))
+   val rowList: util.List[Row] = cassandraUtil.find(userLookupQuery.toString)
+    if(rowList ==null || rowList.size() < 1)
+      {
+        logger.error("Record not exist for the input userId : "+userId)
+        throw new Exception("Record not exist for the input userId : "+userId)
+      }
+    else {
+    val userRow: Row = rowList.get(0)
+    userRow.getString(config.ROOT_ORG_ID) }
   }
   def fetchUserKarmaPointsCreditLookup( userId: String,
                                         contextType: String,
