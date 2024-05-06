@@ -44,7 +44,7 @@ class RatingProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
     if(null == hierarchy || hierarchy.size() < 1)
       return
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
-    val courseName  = hierarchy.get(config.name).asInstanceOf[String]
+    val courseName  = Option(hierarchy.get(config.name).asInstanceOf[String]).map(_.replace(",", "\\,")).getOrElse("")
     if(doesEntryExist(usrId,contextType,config.OPERATION_TYPE_RATING,activity_id)(metrics,config, cassandraUtil))
       return
     kpOnUserRating(usrId , contextType ,config.OPERATION_TYPE_RATING,activity_id,courseName)(metrics)

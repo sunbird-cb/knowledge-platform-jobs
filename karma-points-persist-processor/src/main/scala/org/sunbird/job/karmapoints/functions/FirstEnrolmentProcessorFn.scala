@@ -62,7 +62,7 @@ class FirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: Ht
     val hierarchy: java.util.Map[String, AnyRef] = fetchContentHierarchy(contextId) (metrics,config, cassandraUtil)
     if (hierarchy == null || hierarchy.size() < 1)
       return
-    addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
+    addInfoMap.put(config.ADDINFO_COURSENAME, Option(hierarchy.get(config.name).asInstanceOf[String]).map(_.replace(",", "\\,")).getOrElse(""))
     var addInfo = config.EMPTY
     try {
       addInfo = mapper.writeValueAsString(addInfoMap)
