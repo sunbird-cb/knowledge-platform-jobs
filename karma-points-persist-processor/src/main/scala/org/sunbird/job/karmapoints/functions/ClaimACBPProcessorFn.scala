@@ -11,6 +11,8 @@ import org.sunbird.job.karmapoints.task.KarmaPointsProcessorConfig
 import org.sunbird.job.karmapoints.util.Utility.{mapper, _}
 import org.sunbird.job.util.{CassandraUtil, HttpUtil, JSONUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
+
+import java.util
 import java.util.Date
 import scala.collection.convert.ImplicitConversions.`map AsScala`
 
@@ -71,11 +73,15 @@ class ClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUti
     val res = fetchUserKarmaPointsCreditLookup(userId, contextType, config.OPERATION_COURSE_COMPLETION, contextId)(config, cassandraUtil)
     if (res == null || res.isEmpty) {
       logger.info(s"Making new entry for ACBP with userId: $userId, courseId: $contextId")
-      val addInfoMap = Map(
-        config.ADDINFO_ACBP -> java.lang.Boolean.TRUE,
-        config.OPERATION_COURSE_COMPLETION -> java.lang.Boolean.FALSE,
-        config.ADDINFO_COURSENAME -> courseName
-      )
+       //val addInfoMap = Map(
+      // config.ADDINFO_ACBP -> java.lang.Boolean.TRUE,
+     //  config.OPERATION_COURSE_COMPLETION -> java.lang.Boolean.FALSE,
+    //   config.ADDINFO_COURSENAME -> courseName
+       //  )
+      val addInfoMap = new util.HashMap[String, AnyRef]
+      addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.TRUE)
+      addInfoMap.put(config.OPERATION_COURSE_COMPLETION, java.lang.Boolean.FALSE)
+      addInfoMap.put(config.ADDINFO_COURSENAME, courseName)
       val addInfo = try mapper.writeValueAsString(addInfoMap) catch {
         case e: JsonProcessingException =>
           logger.error("Error serializing addInfoMap", e)
