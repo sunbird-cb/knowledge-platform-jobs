@@ -67,7 +67,7 @@ class ClaimACBPProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUti
     if (config.COURSE != contextType) {
       return
     }
-    val courseName = Option(hierarchy.get(config.name).asInstanceOf[String]).map(_.replace(",", "\\,")).getOrElse("")
+    val courseName = hierarchy.get(config.name).asInstanceOf[String]
     val res = fetchUserKarmaPointsCreditLookup(userId, contextType, config.OPERATION_COURSE_COMPLETION, contextId)(config, cassandraUtil)
     if (res == null || res.isEmpty) {
       logger.info(s"Making new entry for ACBP with userId: $userId, courseId: $contextId")

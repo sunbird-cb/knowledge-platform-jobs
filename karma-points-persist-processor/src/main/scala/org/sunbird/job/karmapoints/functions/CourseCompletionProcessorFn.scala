@@ -66,7 +66,7 @@ class CourseCompletionProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: 
     addInfoMap.put(config.ADDINFO_ASSESSMENT, java.lang.Boolean.FALSE)
     addInfoMap.put(config.ADDINFO_ACBP, java.lang.Boolean.FALSE)
     addInfoMap.put(config.OPERATION_COURSE_COMPLETION, java.lang.Boolean.TRUE)
-    addInfoMap.put(config.ADDINFO_COURSENAME, Option(hierarchy.get(config.name).asInstanceOf[String]).map(_.replace(",", "\\,")).getOrElse(""))
+    addInfoMap.put(config.ADDINFO_COURSENAME, hierarchy.get(config.name))
     var points : Int = config.courseCompletionQuotaKarmaPoints
     val assessmentIdentifier = doesAssessmentExistInHierarchy(hierarchy)(metrics, config)
     if(!StringUtils.isEmpty(assessmentIdentifier)) {
