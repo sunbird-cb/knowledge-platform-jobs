@@ -123,23 +123,27 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
               val programContentStatus = Option(programEnrollmentRow.get.getMap(
                 config.contentStatus, TypeToken.of(classOf[String]), TypeToken.of(classOf[Integer]))).head
               var progressCount: Integer = Option(programEnrollmentRow.get.getInt(config.progress)).head
+              val keyForLeafNodesForProgram = s"$courseParentId:$courseParentId:${config.leafNodesKey}"
+              val leafNodesForProgram = readFromRelationCache(keyForLeafNodesForProgram, metrics).distinct
 
+              logger.info("The keyForLeafNodesForProgram from Redish:" + leafNodesForProgram)
               for ((key, value) <- leafNodeMap) {
                 // Check if the key is present in leafNodeMap
-                if (programContentStatus.get(key) != null) {
-                  // Update progress in contentStatus for the matching key
-                  programContentStatus.put(key, value)
+                if (leafNodesForProgram.contains(key)) {
+                  if (programContentStatus.get(key) != null) {
+                    // Update progress in contentStatus for the matching key
+                    programContentStatus.put(key, value)
+                  } else {
+                    programContentStatus.put(key, value)
+                  }
                 } else {
-                  programContentStatus.put(key, value)
+                  logger.info("The value is not present on the leafnode for program: " + key)
                 }
               }
               if (!programContentStatus.isEmpty) {
                 progressCount = programContentStatus.filter(_._2 == 2).size
               }
               var status: Int = 1
-              val keyForLeafNodesForProgram = s"$courseParentId:$courseParentId:${config.leafNodesKey}"
-              val leafNodesForProgram = readFromRelationCache(keyForLeafNodesForProgram, metrics).distinct
-              logger.info("The keyForLeafNodesForProgram from Redish:" + leafNodesForProgram)
               if (progressCount == leafNodesForProgram.size()) {
                 status = 2
                 programCompletedOn = lastCourseCompleteOn
