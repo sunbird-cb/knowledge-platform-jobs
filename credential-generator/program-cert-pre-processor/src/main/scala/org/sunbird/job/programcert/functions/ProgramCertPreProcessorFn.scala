@@ -130,12 +130,8 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
               for ((key, value) <- leafNodeMap) {
                 // Check if the key is present in leafNodeMap
                 if (leafNodesForProgram.contains(key)) {
-                  if (programContentStatus.get(key) != null) {
-                    // Update progress in contentStatus for the matching key
-                    programContentStatus.put(key, value)
-                  } else {
-                    programContentStatus.put(key, value)
-                  }
+                  // Update progress in contentStatus for the matching key
+                  programContentStatus.put(key, value)
                 } else {
                   logger.info("The value is not present on the leafnode for program: " + key)
                 }
