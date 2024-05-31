@@ -20,7 +20,7 @@ class StorageService(storageParams: StorageParams) extends Serializable {
     if (null == storageService) {
       val storageKey = storageParams.storageKey
       val storageSecret = storageParams.storageSecret
-      storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret, Option(storageParams.storageEndPoint)))
+      storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret, storageParams.storageEndPoint))
     }
     storageService
   }
