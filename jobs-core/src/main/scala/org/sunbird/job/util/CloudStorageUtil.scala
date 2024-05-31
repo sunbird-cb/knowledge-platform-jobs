@@ -22,7 +22,7 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
       val storageSecret = config.getString("cloud_storage_secret", "")
       // TODO: endPoint defined to support "cephs3". Make code changes after cloud-store-sdk 2.11 support it.
       val endPoint = Option(config.getString("cloud_storage_endpoint", ""))
-      println("StorageService --> params: " +  storageType + "," + storageKey)
+      println("StorageService --> params: " +  cloudStorageType + "," + storageKey)
       storageService = StorageServiceFactory.getStorageService(new StorageConfig(cloudStorageType, storageKey, storageSecret, endPoint))
     }
     storageService
