@@ -15,32 +15,21 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
   
   @throws[Exception]
   def getService: BaseStorageService = {
+
     if (null == storageService) {
-      if (StringUtils.equalsIgnoreCase(cloudStorageType, "azure")) {
-        val azureStorageKey = config.getString("azure_storage_key", "")
-        val azureStorageSecret = config.getString("azure_storage_secret", "")
-        storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, azureStorageKey, azureStorageSecret))
-      } else if (StringUtils.equalsIgnoreCase(cloudStorageType, "aws")) {
-        val awsStorageKey = config.getString("aws_storage_key", "")
-        val awsStorageSecret = config.getString("aws_storage_secret", "")
-        storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, awsStorageKey, awsStorageSecret))
-      } else if (StringUtils.equalsIgnoreCase(cloudStorageType, "cephs3")) {
-        val storageKey = config.getString("cephs3_storage_key", "");
-        val storageSecret = config.getString("cephs3_storage_secret", "");
-        val endPoint = config.getString("cephs3_storage_endpoint", "");
-        storageService = StorageServiceFactory.getStorageService(StorageConfig(cloudStorageType, storageKey, storageSecret, Option(endPoint)));
-      } else throw new Exception("Error while initialising cloud storage: " + cloudStorageType)
+
+      val storageKey = config.getString("cloud_storage_key", "")
+      val storageSecret = config.getString("cloud_storage_secret", "")
+      // TODO: endPoint defined to support "cephs3". Make code changes after cloud-store-sdk 2.11 support it.
+      val endPoint = Option(config.getString("cloud_storage_endpoint", ""))
+      println("StorageService --> params: " +  storageType + "," + storageKey)
+      storageService = StorageServiceFactory.getStorageService(new StorageConfig(cloudStorageType, storageKey, storageSecret, endPoint))
     }
     storageService
   }
 
   def getContainerName: String = {
-    cloudStorageType match {
-      case "azure" => config.getString("azure_storage_container", "")
-      case "aws" => config.getString("aws_storage_container", "")
-      case "cephs3" => config.getString("cephs3_storage_container", "")
-      case _ => throw new Exception("Container name not configured.")
-    }
+      config.getString("cloud_storage_container", "")
   }
 
   def uploadFile(folderName: String, file: File, slug: Option[Boolean] = Option(true), container: String = container): Array[String] = {
@@ -58,8 +47,8 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
     getService.getUri(getContainerName, prefix, isDirectory)
   }
   
-  def getCephURI(prefix: String, isDirectory: Option[Boolean]): String = {
-    config.getString("cephs3_storage_endpoint", "") + "/" + getContainerName + "/" + prefix
+  def getIgotURI(prefix: String, isDirectory: Option[Boolean]): String = {
+    config.getString("cloud_storage_endpoint", "") + "/" + getContainerName + "/" + prefix
   }
 
   def uploadDirectory(folderName: String, directory: File, slug: Option[Boolean] = Option(true)): Array[String] = {

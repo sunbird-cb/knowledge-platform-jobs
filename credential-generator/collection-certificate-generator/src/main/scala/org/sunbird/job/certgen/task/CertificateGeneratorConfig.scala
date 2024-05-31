@@ -70,6 +70,9 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   // env vars
   val storageType: String = config.getString("cert_cloud_storage_type")
   val containerName: String = config.getString("cert_container_name")
+  val storageKey: String = config.getString("cert_cloud_storage_key")
+  val storageSecret: String = config.getString("cert_cloud_storage_secret")
+  val storageEndpoint: String = config.getString("cert_cloud_storage_endpoint")
   val azureStorageSecret: String = if (config.hasPath("cert_azure_storage_secret")) config.getString("cert_azure_storage_secret") else ""
   val azureStorageKey: String = if (config.hasPath("cert_azure_storage_key")) config.getString("cert_azure_storage_key") else ""
   val domainUrl: String = config.getString("cert_domain_url")
