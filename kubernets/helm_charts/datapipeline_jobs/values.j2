@@ -337,12 +337,11 @@ questionset-publish:
       table = "questionset_hierarchy"
     }
     print_service.base_url = "{{ kp_print_service_base_url }}"
-    cloud_storage_type="{{ cloud_storage_type }}"
-    cephs3_storage_key="{{ cephs3_storage_key }}"
-    cephs3_storage_secret="{{ cephs3_storage_secret }}"
-    cephs3_storage_endpoint="{{ cephs3_storage_endpoint }}"
-    cephs3_storage_container="{{ cephs3_storage_container }}"
-
+    cloud_storage_type="{{ cloud_service_provider }}"
+    cloud_storage_key="{{ cloud_storage_key }}"
+    cloud_storage_secret="{{ cloud_storage_secret }}"
+    cloud_storage_container="{{ cloud_storage_content_bucketname }}"
+    cloud_storage_endpoint="{{ cloud_storage_endpoint }}"
 
     master.category.validation.enabled ="{{ master_category_validation_enabled }}"
 
@@ -521,11 +520,11 @@ asset-enrichment:
     }
     content_youtube_apikey="{{ youtube_api_key }}"
     cloud_storage_type="{{ cloud_store }}"
-    cloud_storage_type="{{ cloud_storage_type }}"
-    cephs3_storage_key="{{ cephs3_storage_key }}"
-    cephs3_storage_secret="{{ cephs3_storage_secret }}"
-    cephs3_storage_endpoint="{{ cephs3_storage_endpoint }}"
-    cephs3_storage_container="{{ cephs3_storage_container }}"
+    cloud_storage_type="{{ cloud_service_provider }}"
+    cloud_storage_key="{{ cloud_storage_key }}"
+    cloud_storage_secret="{{ cloud_storage_secret }}"
+    cloud_storage_container="{{ cloud_storage_content_bucketname }}"
+    cloud_storage_endpoint="{{ cloud_storage_endpoint }}"
 
 
   flink-conf: |+
@@ -583,12 +582,11 @@ auto-creator-v2:
     service {
       content.basePath = "{{ kp_content_service_base_url }}"
     }
-    cloud_storage_type="{{ cloud_storage_type }}"
-    cephs3_storage_key="{{ cephs3_storage_key }}"
-    cephs3_storage_secret="{{ cephs3_storage_secret }}"
-    cephs3_storage_endpoint="{{ cephs3_storage_endpoint }}"
-    cephs3_storage_container="{{ cephs3_storage_container }}"
-
+    cloud_storage_type="{{ cloud_service_provider }}"
+    cloud_storage_key="{{ cloud_storage_key }}"
+    cloud_storage_secret="{{ cloud_storage_secret }}"
+    cloud_storage_container="{{ cloud_storage_content_bucketname }}"
+    cloud_storage_endpoint="{{ cloud_storage_endpoint }}"
 
     source {
       baseUrl="{{ source_base_url }}"
@@ -632,12 +630,11 @@ content-auto-creator:
       learning_service.basePath = "{{ kp_learning_service_base_url }}"
     }
 
-    cloud_storage_type="{{ cloud_storage_type }}"
-    cephs3_storage_key="{{ cephs3_storage_key }}"
-    cephs3_storage_secret="{{ cephs3_storage_secret }}"
-    cephs3_storage_endpoint="{{ cephs3_storage_endpoint }}"
-    cephs3_storage_container="{{ cephs3_storage_container }}"
-
+    cloud_storage_type="{{ cloud_service_provider }}"
+    cloud_storage_key="{{ cloud_storage_key }}"
+    cloud_storage_secret="{{ cloud_storage_secret }}"
+    cloud_storage_container="{{ cloud_storage_content_bucketname }}"
+    cloud_storage_endpoint="{{ cloud_storage_endpoint }}"
 
     content_auto_creator {
         actions=auto-create
@@ -855,11 +852,12 @@ collection-certificate-generator:
     }
     cert_domain_url = "{{ cert_domain_url }}"
     web.portal.url = "{{ cert_domain_url }}"
-    cert_container_name = "{{ cert_container_name }}"
-    cert_cloud_storage_type = "{{ cloud_storage_type }}"
-    cert_cephs3_storage_secret = "{{ cephs3_storage_secret }}"
-    cert_cephs3_storage_key = "{{ cephs3_storage_key }}"
-    cert_cephs3_storage_endpoint = "{{ cephs3_storage_endpoint }}"
+    cloud_storage_type="{{ cloud_service_provider }}"
+    cloud_storage_key="{{ cloud_storage_key }}"
+    cloud_storage_secret="{{ cloud_storage_secret }}"
+    cloud_storage_container="{{ cert_container_name }}"
+    cloud_storage_endpoint="{{ cloud_storage_endpoint }}"
+
     service {
       certreg.basePath = "{{ cert_reg_service_base_url }}"
       learner.basePath = "{{ learner_service_base_url }}"
@@ -1052,11 +1050,11 @@ content-publish:
             artifact = "artifact"
         }
     }
-    cloud_storage_type: "{{ cloud_storage_type }}"
-    cephs3_storage_key: "{{ cephs3_storage_key }}"
-    cephs3_storage_secret: "{{ cephs3_storage_secret }}"
-    cephs3_storage_endpoint: "{{ cephs3_storage_endpoint }}"
-    cephs3_storage_container: "{{ cephs3_storage_container }}"
+    cloud_storage_type="{{ cloud_service_provider }}"
+    cloud_storage_key="{{ cloud_storage_key }}"
+    cloud_storage_secret="{{ cloud_storage_secret }}"
+    cloud_storage_container="{{ cloud_storage_content_bucketname }}"
+    cloud_storage_endpoint="{{ cloud_storage_endpoint }}"
     
     hierarchy {
       keyspace = "{{ hierarchy_keyspace_name }}"
@@ -1146,11 +1144,11 @@ qrcode-image-generator:
         margin=1
     }
 
-    cloud_storage_type="{{ cloud_storage_type }}"
-    cephs3_storage_key="{{ cephs3_storage_key }}"
-    cephs3_storage_secret="{{ cephs3_storage_secret }}"
-    cephs3_storage_endpoint="{{ cephs3_storage_endpoint }}"
-    cephs3_storage_container="{{ cephs3_storage_container }}"
+    cloud_storage_type="{{ cloud_service_provider }}"
+    cloud_storage_key="{{ cloud_storage_key }}"
+    cloud_storage_secret="{{ cloud_storage_secret }}"
+    cloud_storage_container="{{ cloud_storage_content_bucketname }}"
+    cloud_storage_endpoint="{{ cloud_storage_endpoint }}"
     
     lms-cassandra {
       keyspace = "dialcodes"
