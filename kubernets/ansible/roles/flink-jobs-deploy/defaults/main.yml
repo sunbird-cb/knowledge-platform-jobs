@@ -50,13 +50,21 @@ activity_agg_batch_interval: 60
 activity_agg_batch_read_size: 1
 activity_agg_batch_write_size: 10
 activity_agg_window_shards: 1000
-activity_agg_dedup_index: 13
+activity_agg_dedup_index: 14
 activity_agg_dedup_expiry: 604800
 activity_module_aggs_enabled: true
 activity_input_dedup_enabled: true
 activity_agg_enrolment_filter_processe_enabled: true
 activity_agg_collection_status_cache_expiry_time: 3600
 
+###program_activity_agg_###
+
+program_activity_agg_window_shards: 1000
+program_activity_agg_checkpointing_interval: 300000
+program_activity_agg_checkpointing_pause_interval: 90000
+program_activity_agg_consumer_parallelism: 1
+program_activity_agg_dedup_parallelism: 1
+program_activity_agg_parallelism: 1
 
 ### Relation Cache Updater Job related Vars
 extractor_consumer_parallelism: 1
@@ -70,6 +78,7 @@ post_publish_event_router_parallelism: 1
 post_publish_shallow_copy_parallelism: 1
 post_publish_link_dialcode_parallelism: 1
 post_publish_batch_create_parallelism: 1
+post_publish_relation_update_parallelism: 1
 
 ###  Certificate Job related Vars
 certificate_generator_consumer_parallelism: 1
@@ -124,6 +133,20 @@ registry_sunbird_keyspace: "sunbird"
 cert_registry_table: "cert_registry"
 
 
+### Program Cert Pre Processor
+program_cert_pre_processor_consumer_parallelism: 1
+generate_certificate_parallelism: 1
+middleware_course_batch_table: "course_batch"
+middleware_user_enrolments_table: "user_enrolments"
+middleware_assessment_aggregator_table: "assessment_aggregator"
+
+### Karma Points Persist Processor
+karma_points_persist_processor_parallelism: 1
+karma_points_persist_processor_consumer_parallelism: 1
+karma_points_persist_processor_generate_certificate_parallelism: 1
+user_karma_points_table: "user_karma_points"
+user_karma_points_credit_lookup_table: "user_karma_points_credit_lookup"
+
 ### to be removed
 job_classname: ""
 
@@ -131,6 +154,13 @@ job_classname: ""
 flink_job_names:
   activity-aggregate-updater:
     job_class_name: 'org.sunbird.job.aggregate.task.ActivityAggregateUpdaterStreamTask'
+    replica: 1
+    jobmanager_memory: 1024m
+    taskmanager_memory: 1024m
+    taskslots: 1
+    cpu_requests: 0.3
+  program-activity-aggregate-updater:
+    job_class_name: 'org.sunbird.job.programaggregate.task.ProgramActivityAggregateUpdaterStreamTask'
     replica: 1
     jobmanager_memory: 1024m
     taskmanager_memory: 1024m
@@ -255,6 +285,20 @@ flink_job_names:
     taskmanager_memory: 1024m
     taskslots: 1
     cpu_requests: 0.3
+  program-cert-pre-processor:
+    job_class_name: 'org.sunbird.job.programcert.task.ProgramCertPreProcessorTask'
+    replica: 1
+    jobmanager_memory: 1024m
+    taskmanager_memory: 1024m
+    taskslots: 1
+    cpu_requests: 0.3
+  karma-points-persist-processor:
+    job_class_name: 'org.sunbird.job.karmapoints.task.KarmaPointsProcessorTask'
+    replica: 1
+    jobmanager_memory: 1024m
+    taskmanager_memory: 1024m
+    taskslots: 1
+    cpu_requests: 0.3
 
 ### Global vars
 middleware_course_keyspace: "sunbird_courses"
@@ -319,3 +363,6 @@ qrcode_image_generator_consumer_parallelism: 1
 qrcode_image_generator_parallelism: 1
 
 source_base_url: "{{proto}}://{{domain_name}}/api"
+cb_ext_service_base_url: http://sb-cb-ext-service.{{ env }}.svc.cluster.local:7001/
+
+
