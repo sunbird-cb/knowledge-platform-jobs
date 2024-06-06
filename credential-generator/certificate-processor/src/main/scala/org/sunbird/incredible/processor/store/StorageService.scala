@@ -36,5 +36,8 @@ class StorageService(storageParams: StorageParams) extends Serializable {
     UrlManager.getSharableUrl(url, containerName)
   }
 
+  def getSignedUrl(container: String, path: String, ttl: Int): String = {
+    return getService.getPutSignedURL(container, path, Option.apply(ttl), Option.apply("r"), Option.empty)
+  }
 
 }

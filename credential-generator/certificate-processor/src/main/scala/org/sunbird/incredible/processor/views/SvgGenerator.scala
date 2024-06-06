@@ -2,13 +2,14 @@ package org.sunbird.incredible.processor.views
 
 import java.io.{FileNotFoundException, IOException}
 import java.util.regex.Matcher
-
 import com.twitter.storehaus.cache.{Cache, LRUCache}
 import org.apache.commons.lang.StringUtils
 import org.apache.commons.text.StringSubstitutor
 import org.slf4j.{Logger, LoggerFactory}
 import org.sunbird.incredible.pojos.ob.CertificateExtension
+import org.sunbird.incredible.processor.store.StorageService
 
+import java.net.URL
 import scala.io.{BufferedSource, Source}
 import scala.util.matching.Regex
 
@@ -22,11 +23,11 @@ object SvgGenerator {
   private var svgTemplatesCache: Cache[String, String] = LRUCache[String, String](15)
 
   @throws[FileNotFoundException]
-  def generate(certificateExtension: CertificateExtension, encodedQrCode: String, svgTemplateUrl: String): String = {
+  def generate(certificateExtension: CertificateExtension, encodedQrCode: String, svgTemplateUrl: String, storageService: StorageService = null): String = {
     var cachedTemplate = svgTemplatesCache.get(svgTemplateUrl).getOrElse("")
     if (StringUtils.isEmpty(cachedTemplate)) {
       logger.info("{} svg not cached , downloading", svgTemplateUrl)
-      cachedTemplate = download(svgTemplateUrl)
+      cachedTemplate = download(svgTemplateUrl, storageService)
       cachedTemplate = "data:image/svg+xml," + encodeData(cachedTemplate)
       cachedTemplate = cachedTemplate.replaceAll("\n", "").replaceAll("\t", "")
       svgTemplatesCache = svgTemplatesCache.put(svgTemplateUrl, cachedTemplate)._2
@@ -62,8 +63,20 @@ object SvgGenerator {
   }
 
   @throws[FileNotFoundException]
-  private def download(svgTemplate: String): String = {
-    val svgFileSource: BufferedSource = Source.fromURL(svgTemplate)
+  private def download(svgTemplate: String, storageService: StorageService): String = {
+    println("Got svgTemplate: " + svgTemplate)
+    var container = "igot"
+    var relativePath: String = if (svgTemplate.startsWith("http")) {
+      val uri:String = StringUtils.substringAfter(new URL(svgTemplate).getPath, "/")
+      container = StringUtils.substringBefore(uri ,"/")
+      StringUtils.substringAfter(uri, "/")
+    } else {
+      svgTemplate
+    }
+    println("Got svgTemplate with relative path: " + relativePath)
+    val downloadableUrl = storageService.getSignedUrl(container, relativePath, 30)
+    println("Got downloadable svgTemplate url: " + downloadableUrl)
+    val svgFileSource: BufferedSource = Source.fromURL(downloadableUrl)
     val svgString = svgFileSource.mkString
     svgFileSource.close()
     svgString
