@@ -21,7 +21,7 @@ trait AuditEventGeneratorService {
   private[this] lazy val logger = LoggerFactory.getLogger(classOf[AuditEventGeneratorService])
   private val OBJECT_TYPE_IMAGE_SUFFIX = "Image"
   private val SKIP_AUDIT = """{"object": {"type":null}}"""
-  private lazy var definitionCache: DefinitionCache = null
+  private var definitionCache: DefinitionCache = null
   private lazy val gson = new Gson
 
   private val systemPropsList = List("IL_SYS_NODE_TYPE", "IL_FUNC_OBJECT_TYPE", "IL_UNIQUE_ID", "IL_TAG_NAME", "IL_ATTRIBUTE_NAME", "IL_INDEXABLE_METADATA_KEY", "IL_NON_INDEXABLE_METADATA_KEY",
