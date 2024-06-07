@@ -33,7 +33,7 @@ class CollectionPublisherSpec extends FlatSpec with BeforeAndAfterAll with Match
   val jobConfig: ContentPublishConfig = new ContentPublishConfig(config)
   implicit val cloudStorageUtil: CloudStorageUtil = new CloudStorageUtil(jobConfig)
   implicit val ec: ExecutionContextExecutor = ExecutionContexts.global
-  implicit val defCache: DefinitionCache = new DefinitionCache()
+  implicit val defCache: DefinitionCache = new DefinitionCache(jobConfig)
   implicit val defConfig: DefinitionConfig = DefinitionConfig(jobConfig.schemaSupportVersionMap, jobConfig.definitionBasePath)
   implicit val publishConfig: PublishConfig = jobConfig.asInstanceOf[PublishConfig]
   implicit val httpUtil: HttpUtil = new HttpUtil

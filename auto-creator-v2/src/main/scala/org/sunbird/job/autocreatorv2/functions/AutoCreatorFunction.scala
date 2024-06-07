@@ -22,7 +22,7 @@ class AutoCreatorFunction(config: AutoCreatorV2Config, httpUtil: HttpUtil,
   extends BaseProcessFunction[Event, String](config) with AutoCreator {
 
   private[this] lazy val logger = LoggerFactory.getLogger(classOf[AutoCreatorFunction])
-  lazy val defCache: DefinitionCache = new DefinitionCache()
+  lazy val defCache: DefinitionCache = new DefinitionCache(config)
 
   override def metricsList(): List[String] = {
     List(config.totalEventsCount, config.successEventCount, config.failedEventCount, config.skippedEventCount)

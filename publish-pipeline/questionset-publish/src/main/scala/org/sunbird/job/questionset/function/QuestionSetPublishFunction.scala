@@ -48,7 +48,7 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
     neo4JUtil = new Neo4JUtil(config.graphRoutePath, config.graphName)
     cloudStorageUtil = new CloudStorageUtil(config)
     ec = ExecutionContexts.global
-    definitionCache = new DefinitionCache()
+    definitionCache = new DefinitionCache(config)
     definitionConfig = DefinitionConfig(config.schemaSupportVersionMap, config.definitionBasePath)
     cache = new DataCache(config, new RedisConnect(config), config.cacheDbId, List())
     cache.init()

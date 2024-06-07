@@ -27,7 +27,7 @@ class ObjectBundleSpec extends FlatSpec with BeforeAndAfterAll with Matchers wit
   implicit val ec: ExecutionContextExecutor = ExecutionContexts.global
   val definitionBasePath: String = if (config.hasPath("schema.basePath")) config.getString("schema.basePath") else "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/schemas/local"
   val schemaSupportVersionMap = if (config.hasPath("schema.supportedVersion")) config.getObject("schema.supportedVersion").unwrapped().asScala.toMap else Map[String, AnyRef]()
-  implicit val defCache = new DefinitionCache()
+  implicit val defCache = new DefinitionCache(publishConfig)
   implicit val defConfig = DefinitionConfig(schemaSupportVersionMap, definitionBasePath)
 
   "validUrl" should "return true for valid url input" in {

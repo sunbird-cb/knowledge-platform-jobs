@@ -19,7 +19,7 @@ class ContentAutoCreatorSpec extends FlatSpec with Matchers with MockitoSugar {
 	implicit val mockNeo4JUtil: Neo4JUtil = mock[Neo4JUtil](Mockito.withSettings().serializable())
 	val config: Config = ConfigFactory.load("test.conf").withFallback(ConfigFactory.systemEnvironment())
 	val jobConfig: ContentAutoCreatorConfig = new ContentAutoCreatorConfig(config)
-	val defCache = new DefinitionCache()
+	val defCache = new DefinitionCache(jobConfig)
 	implicit val cloudUtil : CloudStorageUtil = new CloudStorageUtil(jobConfig)
 	var mockHttpUtil: HttpUtil = mock[HttpUtil]
 

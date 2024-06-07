@@ -29,7 +29,7 @@ class EcarGeneratorSpec extends FlatSpec with BeforeAndAfterAll with Matchers {
   implicit val mockNeo4JUtil: Neo4JUtil = mock[Neo4JUtil](Mockito.withSettings().serializable())
   val definitionBasePath: String = if (config.hasPath("schema.basePath")) config.getString("schema.basePath") else "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/schemas/local"
   val schemaSupportVersionMap = if (config.hasPath("schema.supportedVersion")) config.getObject("schema.supportedVersion").unwrapped().asScala.toMap else Map[String, AnyRef]()
-  implicit val defCache = new DefinitionCache()
+  implicit val defCache = new DefinitionCache(publishConfig)
   implicit val defConfig = DefinitionConfig(schemaSupportVersionMap, definitionBasePath)
 
   "Object Ecar Generator generateEcar" should "return a Map containing Packaging Type and its url after uploading it to cloud" in {

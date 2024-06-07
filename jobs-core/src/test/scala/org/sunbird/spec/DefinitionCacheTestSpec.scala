@@ -3,12 +3,13 @@ package org.sunbird.spec
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.scalatestplus.mockito.MockitoSugar
+import org.sunbird.job.BaseJobConfig
 import org.sunbird.job.domain.`object`.DefinitionCache
 
 class DefinitionCacheTestSpec extends FlatSpec with BeforeAndAfterAll with Matchers with MockitoSugar {
 
   val config: Config = ConfigFactory.load("test.conf")
-  val definitionCache = new DefinitionCache()
+  val definitionCache = new DefinitionCache(new BaseJobConfig(config, null))
   val basePath = "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/schemas/local"
 
   "DefinitionCache" should "return the definition for the objectType and version specified " in {
