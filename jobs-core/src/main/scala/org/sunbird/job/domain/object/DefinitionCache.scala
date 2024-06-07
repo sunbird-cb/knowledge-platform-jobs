@@ -64,7 +64,7 @@ class DefinitionCache(config: BaseJobConfig) extends Serializable {
 
     logger.info("Got downloadable final url: " + downloadableUrl)
 
-    Source.fromURL(filePath + fileName).mkString
+    Source.fromURL(downloadableUrl).mkString
   }
 
 }
