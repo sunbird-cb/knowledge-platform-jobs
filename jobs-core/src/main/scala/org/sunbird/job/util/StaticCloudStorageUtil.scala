@@ -20,10 +20,10 @@ object StaticCloudStorageUtil extends Serializable {
   def getService: BaseStorageService = {
 
     if (null == storageService) {
-      val cloudStorageType: String = StaticCloudStorageUtil.config.getString("cloud_storage_type", "azure")
-      val storageKey = StaticCloudStorageUtil.config.getString("cloud_storage_key", "")
-      val storageSecret = StaticCloudStorageUtil.config.getString("cloud_storage_secret", "").replace("\\n", "\n")
-      val endPoint = Option(StaticCloudStorageUtil.config.getString("cloud_storage_endpoint", ""))
+      val cloudStorageType: String = config.getString("cloud_storage_type", "azure")
+      val storageKey = config.getString("cloud_storage_key", "")
+      val storageSecret = config.getString("cloud_storage_secret", "").replace("\\n", "\n")
+      val endPoint = Option(config.getString("cloud_storage_endpoint", ""))
       // TODO: endPoint defined to support "cephs3". Make code changes after cloud-store-sdk 2.11 support it.
       println("StorageService --> params: " +  cloudStorageType + "," + storageKey)
       storageService = StorageServiceFactory.getStorageService(new StorageConfig(cloudStorageType, storageKey, storageSecret, endPoint))
@@ -32,7 +32,7 @@ object StaticCloudStorageUtil extends Serializable {
   }
 
   def getContainerName: String = {
-    StaticCloudStorageUtil.config.getString("cloud_storage_container", "")
+    config.getString("cloud_storage_container", "")
   }
 
   def uploadFile(folderName: String, file: File, slug: Option[Boolean] = Option(true), container: String = container): Array[String] = {
