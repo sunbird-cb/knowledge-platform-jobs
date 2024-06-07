@@ -430,6 +430,11 @@ search-indexer:
     schema.definition_cache.expiry = {{ schema_definition_cache_expiry_in_sec }}
     restrict.objectTypes = ["EventSet", "Questionnaire", "Misconception", "FrameworkType", "EventSetImage", "EventImage"]
     ignored.fields={{ search_indexer_ignored_fields | to_json }}
+    cloud_storage_type="{{ cloud_service_provider }}"
+    cloud_storage_key="{{ cloud_storage_key }}"
+    cloud_storage_secret="{{ cloud_storage_secret | replace('\n', '\\n') }}"
+    cloud_storage_container="{{ cloud_storage_content_bucketname }}"
+    cloud_storage_endpoint="{{ cloud_storage_endpoint }}"
 
   flink-conf: |+
     jobmanager.memory.flink.size: {{ flink_job_names['search-indexer'].jobmanager_memory }}
