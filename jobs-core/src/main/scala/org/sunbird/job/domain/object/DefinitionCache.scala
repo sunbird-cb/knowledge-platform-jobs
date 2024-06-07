@@ -2,9 +2,11 @@ package org.sunbird.job.domain.`object`
 
 import com.twitter.storehaus.cache.Cache
 import com.twitter.util.Duration
+import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
-import org.sunbird.job.util.ScalaJsonUtil
+import org.sunbird.job.util.{ScalaJsonUtil, StaticCloudStorageUtil}
 
+import java.net.URL
 import scala.io.Source
 
 class DefinitionCache extends Serializable {
@@ -46,7 +48,22 @@ class DefinitionCache extends Serializable {
   }
 
   private def fileToString(basePath: String, fileName: String): String = {
-    Source.fromURL(basePath + fileName).mkString
+    val filePath = basePath + fileName
+    logger.info("Got filePath: " + filePath)
+    var container = "content"
+    var relativePath: String = if (filePath.startsWith("http")) {
+      val uri:String = StringUtils.substringAfter(new URL(filePath).getPath, "/")
+      container = StringUtils.substringBefore(uri ,"/")
+      StringUtils.substringAfter(uri, "/")
+    } else {
+      filePath
+    }
+    logger.info("Got filePath with relative path: " + relativePath)
+    val cloudStorageUtil = new StaticCloudStorageUtil()
+    val downloadableUrl = cloudStorageUtil.getSignedUrl(container, relativePath, 30)
+    logger.info("Got downloadable definition path url: " + downloadableUrl)
+
+    Source.fromURL(filePath + fileName).mkString
   }
 
 }

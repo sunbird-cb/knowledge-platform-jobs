@@ -16,7 +16,7 @@ object FlinkUtil {
     env.getConfig.setUseSnapshotCompression(config.enableCompressedCheckpointing)
     env.enableCheckpointing(config.checkpointingInterval)
     env.getCheckpointConfig.setCheckpointTimeout(config.checkpointingTimeout)
-    
+    StaticCloudStorageUtil.setConfig(config)
 
     /**
      * Use Blob storage as distributed state backend if enabled
