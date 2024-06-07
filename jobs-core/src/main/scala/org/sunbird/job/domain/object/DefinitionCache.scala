@@ -59,8 +59,7 @@ class DefinitionCache extends Serializable {
       filePath
     }
     logger.info("Got filePath with relative path: " + relativePath)
-    val cloudStorageUtil = new StaticCloudStorageUtil()
-    val downloadableUrl = cloudStorageUtil.getSignedUrl(container, relativePath, 30)
+    val downloadableUrl = StaticCloudStorageUtil.getSignedUrl(container, relativePath, 30)
     logger.info("Got downloadable definition path url: " + downloadableUrl)
 
     Source.fromURL(filePath + fileName).mkString

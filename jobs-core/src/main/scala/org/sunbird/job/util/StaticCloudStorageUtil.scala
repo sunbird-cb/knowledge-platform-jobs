@@ -6,7 +6,12 @@ import org.sunbird.job.BaseJobConfig
 
 import java.io.File
 
-class StaticCloudStorageUtil extends Serializable {
+object StaticCloudStorageUtil extends Serializable {
+  var config: BaseJobConfig = null
+
+  def setConfig(baseConfig: BaseJobConfig): Unit = {
+    this.config = baseConfig
+  }
 
   var storageService: BaseStorageService = null
   val container: String = getContainerName
@@ -64,12 +69,4 @@ class StaticCloudStorageUtil extends Serializable {
     return getService.getPutSignedURL(container, path, Option.apply(ttl), Option.apply("r"), Option.empty)
   }
 
-}
-
-object StaticCloudStorageUtil {
-  var config: BaseJobConfig = null
-
-  def setConfig(baseConfig: BaseJobConfig): Unit = {
-    this.config = baseConfig
-  }
 }
