@@ -1,13 +1,14 @@
 package org.sunbird.job.publish.helpers
 
 import org.apache.commons.io.{FilenameUtils, IOUtils}
+import org.apache.commons.lang.StringUtils
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import org.sunbird.job.exception.InvalidInputException
 import org.sunbird.job.publish.config.PublishConfig
 import org.sunbird.job.publish.core.{DefinitionConfig, ObjectData}
-import org.sunbird.job.util.{FileUtils, JSONUtil, Neo4JUtil, ScalaJsonUtil, Slug}
+import org.sunbird.job.util.{CloudStorageUtil, FileUtils, JSONUtil, Neo4JUtil, ScalaJsonUtil, Slug}
 
 import java.io._
 import java.net.URL
@@ -109,7 +110,7 @@ trait ObjectBundle {
   }
 
   //TODO: Enhance this method of .ecar & .zip extension
-  def downloadFiles(identifier: String, files: Map[AnyRef, List[String]], bundlePath: String)(implicit ec: ExecutionContext): Future[List[File]] = {
+  def downloadFiles(identifier: String, files: Map[AnyRef, List[String]], bundlePath: String)(implicit ec: ExecutionContext, cloudStorageUtil: CloudStorageUtil): Future[List[File]] = {
     val futures = files.map {
       case (k, v) =>
         v.map {
@@ -128,6 +129,41 @@ trait ObjectBundle {
                   // UnknownHostException | FileNotFoundException
                   try {
                     FileUtils.downloadFile(url, destPath)
+                  } catch {
+                    case e: Exception => throw new InvalidInputException(s"Error while downloading file $url", e)
+                  }
+              }
+            }
+          }
+        }
+    }.flatten.toList
+    Future.sequence(futures)
+  }
+
+  def downloadFiles_v2(identifier: String, files: Map[AnyRef, List[String]], bundlePath: String)(implicit ec: ExecutionContext, cloudStorageUtil: CloudStorageUtil): Future[List[File]] = {
+    val futures = files.map {
+      case (k, v) =>
+        v.map {
+          id => {
+            Future {
+              val destPath = s"""$bundlePath${File.separator}${StringUtils.replace(id, ".img", "")}"""
+              logger.info(s"ObjectBundle ::: downloadFiles ::: Processing file: $k for : " + identifier)
+              k match {
+                case _: File =>
+                  val file = k.asInstanceOf[File]
+                  val newFile = new File(s"""${destPath}${File.separator}${file.getName}""")
+                  FileUtils.copyFile(file, newFile)
+                  newFile
+                case _ =>
+                  val url = k.asInstanceOf[String]
+                  // UnknownHostException | FileNotFoundException
+                  try {
+                    val uri:String = StringUtils.substringAfter(new URL(url).getPath, "/")
+                    val container = StringUtils.substringBefore(uri ,"/")
+                    val relativePath = StringUtils.substringAfter(uri, "/")
+                    logger.info("ObjectBundle ::: downloadFilesv2: container- " + container + ": path" + relativePath)
+                    logger.info("ObjectBundle ::: downloadFilesv2::: Processing file destpath:url " + destPath + ":" + url)
+                    cloudStorageUtil.downloadFile(container, destPath, relativePath)
                   } catch {
                     case e: Exception => throw new InvalidInputException(s"Error while downloading file $url", e)
                   }

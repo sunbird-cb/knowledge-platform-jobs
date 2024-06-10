@@ -65,6 +65,10 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
     getService.download(getContainerName, file, downloadPath, slug)
   }
 
+  def downloadFile(container: String, downloadPath: String, file: String, slug: Option[Boolean] = Option(false)): Unit = {
+    getService.download(container, file, downloadPath, slug)
+  }
+
   def getSignedUrl(container: String, path: String, ttl: Int): String = {
     getService.getPutSignedURL(container, path, Option.apply(ttl), Option.apply("r"), Option.empty)
   }

@@ -128,7 +128,7 @@ trait QuestionPublisher extends ObjectReader with ObjectValidator with ObjectEnr
       val downloadUrls: Map[AnyRef, List[String]] = dUrls.flatten.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }
       logger.info("QuestionPublisher ::: updateArtifactUrl ::: downloadUrls :::: " + downloadUrls)
       val duration: String = config.getString("media_download_duration", "300 seconds")
-      val downloadedMedias: List[File] = Await.result(downloadFiles(obj.identifier, downloadUrls, bundlePath), Duration.apply(duration))
+      val downloadedMedias: List[File] = Await.result(downloadFiles_v2(obj.identifier, downloadUrls, bundlePath), Duration.apply(duration))
       if (downloadUrls.nonEmpty && downloadedMedias.isEmpty)
         throw new Exception("Error Occurred While Downloading Bundle Media Files For : " + obj.identifier)
 
