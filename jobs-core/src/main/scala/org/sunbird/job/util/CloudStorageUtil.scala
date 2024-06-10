@@ -65,7 +65,7 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
     getService.download(getContainerName, file, downloadPath, slug)
   }
 
-  def downloadFile(container: String, downloadPath: String, file: String, slug: Option[Boolean] = Option(false)): Unit = {
+  def downloadFileFromContainer(container: String, downloadPath: String, file: String, slug: Option[Boolean] = Option(false)): Unit = {
     getService.download(container, file, downloadPath, slug)
   }
 

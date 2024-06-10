@@ -163,7 +163,7 @@ trait ObjectBundle {
                     val relativePath = StringUtils.substringAfter(uri, "/")
                     logger.info("ObjectBundle ::: downloadFilesv2: container- " + container + ": path" + relativePath)
                     logger.info("ObjectBundle ::: downloadFilesv2::: Processing file destpath:url " + destPath + ":" + url)
-                    cloudStorageUtil.downloadFile(container, destPath, relativePath)
+                    cloudStorageUtil.downloadFileFromContainer(container, destPath, relativePath)
                   } catch {
                     case e: Exception => throw new InvalidInputException(s"Error while downloading file $url", e)
                   }
