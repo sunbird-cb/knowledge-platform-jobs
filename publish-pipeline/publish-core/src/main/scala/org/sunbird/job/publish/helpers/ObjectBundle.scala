@@ -1,7 +1,6 @@
 package org.sunbird.job.publish.helpers
 
 import org.apache.commons.io.{FilenameUtils, IOUtils}
-import org.apache.commons.lang.StringUtils
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
@@ -110,7 +109,7 @@ trait ObjectBundle {
   }
 
   //TODO: Enhance this method of .ecar & .zip extension
-  def downloadFiles(identifier: String, files: Map[AnyRef, List[String]], bundlePath: String)(implicit ec: ExecutionContext, cloudStorageUtil: CloudStorageUtil): Future[List[File]] = {
+  def downloadFiles(identifier: String, files: Map[AnyRef, List[String]], bundlePath: String)(implicit ec: ExecutionContext): Future[List[File]] = {
     val futures = files.map {
       case (k, v) =>
         v.map {
