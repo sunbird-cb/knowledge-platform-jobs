@@ -160,24 +160,12 @@ trait ObjectBundle {
                     val uri:String = StringUtils.substringAfter(new URL(url).getPath, "/")
                     val container = StringUtils.substringBefore(uri ,"/")
                     val relativePath = StringUtils.substringAfter(uri, "/")
-                    logger.info("ObjectBundle ::: downloadFilesv2: container- " + container + ": path" + relativePath)
-                    logger.info("ObjectBundle ::: downloadFilesv2::: Processing file destpath:url " + destPath + ":" + url)
-                    val folder = new File(destPath)
-                    if (!folder.exists) folder.mkdirs
-                    cloudStorageUtil.downloadFileFromContainer(container, destPath, relativePath)
-                    val fileName = url.substring(url.lastIndexOf("/") + 1, url.length)
-                    logger.info("Filename: " + fileName)
-                    val listOfFiles = folder.listFiles()
-                    if(listOfFiles != null) {
-                      for (file <- listOfFiles) {
-                        if (file.isDirectory) System.out.println("[DIR]  " + file.getAbsolutePath)
-                        else System.out.println("[FILE] " + file.getAbsolutePath)
-                      }
-                    }
+                    logger.info("ObjectBundle ::: downloadFilesv2: container-" + container + ": path-" + relativePath + " from url-" + url)
+                    logger.info("ObjectBundle ::: downloadFilesv2::: Downloading file to" + destPath)
 
-                    val file = new File(destPath + File.separator + fileName)
-                    logger.info("Created file: " + file.getAbsolutePath + ": with bytes" + file.length())
-                    file
+                    val downloadableUrl = cloudStorageUtil.getSignedUrl(container, relativePath, 600)
+                    logger.info("Got signed URL-" + downloadableUrl)
+                    FileUtils.downloadFile(downloadableUrl, destPath)
                   } catch {
                     case e: Exception => throw new InvalidInputException(s"Error while downloading file $url", e)
                   }
