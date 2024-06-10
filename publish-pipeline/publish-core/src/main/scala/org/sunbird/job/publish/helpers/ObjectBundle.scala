@@ -88,7 +88,7 @@ trait ObjectBundle {
     }).unzip
   }
 
-  def getObjectBundle(obj: ObjectData, objList: List[Map[String, AnyRef]], pkgType: String)(implicit ec: ExecutionContext, neo4JUtil: Neo4JUtil, config: PublishConfig, defCache: DefinitionCache, defConfig: DefinitionConfig): File = {
+  def getObjectBundle(obj: ObjectData, objList: List[Map[String, AnyRef]], pkgType: String)(implicit ec: ExecutionContext, neo4JUtil: Neo4JUtil, config: PublishConfig, defCache: DefinitionCache, defConfig: DefinitionConfig, cloudStorageUtil: CloudStorageUtil): File = {
     val bundleFileName = bundleLocation + File.separator + getBundleFileName(obj.identifier, obj.metadata, pkgType)
     val bundlePath = bundleLocation + File.separator + System.currentTimeMillis + "_temp"
     val objType = if(obj.getString("objectType", "").replaceAll("Image", "").equalsIgnoreCase("collection")) "content" else obj.getString("objectType", "").replaceAll("Image", "")
@@ -99,7 +99,7 @@ trait ObjectBundle {
     val downloadUrls: Map[AnyRef, List[String]] = dUrls.flatten.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }
     logger.info("ObjectBundle ::: getObjectBundle ::: downloadUrls :::: " + downloadUrls)
     val duration: String = config.getString("media_download_duration", "300 seconds")
-    val downloadedMedias: List[File] = Await.result(downloadFiles(obj.identifier, downloadUrls, bundlePath), Duration.apply(duration))
+    val downloadedMedias: List[File] = Await.result(downloadFiles_v2(obj.identifier, downloadUrls, bundlePath), Duration.apply(duration))
     if (downloadUrls.nonEmpty && downloadedMedias.isEmpty)
       throw new InvalidInputException("Error Occurred While Downloading Bundle Media Files For : " + obj.identifier)
     val manifestFile: File = getManifestFile(obj.identifier, objType, bundlePath, updatedObjList)
