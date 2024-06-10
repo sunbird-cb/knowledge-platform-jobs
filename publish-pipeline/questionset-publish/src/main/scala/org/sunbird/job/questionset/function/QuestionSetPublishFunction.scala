@@ -2,7 +2,6 @@ package org.sunbird.job.questionset.function
 
 import akka.dispatch.ExecutionContexts
 import com.google.gson.reflect.TypeToken
-import org.apache.commons.lang.StringUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
