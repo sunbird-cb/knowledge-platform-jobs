@@ -12,7 +12,7 @@ import org.sunbird.job.exception.InvalidInputException
 import org.sunbird.job.publish.config.PublishConfig
 import org.sunbird.job.publish.core.{DefinitionConfig, ObjectData}
 import org.sunbird.job.publish.helpers.{EcarPackageType, ObjectBundle}
-import org.sunbird.job.util.{HttpUtil, Neo4JUtil}
+import org.sunbird.job.util.{CloudStorageUtil, HttpUtil, Neo4JUtil}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContextExecutor
@@ -22,7 +22,7 @@ class ObjectBundleSpec extends FlatSpec with BeforeAndAfterAll with Matchers wit
   implicit val httpUtil = new HttpUtil
   val config: Config = ConfigFactory.load("test.conf").withFallback(ConfigFactory.systemEnvironment())
   implicit val publishConfig: PublishConfig = new PublishConfig(config, "")
-  //	implicit val cloudStorageUtil: CloudStorageUtil = new CloudStorageUtil(publishConfig)
+  implicit val cloudStorageUtil: CloudStorageUtil = new CloudStorageUtil(publishConfig)
   implicit val mockNeo4JUtil: Neo4JUtil = mock[Neo4JUtil](Mockito.withSettings().serializable())
   implicit val ec: ExecutionContextExecutor = ExecutionContexts.global
   val definitionBasePath: String = if (config.hasPath("schema.basePath")) config.getString("schema.basePath") else "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/schemas/local"
