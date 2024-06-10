@@ -166,7 +166,18 @@ trait ObjectBundle {
                     if (!folder.exists) folder.mkdirs
                     cloudStorageUtil.downloadFileFromContainer(container, destPath, relativePath)
                     val fileName = url.substring(url.lastIndexOf("/") + 1, url.length)
-                    new File(destPath + File.separator + fileName)
+                    logger.info("Filename: " + fileName)
+                    val listOfFiles = folder.listFiles()
+                    if(listOfFiles != null) {
+                      for (file <- listOfFiles) {
+                        if (file.isDirectory) System.out.println("[DIR]  " + file.getAbsolutePath)
+                        else System.out.println("[FILE] " + file.getAbsolutePath)
+                      }
+                    }
+
+                    val file = new File(destPath + File.separator + fileName)
+                    logger.info("Created file: " + file.getAbsolutePath + ": with bytes" + file.length())
+                    file
                   } catch {
                     case e: Exception => throw new InvalidInputException(s"Error while downloading file $url", e)
                   }
