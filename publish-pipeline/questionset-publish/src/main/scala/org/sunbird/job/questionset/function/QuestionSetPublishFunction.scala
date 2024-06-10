@@ -140,7 +140,7 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
     val ecarMap: Map[String, String] = generateEcar(data, pkgTypes)
     val variants: java.util.Map[String, java.util.Map[String, String]] = ecarMap.map { case (key, value) => key.toLowerCase -> Map[String, String]("ecarUrl" -> value, "size" -> httpUtil.getSize(getSignedURL(value, cloudStorageUtil)).toString).asJava }.asJava
     logger.info("QuestionSetPublishFunction ::: generateECAR ::: ecar map ::: " + ecarMap)
-    val meta: Map[String, AnyRef] = Map("downloadUrl" -> ecarMap.getOrElse(EcarPackageType.FULL.toString, ""), "variants" -> variants, "size" -> httpUtil.getSize(getSignedURL(ecarMap.getOrElse(EcarPackageType.FULL.toString, ""), cloudStorageUtil).asInstanceOf[AnyRef])
+    val meta: Map[String, AnyRef] = Map("downloadUrl" -> ecarMap.getOrElse(EcarPackageType.FULL.toString, ""), "variants" -> variants, "size" -> httpUtil.getSize(getSignedURL(ecarMap.getOrElse(EcarPackageType.FULL.toString, ""), cloudStorageUtil)).asInstanceOf[AnyRef])
     new ObjectData(data.identifier, data.metadata ++ meta, data.extData, data.hierarchy)
   }
 
