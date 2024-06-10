@@ -2,6 +2,7 @@ package org.sunbird.job.questionset.function
 
 import akka.dispatch.ExecutionContexts
 import com.google.gson.reflect.TypeToken
+import org.apache.commons.lang.StringUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
@@ -17,10 +18,11 @@ import org.sunbird.job.questionset.publish.util.QuestionPublishUtil
 import org.sunbird.job.questionset.task.QuestionSetPublishConfig
 import org.sunbird.job.util._
 import org.sunbird.job.{BaseProcessFunction, Metrics}
-import java.lang.reflect.Type
 
+import java.lang.reflect.Type
 import org.sunbird.job.cache.{DataCache, RedisConnect}
 
+import java.net.URL
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext
@@ -136,10 +138,23 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
 
   def generateECAR(data: ObjectData, pkgTypes: List[String])(implicit ec: ExecutionContext, neo4JUtil: Neo4JUtil, cloudStorageUtil: CloudStorageUtil, config: PublishConfig, defCache: DefinitionCache, defConfig: DefinitionConfig, httpUtil: HttpUtil): ObjectData = {
     val ecarMap: Map[String, String] = generateEcar(data, pkgTypes)
-    val variants: java.util.Map[String, java.util.Map[String, String]] = ecarMap.map { case (key, value) => key.toLowerCase -> Map[String, String]("ecarUrl" -> value, "size" -> httpUtil.getSize(value).toString).asJava }.asJava
+    val variants: java.util.Map[String, java.util.Map[String, String]] = ecarMap.map { case (key, value) => key.toLowerCase -> Map[String, String]("ecarUrl" -> value, "size" -> httpUtil.getSize(getSignedURL(value, cloudStorageUtil)).toString).asJava }.asJava
     logger.info("QuestionSetPublishFunction ::: generateECAR ::: ecar map ::: " + ecarMap)
-    val meta: Map[String, AnyRef] = Map("downloadUrl" -> ecarMap.getOrElse(EcarPackageType.FULL.toString, ""), "variants" -> variants, "size" -> httpUtil.getSize(ecarMap.getOrElse(EcarPackageType.FULL.toString, "")).asInstanceOf[AnyRef])
+    val meta: Map[String, AnyRef] = Map("downloadUrl" -> ecarMap.getOrElse(EcarPackageType.FULL.toString, ""), "variants" -> variants, "size" -> httpUtil.getSize(getSignedURL(ecarMap.getOrElse(EcarPackageType.FULL.toString, ""), cloudStorageUtil).asInstanceOf[AnyRef])
     new ObjectData(data.identifier, data.metadata ++ meta, data.extData, data.hierarchy)
+  }
+
+  def getSignedURL(url: String, cloudStorageUtil: CloudStorageUtil): String = {
+    if (url.startsWith("http")) {
+      val uri:String = StringUtils.substringAfter(new URL(url).getPath, "/")
+      val container = StringUtils.substringBefore(uri ,"/")
+      val relativePath = StringUtils.substringAfter(uri, "/")
+      logger.info("Got filePath with relative path: " + relativePath)
+      cloudStorageUtil.getSignedUrl(container, relativePath, 30)
+    } else {
+      url
+    }
+
   }
 
   def generatePreviewUrl(data: ObjectData, qList: List[ObjectData])(implicit httpUtil: HttpUtil, cloudStorageUtil: CloudStorageUtil): ObjectData = {

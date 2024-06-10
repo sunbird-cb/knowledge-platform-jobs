@@ -165,7 +165,7 @@ trait ObjectBundle {
 
                     val downloadableUrl = cloudStorageUtil.getSignedUrl(container, relativePath, 600)
                     logger.info("Got signed URL-" + downloadableUrl)
-                    FileUtils.downloadFile(downloadableUrl, destPath)
+                    FileUtils.downloadFile(downloadableUrl, destPath, uri.substring(uri.lastIndexOf("/") + 1, uri.length))
                   } catch {
                     case e: Exception => throw new InvalidInputException(s"Error while downloading file $url", e)
                   }
