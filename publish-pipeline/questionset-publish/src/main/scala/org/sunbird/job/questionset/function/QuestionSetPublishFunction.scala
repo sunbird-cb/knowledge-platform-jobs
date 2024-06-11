@@ -143,19 +143,6 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
     new ObjectData(data.identifier, data.metadata ++ meta, data.extData, data.hierarchy)
   }
 
-  def getSignedURL(url: String, cloudStorageUtil: CloudStorageUtil): String = {
-    if (url.startsWith("http")) {
-      val uri:String = StringUtils.substringAfter(new URL(url).getPath, "/")
-      val container = StringUtils.substringBefore(uri ,"/")
-      val relativePath = StringUtils.substringAfter(uri, "/")
-      logger.info("Got filePath with relative path: " + relativePath)
-      cloudStorageUtil.getSignedUrl(container, relativePath, 30)
-    } else {
-      url
-    }
-
-  }
-
   def generatePreviewUrl(data: ObjectData, qList: List[ObjectData])(implicit httpUtil: HttpUtil, cloudStorageUtil: CloudStorageUtil): ObjectData = {
     val (pdfUrl, previewUrl) = getPdfFileUrl(qList, data, "questionSetTemplate.vm", config.printServiceBaseUrl, System.currentTimeMillis().toString)(httpUtil, cloudStorageUtil)
     logger.info("generatePreviewUrl ::: finalPdfUrl ::: " + pdfUrl.getOrElse(""))
