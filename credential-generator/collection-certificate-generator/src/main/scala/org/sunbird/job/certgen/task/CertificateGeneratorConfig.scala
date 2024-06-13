@@ -165,4 +165,6 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val priorityValue = 1
   val userFeedCount = "user-feed-count"
   
+  val courseProvider: String ="courseProvider"
+  val coursePosterImage :String ="coursePosterImage"
 }
