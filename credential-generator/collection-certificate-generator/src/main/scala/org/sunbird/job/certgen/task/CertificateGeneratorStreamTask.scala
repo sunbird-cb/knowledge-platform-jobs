@@ -55,7 +55,6 @@ class CertificateGeneratorStreamTask(config: CertificateGeneratorConfig, kafkaCo
       .uid("user-feed")
       .setParallelism(config.userFeedParallelism)
 
-
     env.execute(config.jobName)
   }
 

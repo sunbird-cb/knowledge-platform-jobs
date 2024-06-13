@@ -64,3 +64,14 @@ case class UserEnrollmentData(batchId: String,
 case class Recipient(id: String, name: String, `type`: String)
 case class Training(id: String, name: String, `type`: String, batchId: String)
 case class Issuer(url: String, name: String, kid: String)
+case class ActorObject(id: String = "Certificate Generator", `type`: String = "System")
+case class EventObjectCourseCertificate(id: String, `type`: String = "GenerateCertificate")
+case class EventContextCorseCertificate(pdata: Map[String, String] = Map("ver" -> "1.0", "id" -> "org.sunbird.learning.platform"))
+case class BEJobRequestEvent(actor: ActorObject= ActorObject(),
+                             eid: String = "BE_JOB_REQUEST",
+                             edata: Map[String, AnyRef],
+                             ets: Long = System.currentTimeMillis(),
+                             context: EventContextCorseCertificate = EventContextCorseCertificate(),
+                             mid: String = s"LMS.${UUID.randomUUID().toString}",
+                             `object`: EventObjectCourseCertificate
+                            )

@@ -25,7 +25,6 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val enableSuppressException: Boolean = if(config.hasPath("enable.suppress.exception")) config.getBoolean("enable.suppress.exception") else false
   val enableRcCertificate: Boolean = if(config.hasPath("enable.rc.certificate")) config.getBoolean("enable.rc.certificate") else false
 
-
   // Producers
   val certificateGeneratorAuditProducer = "collection-certificate-generator-audit-events-sink"
 
@@ -62,6 +61,7 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val dbUpdateCount = "db-update-user-enrollment-count"
   val notifiedUserCount = "notified-user-count"
   val skipNotifyUserCount = "skipped-notify-user-count"
+  val failedNotifyUserCount = "failed-notify-user-count"
   val courseBatchdbReadCount = "db-course-batch-read-count"
 
   // Consumers
@@ -164,10 +164,11 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val userFeedMsg: String = "You have earned a certificate! Download it from your profile page."
   val priorityValue = 1
   val userFeedCount = "user-feed-count"
-  val courseProvider: String = "courseProvider"
-  val coursePosterImage: String = "coursePosterImage"
+
+  val courseProvider: String ="courseProvider"
+  val coursePosterImage :String ="coursePosterImage"
+
   val newEmailTemplateNotificationEndPoint: String = "/v1/notification/email"
 
-  val failedNotifyUserCount = "failed-notify-user-count"
   val enableUserNotification: Boolean = if(config.hasPath("enable.user.email.notification")) config.getBoolean("enable.user.email.notification") else true
 }

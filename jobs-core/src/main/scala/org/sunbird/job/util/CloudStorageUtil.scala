@@ -57,6 +57,10 @@ class CloudStorageUtil(config: BaseJobConfig) extends Serializable {
   def getURI(prefix: String, isDirectory: Option[Boolean]): String = {
     getService.getUri(getContainerName, prefix, isDirectory)
   }
+  
+  def getCephURI(prefix: String, isDirectory: Option[Boolean]): String = {
+    config.getString("cephs3_storage_endpoint", "") + "/" + getContainerName + "/" + prefix
+  }
 
   def uploadDirectory(folderName: String, directory: File, slug: Option[Boolean] = Option(true)): Array[String] = {
     val slugFile = if (slug.getOrElse(true)) Slug.createSlugFile(directory) else directory

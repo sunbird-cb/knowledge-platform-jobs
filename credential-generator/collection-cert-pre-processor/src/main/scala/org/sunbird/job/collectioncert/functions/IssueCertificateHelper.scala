@@ -3,19 +3,20 @@ package org.sunbird.job.collectioncert.functions
 import java.text.SimpleDateFormat
 import com.datastax.driver.core.querybuilder.QueryBuilder
 import com.datastax.driver.core.{Row, TypeTokens}
+import org.apache.commons.collections.CollectionUtils
 import org.apache.commons.lang3.StringUtils
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.sunbird.job.Metrics
 import org.sunbird.job.cache.DataCache
 import org.sunbird.job.collectioncert.domain.{AssessedUser, AssessmentUserAttempt, BEJobRequestEvent, EnrolledUser, Event, EventObject}
 import org.sunbird.job.collectioncert.task.CollectionCertPreProcessorConfig
-import org.sunbird.job.util.{CassandraUtil, HttpUtil, ScalaJsonUtil}
+import org.sunbird.job.util.{CassandraUtil, HttpUtil, ScalaJsonUtil, JSONUtil}
 
 import scala.collection.JavaConverters._
 
 trait IssueCertificateHelper {
     private[this] val logger = LoggerFactory.getLogger(classOf[CollectionCertPreProcessorFn])
-
 
     def issueCertificate(event:Event, template: Map[String, String])(cassandraUtil: CassandraUtil, cache:DataCache, contentCache: DataCache, metrics: Metrics, config: CollectionCertPreProcessorConfig, httpUtil: HttpUtil): String = {
         //validCriteria
@@ -23,13 +24,16 @@ trait IssueCertificateHelper {
         val criteria = validateTemplate(template, event.batchId)(config)
         //validateEnrolmentCriteria
         val certName = template.getOrElse(config.name, "")
+        logger.info("CertName" + certName)
         val additionalProps: Map[String, List[String]] = ScalaJsonUtil.deserialize[Map[String, List[String]]](template.getOrElse("additionalProps", "{}"))
         val enrolledUser: EnrolledUser = validateEnrolmentCriteria(event, criteria.getOrElse(config.enrollment, Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]], certName, additionalProps)(metrics, cassandraUtil, config)
+        logger.info("enrolledUser" + enrolledUser)
         //validateAssessmentCriteria
         val assessedUser = validateAssessmentCriteria(event, criteria.getOrElse(config.assessment, Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]], enrolledUser.userId, additionalProps)(metrics, cassandraUtil, contentCache, config)
+        logger.info("assessedUser" + assessedUser)
         //validateUserCriteria
         val userDetails = validateUser(assessedUser.userId, criteria.getOrElse(config.user, Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]], additionalProps)(metrics, config, httpUtil)
-
+        logger.info("userDetails" + userDetails)
         //generateCertificateEvent
         if(userDetails.nonEmpty) {
             generateCertificateEvent(event, template, userDetails, enrolledUser, assessedUser, additionalProps, certName)(metrics, config, cache, httpUtil)
@@ -210,18 +214,17 @@ trait IssueCertificateHelper {
         val lastName = Option(userDetails.getOrElse("lastName", "").asInstanceOf[String]).getOrElse("")
         def nullStringCheck(name:String):String = {if(StringUtils.equalsIgnoreCase("null", name)) ""  else name}
         val recipientName = nullStringCheck(firstName).concat(" ").concat(nullStringCheck(lastName)).trim
-        val courseInfo:java.util.Map[String, AnyRef] = getCourseInfo(event.courseId)(metrics, config, cache, httpUtil)
+        val courseInfo: java.util.Map[String, AnyRef] = getCourseInfo(event.courseId)(metrics, config, cache, httpUtil)
         val courseName = courseInfo.getOrDefault("courseName", "").asInstanceOf[String]
         val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
         val related = getRelatedData(event, enrolledUser, assessedUser, userDetails, additionalProps, certName, courseName)(config)
-        val providerName = getCourseOrganisation(event.courseId)(metrics, config, cache, httpUtil)
         val parentCollections: List[String] = Option(courseInfo.get(config.parentCollections))
-          .collect {
+            .collect {
               case list: java.util.List[_] =>
-                  list.asInstanceOf[java.util.List[String]].asScala.toList
-          }
-          .getOrElse(List.empty)
-
+                list.asInstanceOf[java.util.List[String]].asScala.toList
+            }
+            .getOrElse(List.empty)
+        
         val eData = Map[String, AnyRef] (
             "issuedDate" -> dateFormatter.format(enrolledUser.issuedOn),
             "data" -> List(Map[String, AnyRef]("recipientName" -> recipientName, "recipientId" -> event.userId)),
@@ -237,14 +240,13 @@ trait IssueCertificateHelper {
             "basePath" -> config.certBasePath,
             "related" ->  related,
             "name" -> certName,
-            "providerName" -> providerName,
+            "providerName" -> courseInfo.getOrDefault("providerName", "").asInstanceOf[String],
             "tag" -> event.batchId,
             "primaryCategory" -> courseInfo.getOrDefault("primaryCategory", "").asInstanceOf[String],
             "parentCollections" -> parentCollections,
             "coursePosterImage" -> courseInfo.getOrDefault("coursePosterImage", "").asInstanceOf[String],
-
         )
-
+        logger.info("Constructured eData from preProcessor : " + JSONUtil.serialize(eData))
         ScalaJsonUtil.serialize(BEJobRequestEvent(edata = eData, `object` = EventObject(id= event.userId)))
     }
 

@@ -58,6 +58,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
         certTemplate.get(metaData.templateId).containsKey(config.notifyTemplate)) {
         logger.info("notification template is present in the cert-templates object {}",
           certTemplate.get(metaData.templateId).containsKey(config.notifyTemplate))
+        logger.info("Sending notification email. URL: {}", url)
         val notifyTemplate = getNotifyTemplateFromRes(certTemplate.get(metaData.templateId))
         val ratingUrl = config.domainUrl + config.ratingMidPoint + metaData.courseId + config.ratingEndPoint + metaData.batchId
         val request = mutable.Map[String, AnyRef]("request" -> (notifyTemplate ++ mutable.Map[String, AnyRef](
@@ -71,7 +72,6 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
           config.courseProvider -> metaData.courseProvider,
           config.coursePosterImage -> metaData.coursePosterImage
         )))
-
         val response = httpUtil.post(url, ScalaJsonUtil.serialize(request))
         if (response.status == 200) {
           metrics.incCounter(config.notifiedUserCount)
@@ -82,7 +82,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
           logger.error(s"Error response from email notification for request :: ${request} :: response is :: ${response.status} ::  ${response.body}")
           throw new InvalidEventException(s"Error in email notification response : ${response}", Map("partition" -> metaData.partition, "offset" -> metaData.offset), null)
         }
-        if (StringUtils.isNoneBlank(userResponse.getOrElse("maskedPhone", "").asInstanceOf[String])) {
+      /*  if (StringUtils.isNoneBlank(userResponse.getOrElse("maskedPhone", "").asInstanceOf[String])) {
           request.put(config.body, "sms")
           val smsBody = config.notificationSmsBody.replaceAll("@@TRAINING_NAME@@", metaData.courseName)
             .replaceAll("@@HELD_DATE@@", dateFormatter.format(metaData.issuedOn))
@@ -96,7 +96,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
             logger.error(s"Error response from sms notification for request :: ${request} :: response is :: ${response.status} ::  ${response.body}")
             throw new InvalidEventException(s"Error in sms notification response : ${response}", Map("partition" -> metaData.partition, "offset" -> metaData.offset), null)
           }
-        }
+        }*/
       } else {
         logger.info("notification template is not present in the cert-templates object {}")
         metrics.incCounter(config.skipNotifyUserCount)

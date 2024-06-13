@@ -39,8 +39,11 @@ class CollectionProgressUpdateFunction(config: ActivityAggregateUpdaterConfig)(i
       val row = getEnrolment(p.userId, p.courseId, p.batchId)(metrics)
       (row != null && row.getInt("status") != 2)
     } else events
+    logger.info("The event at progress: "+ events)
+    logger.info("Pending Enrollment: " + pendingEnrolments)
     val enrolmentQueries = pendingEnrolments.map(collectionProgress => getEnrolmentUpdateQuery(collectionProgress))
     updateDB(config.thresholdBatchWriteSize, enrolmentQueries)(metrics)
+    logger.info("enrolmentQueries Enrolement: " + enrolmentQueries)
     // Create and update the checksum to DeDup store for the input events.
     if (config.dedupEnabled) {
       events.map(cp => cp.inputContents.map(c => DeDupHelper.getMessageId(cp.courseId, cp.batchId, cp.userId, c, 2)))

@@ -86,5 +86,4 @@ class CollectionCertPreProcessorConfig(override val config: Config) extends Base
     val posterImage: String = "posterImage"
     val parentCollections: String = "parentCollections"
 
-
 }

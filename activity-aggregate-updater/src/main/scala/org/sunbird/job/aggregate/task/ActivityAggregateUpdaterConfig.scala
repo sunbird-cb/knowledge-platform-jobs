@@ -132,4 +132,13 @@ class ActivityAggregateUpdaterConfig(override val config: Config) extends BaseJo
   val searchServiceBasePath: String = config.getString("service.search.basePath")
   val searchAPIURL = searchServiceBasePath + "/v3/search"
 
+  val contentServiceBase: String = config.getString("service.content.basePath")
+  val contentReadURL = contentServiceBase + "/content/v3/read/"
+  val name: String = "name"
+  val primaryCategory: String = "primaryCategory"
+  val versionKey: String = "versionKey"
+  val defaultHeaders = Map[String, String] ("Content-Type" -> "application/json")
+  val userAccBlockedErrCode = "UOS_USRRED0006"
+  val skippedEventCount = "skipped-events-count"
+
 }

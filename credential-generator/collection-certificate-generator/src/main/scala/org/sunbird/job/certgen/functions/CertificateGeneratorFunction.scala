@@ -19,7 +19,7 @@ import org.sunbird.job.certgen.domain._
 import org.sunbird.job.certgen.exceptions.ServerException
 import org.sunbird.job.certgen.task.CertificateGeneratorConfig
 import org.sunbird.job.exception.InvalidEventException
-import org.sunbird.job.util.{CassandraUtil, ElasticSearchUtil, HttpUtil, ScalaJsonUtil}
+import org.sunbird.job.util.{CassandraUtil, ElasticSearchUtil, HttpUtil, ScalaJsonUtil, JSONUtil}
 import org.sunbird.job.{BaseProcessKeyedFunction, Metrics}
 
 import java.io.{File, IOException}
@@ -27,8 +27,9 @@ import java.lang.reflect.Type
 import java.text.SimpleDateFormat
 import java.util
 import java.util.stream.Collectors
-import java.util.{Base64, Date}
+import java.util.{Base64, Date, UUID}
 import scala.collection.JavaConverters._
+import org.sunbird.job.certgen.domain.{ BEJobRequestEvent, EventObjectCourseCertificate}
 
 class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, storageService: StorageService, @transient var cassandraUtil: CassandraUtil = null)
   extends BaseProcessKeyedFunction[String, Event, String](config) {
@@ -72,11 +73,11 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
       if(certValidator.isNotIssued(event)(config, metrics, cassandraUtil)) {
         if(config.enableRcCertificate) generateCertificateUsingRC(event, context)(metrics)
         else generateCertificate(event, context)(metrics)
-
       } else {
         metrics.incCounter(config.skippedEventCount)
         logger.info(s"Certificate already issued for: ${event.eData.getOrElse("userId", "")} ${event.related}")
       }
+      metrics.incCounter(config.successEventCount)
     } catch {
       case e: Exception =>
         metrics.incCounter(config.failedEventCount)
@@ -361,4 +362,23 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
   }
 
 
+  def generateCourseCompletionEvent(event: Event) = {
+    val eData = Map[String, AnyRef](
+      "userId" -> event.userId,
+      "batchId" -> event.batchId,
+      "courseId" -> event.courseId,
+      "parentCollections" -> event.parentCollections
+    )
+    ScalaJsonUtil.serialize(BEJobRequestEvent(edata = eData, `object` = EventObjectCourseCertificate(id = event.userId)))
+  }
+
+  /*
+  def createProgramCertPreProcessorEvent(event: Event, context: KeyedProcessFunction[String, Event, String]#Context) : Unit = {
+    val ets = System.currentTimeMillis
+    val mid = s"""LP.${ets}.${UUID.randomUUID}"""
+    val event = s"""{"eid": "BE_JOB_REQUEST","ets": ${ets},"mid": "${mid}","actor": {"id": "Program Certificate Generator","type": "System"},"context": {"pdata": {"ver": "1.0","id": "org.sunbird.platform"}},"object": {"id": "${event.batchId}_${event.courseId}","type": "ProgramCertificateGeneration"},"edata": {"userIds": ["${event.userId}"],"action": "program_cert_pre_process","iteration": 1, "trigger": "auto-issue","batchId": "${event.batchId}","reIssue": false,"courseId": "${event.courseId}"}}"""
+    logger.info("Cert generator... Triggering program cert pre processor event : " + event)
+    context.output(config.generateProgramCertificateOutputTag, event)
+  }
+  */
 }
