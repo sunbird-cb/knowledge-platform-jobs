@@ -4,11 +4,13 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.flink.streaming.api.functions.ProcessFunction
+import org.slf4j.LoggerFactory
 import org.sunbird.job.karmapoints.domain.Event
 import org.sunbird.job.karmapoints.task.KarmaPointsProcessorConfig
 import org.sunbird.job.karmapoints.util.Utility._
 import org.sunbird.job.util.{CassandraUtil, HttpUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
+
 import java.util
 
 class FirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: HttpUtil)
@@ -16,6 +18,7 @@ class FirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: Ht
                                 @transient var cassandraUtil: CassandraUtil = null)
   extends BaseProcessFunction[Event, String](config)   {
   lazy private val mapper: ObjectMapper = new ObjectMapper()
+  private[this] val logger = LoggerFactory.getLogger(classOf[FirstEnrolmentProcessorFn])
 
   override def open(parameters: Configuration): Unit = {
     super.open(parameters)
@@ -48,8 +51,9 @@ class FirstEnrolmentProcessorFn(config: KarmaPointsProcessorConfig, httpUtil: Ht
     if(null == hierarchy || hierarchy.size() < 1)
       return
     val contextType = hierarchy.get(config.PRIMARY_CATEGORY).asInstanceOf[String]
+    logger.info(s"Request is processing for userId: $usrId, contextType: $contextType")
     if (doesEntryExist(usrId, contextType, config.OPERATION_TYPE_ENROLMENT, contextId)(metrics, config, cassandraUtil)
-      || !isUserFirstEnrollment(usrId)(config, cassandraUtil) || !contextType.equalsIgnoreCase(config.COURSE))
+      || !isUserFirstEnrollment(usrId)(config, cassandraUtil) || !config.COURSE.equalsIgnoreCase(contextType))
       return
     kpOnFirstEnrollment(usrId, contextType,config.OPERATION_TYPE_ENROLMENT,contextId,cassandraUtil)(metrics)
   }
