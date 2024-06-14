@@ -19,9 +19,8 @@ import org.sunbird.job.{BaseProcessKeyedFunction, Metrics}
 
 import java.util.{Date, UUID}
 import scala.collection.JavaConverters._
-import scala.collection.convert.ImplicitConversions.{`collection AsScalaIterable`, `seq AsJavaList`}
+import scala.collection.convert.ImplicitConversions.{`map AsScala`, `seq AsJavaList`}
 import scala.collection.mutable
-import scala.util.control.Breaks.{break, breakable}
 
 class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil: HttpUtil)
                                (implicit val stringTypeInfo: TypeInformation[String],
@@ -81,6 +80,7 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
             val leafNodeMap = mutable.Map[String, Int]()
 
             var isProgramCertificateToBeGenerated: Boolean = true;
+            var lastCourseCompleteOn: Date = null
             var programCompletedOn: Date = null
             for (courseId <- programChildrenCourses) {
               val courseMetadata: java.util.Map[String, AnyRef] = getCourseInfo(courseId)(metrics, config, cache, httpUtil)
@@ -93,12 +93,13 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                 var courseCompletedOn: Date = null;
                 if (isCertificateIssued) {
                   courseCompletedOn = courseEnrollmentRow.get.getTimestamp("completedon")
-                  if (programCompletedOn == null) {
-                    programCompletedOn = courseCompletedOn
-                  } else if (programCompletedOn.before(courseCompletedOn)) {
-                    programCompletedOn = courseCompletedOn
+                  if (lastCourseCompleteOn == null) {
+                    lastCourseCompleteOn = courseCompletedOn
+                  } else if (lastCourseCompleteOn.before(courseCompletedOn)) {
+                    lastCourseCompleteOn = courseCompletedOn
                   }
-                } else if (courseEnrollmentRow.isDefined) {
+                }
+                if (courseEnrollmentRow.isDefined) {
                   val courseContentStatus = Option(courseEnrollmentRow.get.getMap(
                     config.contentStatus, TypeToken.of(classOf[String]), TypeToken.of(classOf[Integer]))).head.asScala
                   for ((key, value) <- courseContentStatus) {
@@ -113,22 +114,8 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
                     }
                   }
                 }
-
-                breakable {
-                  if (!isCertificateIssued) {
-                    isProgramCertificateToBeGenerated = false;
-                    break
-                  } else {
-                    val leafNodes = Option(courseMetadata.get(config.leafNodes))
-                      .collect {
-                        case list: java.util.List[_] =>
-                          list.asInstanceOf[java.util.List[String]].asScala.toList
-                      }
-                      .getOrElse(List.empty)
-                    for (leafNode <- leafNodes) {
-                      leafNodeMap += (leafNode -> 2)
-                    }
-                  }
+                if (!isCertificateIssued && isProgramCertificateToBeGenerated) { //AtLeast one course doesn't have certificate
+                  isProgramCertificateToBeGenerated = false;
                 }
               }
             }
@@ -136,31 +123,26 @@ class ProgramCertPreProcessorFn(config: ProgramCertPreProcessorConfig, httpUtil:
               val programContentStatus = Option(programEnrollmentRow.get.getMap(
                 config.contentStatus, TypeToken.of(classOf[String]), TypeToken.of(classOf[Integer]))).head
               var progressCount: Integer = Option(programEnrollmentRow.get.getInt(config.progress)).head
-
-              var updateCount = 0
-
-              for ((key, value) <- leafNodeMap) {
-                // Check if the key is present in leafNodeMap
-                if (programContentStatus.get(key) != null) {
-                  if (programContentStatus.get(key) != 2) {
-                    // Update progress in contentStatus for the matching key
-                    programContentStatus.put(key, value)
-                    updateCount += 1
-                  }
-                } else {
-                  programContentStatus.put(key, value)
-                  updateCount += 1
-                }
-              }
-
-              // Update the progress with the total update count
-              progressCount += updateCount
-              var status: Int = 1
               val keyForLeafNodesForProgram = s"$courseParentId:$courseParentId:${config.leafNodesKey}"
               val leafNodesForProgram = readFromRelationCache(keyForLeafNodesForProgram, metrics).distinct
+
               logger.info("The keyForLeafNodesForProgram from Redish:" + leafNodesForProgram)
+              for ((key, value) <- leafNodeMap) {
+                // Check if the key is present in leafNodeMap
+                if (leafNodesForProgram.contains(key)) {
+                  // Update progress in contentStatus for the matching key
+                  programContentStatus.put(key, value)
+                } else {
+                  logger.info("The value is not present on the leafnode for program: " + key)
+                }
+              }
+              if (!programContentStatus.isEmpty) {
+                progressCount = programContentStatus.filter(_._2 == 2).size
+              }
+              var status: Int = 1
               if (progressCount == leafNodesForProgram.size()) {
                 status = 2
+                programCompletedOn = lastCourseCompleteOn
               } else {
                 isProgramCertificateToBeGenerated = false
               }
