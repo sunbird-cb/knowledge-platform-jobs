@@ -111,6 +111,7 @@ base_config: |
     }
     schema {
       basePath = "{{ kp_schema_base_path }}"
+      base_path = "{{ kp_schema_base_path }}"
       supportedVersion = {
         itemset = "2.0"
       }
@@ -523,6 +524,14 @@ asset-enrichment:
       sample = 5
       size.pixel = 150
     }
+
+    schema {
+        base_path = "{{ kp_schema_base_path }}"
+        supportedVersion = {
+            itemset = "2.0"
+        }
+    }
+
     content_youtube_apikey="{{ youtube_api_key }}"
     cloud_storage_type="{{ cloud_store }}"
     cloud_storage_type="{{ cloud_service_provider }}"
