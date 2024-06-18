@@ -37,8 +37,8 @@ trait VideoEnrichmentHelper extends ThumbnailUtil {
         throw e
     }
   }
-  def getDownloadableURL(filePath: String)(implicit storageUtil: CloudStorageUtil): String = {
-    val downloadableUrl: String = if (filePath.startsWith("http")) {
+  def getDownloadableURL(filePath: String)(implicit storageUtil: CloudStorageUtil, config: AssetEnrichmentConfig): String = {
+    val downloadableUrl: String = if (filePath.contains(config.getString("cloud_storage_endpoint", "http"))) {
       val uri:String = StringUtils.substringAfter(new URL(filePath).getPath, "/")
       val container = StringUtils.substringBefore(uri ,"/")
       val relativePath = StringUtils.substringAfter(uri, "/")
