@@ -7,7 +7,7 @@ import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import org.sunbird.job.exception.InvalidInputException
 import org.sunbird.job.publish.config.PublishConfig
 import org.sunbird.job.publish.core.{DefinitionConfig, ObjectData}
-import org.sunbird.job.util.{FileUtils, JSONUtil, Neo4JUtil, ScalaJsonUtil, Slug}
+import org.sunbird.job.util.{CloudStorageUtil, FileUtils, JSONUtil, Neo4JUtil, ScalaJsonUtil, Slug}
 
 import java.io._
 import java.net.URL
@@ -88,7 +88,7 @@ trait ObjectBundle {
     }).unzip
   }
 
-  def getObjectBundle(obj: ObjectData, objList: List[Map[String, AnyRef]], pkgType: String)(implicit ec: ExecutionContext, neo4JUtil: Neo4JUtil, config: PublishConfig, defCache: DefinitionCache, defConfig: DefinitionConfig): File = {
+  def getObjectBundle(obj: ObjectData, objList: List[Map[String, AnyRef]], pkgType: String)(implicit ec: ExecutionContext, neo4JUtil: Neo4JUtil, config: PublishConfig, defCache: DefinitionCache, defConfig: DefinitionConfig, cloudStorageUtil: CloudStorageUtil): File = {
     val bundleFileName = bundleLocation + File.separator + getBundleFileName(obj.identifier, obj.metadata, pkgType)
     val bundlePath = bundleLocation + File.separator + System.currentTimeMillis + "_temp"
     val objType = if(obj.getString("objectType", "").replaceAll("Image", "").equalsIgnoreCase("collection")) "content" else obj.getString("objectType", "").replaceAll("Image", "")
@@ -99,7 +99,7 @@ trait ObjectBundle {
     val downloadUrls: Map[AnyRef, List[String]] = dUrls.flatten.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }
     logger.info("ObjectBundle ::: getObjectBundle ::: downloadUrls :::: " + downloadUrls)
     val duration: String = config.getString("media_download_duration", "300 seconds")
-    val downloadedMedias: List[File] = Await.result(downloadFiles(obj.identifier, downloadUrls, bundlePath), Duration.apply(duration))
+    val downloadedMedias: List[File] = Await.result(downloadFiles_v2(obj.identifier, downloadUrls, bundlePath), Duration.apply(duration))
     if (downloadUrls.nonEmpty && downloadedMedias.isEmpty)
       throw new InvalidInputException("Error Occurred While Downloading Bundle Media Files For : " + obj.identifier)
     val manifestFile: File = getManifestFile(obj.identifier, objType, bundlePath, updatedObjList)
@@ -128,6 +128,44 @@ trait ObjectBundle {
                   // UnknownHostException | FileNotFoundException
                   try {
                     FileUtils.downloadFile(url, destPath)
+                  } catch {
+                    case e: Exception => throw new InvalidInputException(s"Error while downloading file $url", e)
+                  }
+              }
+            }
+          }
+        }
+    }.flatten.toList
+    Future.sequence(futures)
+  }
+
+  def downloadFiles_v2(identifier: String, files: Map[AnyRef, List[String]], bundlePath: String)(implicit ec: ExecutionContext, cloudStorageUtil: CloudStorageUtil): Future[List[File]] = {
+    val futures = files.map {
+      case (k, v) =>
+        v.map {
+          id => {
+            Future {
+              val destPath = s"""$bundlePath${File.separator}${StringUtils.replace(id, ".img", "")}"""
+              logger.info(s"ObjectBundle ::: downloadFiles ::: Processing file: $k for : " + identifier)
+              k match {
+                case _: File =>
+                  val file = k.asInstanceOf[File]
+                  val newFile = new File(s"""${destPath}${File.separator}${file.getName}""")
+                  FileUtils.copyFile(file, newFile)
+                  newFile
+                case _ =>
+                  val url = k.asInstanceOf[String]
+                  // UnknownHostException | FileNotFoundException
+                  try {
+                    val uri:String = StringUtils.substringAfter(new URL(url).getPath, "/")
+                    val container = StringUtils.substringBefore(uri ,"/")
+                    val relativePath = StringUtils.substringAfter(uri, "/")
+                    logger.info("ObjectBundle ::: downloadFilesv2: container-" + container + ": path-" + relativePath + " from url-" + url)
+                    logger.info("ObjectBundle ::: downloadFilesv2::: Downloading file to" + destPath)
+
+                    val downloadableUrl = cloudStorageUtil.getSignedUrl(container, relativePath, 600)
+                    logger.info("Got signed URL-" + downloadableUrl)
+                    FileUtils.downloadFile(downloadableUrl, destPath, uri.substring(uri.lastIndexOf("/") + 1, uri.length))
                   } catch {
                     case e: Exception => throw new InvalidInputException(s"Error while downloading file $url", e)
                   }

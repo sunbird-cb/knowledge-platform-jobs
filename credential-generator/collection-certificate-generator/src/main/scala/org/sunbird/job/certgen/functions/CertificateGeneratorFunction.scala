@@ -31,7 +31,7 @@ import java.util.{Base64, Date, UUID}
 import scala.collection.JavaConverters._
 import org.sunbird.job.certgen.domain.{ BEJobRequestEvent, EventObjectCourseCertificate}
 
-class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, storageService: StorageService, @transient var cassandraUtil: CassandraUtil = null)
+class CertificateGeneratorFunction  (config: CertificateGeneratorConfig, httpUtil: HttpUtil, storageService: StorageService, @transient var cassandraUtil: CassandraUtil = null)
   extends BaseProcessKeyedFunction[String, Event, String](config) {
 
 
@@ -96,7 +96,7 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
         uuid = certificateGenerator.getUUID(certificateExtension)
         val qrMap = certificateGenerator.generateQrCode(uuid, directory, certificateConfig.basePath)
         val encodedQrCode: String = encodeQrCode(qrMap.qrFile)
-        val printUri = SvgGenerator.generate(certificateExtension, encodedQrCode, event.svgTemplate)
+        val printUri = SvgGenerator.generate(certificateExtension, encodedQrCode, event.svgTemplate, storageService)
         certificateExtension.printUri = Option(printUri)
         val jsonUrl = uploadJson(certificateExtension, directory.concat(uuid).concat(".json"), event.tag.concat("/"))
         //adding certificate to registry

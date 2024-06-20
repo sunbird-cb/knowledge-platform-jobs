@@ -59,6 +59,18 @@ class HttpUtil extends Serializable {
     }
   }
 
+  def getFileSize(url: String):Int = {
+    val resp = Unirest.get(url).asBytes()
+    if (null != resp && resp.getStatus == 200) {
+      val contentLength = if (CollectionUtils.isNotEmpty(resp.getHeaders.get("Content-Length"))) resp.getHeaders.get("Content-Length") else resp.getHeaders.get("content-length")
+      println(s"Got metadata for : $url | status : ${resp.getStatus}, contentLength: ${contentLength}")
+      if (CollectionUtils.isNotEmpty(contentLength)) contentLength.get(0).toInt else 0
+    } else {
+      println(s"Unable to get metadata for : $url | status : ${resp.getStatus}, body: ${resp.getBody}")
+      0
+    }
+  }
+
   def downloadFile(url: String, downloadLocation: String): File = {
     val saveFile = new File(downloadLocation)
     if (!saveFile.exists) saveFile.mkdirs

@@ -22,7 +22,7 @@ class QuestionSetPublisherSpec extends FlatSpec with BeforeAndAfterAll with Matc
   implicit val cloudStorageUtil = new CloudStorageUtil(jobConfig)
   implicit val readerConfig: ExtDataConfig = ExtDataConfig(jobConfig.questionSetKeyspaceName, jobConfig.questionSetTableName, List("identifier"), Map("hierarchy"->"string","instructions"->"string"))
   val questionReaderConfig: ExtDataConfig = ExtDataConfig(jobConfig.questionKeyspaceName, jobConfig.questionTableName)
-  implicit val defCache = new DefinitionCache()
+  implicit val defCache = new DefinitionCache(jobConfig)
   implicit val defConfig = DefinitionConfig(jobConfig.schemaSupportVersionMap, jobConfig.definitionBasePath)
 
   override protected def beforeAll(): Unit = {

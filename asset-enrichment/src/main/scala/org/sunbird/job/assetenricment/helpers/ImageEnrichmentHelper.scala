@@ -1,5 +1,6 @@
 package org.sunbird.job.assetenricment.helpers
 
+import org.apache.commons.lang.StringUtils
 import org.im4java.core.Info
 import org.slf4j.LoggerFactory
 import org.sunbird.job.assetenricment.models.Asset
@@ -9,6 +10,7 @@ import org.sunbird.job.domain.`object`.DefinitionCache
 import org.sunbird.job.util.{CloudStorageUtil, FileUtils, Neo4JUtil, ScalaJsonUtil, Slug}
 
 import java.io.File
+import java.net.URL
 import scala.collection.mutable
 
 trait ImageEnrichmentHelper {
@@ -32,10 +34,25 @@ trait ImageEnrichmentHelper {
     }
   }
 
+  def getDownloadableURL(filePath: String)(implicit storageUtil: CloudStorageUtil, config: AssetEnrichmentConfig): String = {
+    val downloadableUrl: String = if (filePath.contains(config.getString("cloud_storage_endpoint", "http"))) {
+      val uri:String = StringUtils.substringAfter(new URL(filePath).getPath, "/")
+      val container = StringUtils.substringBefore(uri ,"/")
+      val relativePath = StringUtils.substringAfter(uri, "/")
+      logger.info("Got filePath with relative path: " + relativePath)
+      storageUtil.getSignedUrl(container, relativePath, 30)
+    } else {
+      filePath
+    }
+    downloadableUrl
+  }
+
   def optimizeImage(contentId: String, originalURL: String)(implicit config: AssetEnrichmentConfig, definitionCache: DefinitionCache, cloudStorageUtil: CloudStorageUtil): Map[String, String] = {
     val variantsMap = mutable.Map[String, String]()
     val variants = getVariant()(definitionCache, config)
-    val originalFile = FileUtils.copyURLToFile(contentId, originalURL, originalURL.substring(originalURL.lastIndexOf("/") + 1, originalURL.length))
+
+    val downloadableURL = getDownloadableURL(originalURL)
+    val originalFile = FileUtils.copyURLToFile(contentId, downloadableURL, originalURL.substring(originalURL.lastIndexOf("/") + 1, originalURL.length))
     try {
       originalFile match {
         case Some(file: File) => variants.foreach(variant => {

@@ -67,6 +67,22 @@ object FileUtils {
     file
   }
 
+  def downloadFile(fileUrl: String, basePath: String, fileName: String): File = {
+    val url = new URL(fileUrl)
+    val httpConn = url.openConnection().asInstanceOf[HttpURLConnection]
+    val disposition = httpConn.getHeaderField("Content-Disposition")
+    httpConn.getContentType
+    httpConn.getContentLength
+    val saveFile = new File(basePath)
+    if (!saveFile.exists) saveFile.mkdirs
+    val saveFilePath = basePath + File.separator + fileName
+    val inputStream = httpConn.getInputStream
+    val outputStream = new FileOutputStream(saveFilePath)
+    IOUtils.copy(inputStream, outputStream)
+    val file = new File(saveFilePath)
+    logger.info("FileUtils :: downloadFile :: " + System.currentTimeMillis() + " ::: Downloaded file: " + file.getAbsolutePath)
+    file
+  }
   def extractPackage(file: File, basePath: String): Unit = {
     val zipFile = new ZipFile(file)
     for (entry <- zipFile.entries().asScala) {

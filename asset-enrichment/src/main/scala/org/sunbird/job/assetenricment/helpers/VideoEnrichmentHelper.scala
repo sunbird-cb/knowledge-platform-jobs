@@ -12,6 +12,7 @@ import org.sunbird.job.assetenricment.util._
 import org.sunbird.job.util._
 
 import java.io.File
+import java.net.URL
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.imageio.ImageIO
@@ -36,6 +37,18 @@ trait VideoEnrichmentHelper extends ThumbnailUtil {
         throw e
     }
   }
+  def getDownloadableURL(filePath: String)(implicit storageUtil: CloudStorageUtil, config: AssetEnrichmentConfig): String = {
+    val downloadableUrl: String = if (filePath.contains(config.getString("cloud_storage_endpoint", "http"))) {
+      val uri:String = StringUtils.substringAfter(new URL(filePath).getPath, "/")
+      val container = StringUtils.substringBefore(uri ,"/")
+      val relativePath = StringUtils.substringAfter(uri, "/")
+      logger.info("Got filePath with relative path: " + relativePath)
+      storageUtil.getSignedUrl(container, relativePath, 30)
+    } else {
+      filePath
+    }
+    downloadableUrl
+  }
 
   private def enrichVideo(asset: Asset, videoUrl: String)(youTubeUtil: YouTubeUtil, cloudStorageUtil: CloudStorageUtil, neo4JUtil: Neo4JUtil, config: AssetEnrichmentConfig): Asset = {
     if (StringUtils.equalsIgnoreCase("video/x-youtube", asset.mimeType)) processYoutubeVideo(asset, videoUrl)(youTubeUtil)
@@ -54,7 +67,8 @@ trait VideoEnrichmentHelper extends ThumbnailUtil {
   }
 
   def processOtherVideo(asset: Asset, videoUrl: String)(implicit cloudStorageUtil: CloudStorageUtil, config: AssetEnrichmentConfig): Unit = {
-    val videoFile = FileUtils.copyURLToFile(asset.identifier, videoUrl, videoUrl.substring(videoUrl.lastIndexOf("/") + 1))
+    val downloadableURL = getDownloadableURL(videoUrl)
+    val videoFile = FileUtils.copyURLToFile(asset.identifier, downloadableURL, videoUrl.substring(videoUrl.lastIndexOf("/") + 1))
     try {
       videoFile match {
         case Some(file: File) => enrichVideo(asset, file)(cloudStorageUtil, config)

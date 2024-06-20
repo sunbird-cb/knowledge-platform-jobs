@@ -17,10 +17,11 @@ import org.sunbird.job.questionset.publish.util.QuestionPublishUtil
 import org.sunbird.job.questionset.task.QuestionSetPublishConfig
 import org.sunbird.job.util._
 import org.sunbird.job.{BaseProcessFunction, Metrics}
-import java.lang.reflect.Type
 
+import java.lang.reflect.Type
 import org.sunbird.job.cache.{DataCache, RedisConnect}
 
+import java.net.URL
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext
@@ -48,7 +49,7 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
     neo4JUtil = new Neo4JUtil(config.graphRoutePath, config.graphName)
     cloudStorageUtil = new CloudStorageUtil(config)
     ec = ExecutionContexts.global
-    definitionCache = new DefinitionCache()
+    definitionCache = new DefinitionCache(config)
     definitionConfig = DefinitionConfig(config.schemaSupportVersionMap, config.definitionBasePath)
     cache = new DataCache(config, new RedisConnect(config), config.cacheDbId, List())
     cache.init()
@@ -136,9 +137,9 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
 
   def generateECAR(data: ObjectData, pkgTypes: List[String])(implicit ec: ExecutionContext, neo4JUtil: Neo4JUtil, cloudStorageUtil: CloudStorageUtil, config: PublishConfig, defCache: DefinitionCache, defConfig: DefinitionConfig, httpUtil: HttpUtil): ObjectData = {
     val ecarMap: Map[String, String] = generateEcar(data, pkgTypes)
-    val variants: java.util.Map[String, java.util.Map[String, String]] = ecarMap.map { case (key, value) => key.toLowerCase -> Map[String, String]("ecarUrl" -> value, "size" -> httpUtil.getSize(value).toString).asJava }.asJava
+    val variants: java.util.Map[String, java.util.Map[String, String]] = ecarMap.map { case (key, value) => key.toLowerCase -> Map[String, String]("ecarUrl" -> value, "size" -> httpUtil.getFileSize(getSignedURL(value, cloudStorageUtil)).toString).asJava }.asJava
     logger.info("QuestionSetPublishFunction ::: generateECAR ::: ecar map ::: " + ecarMap)
-    val meta: Map[String, AnyRef] = Map("downloadUrl" -> ecarMap.getOrElse(EcarPackageType.FULL.toString, ""), "variants" -> variants, "size" -> httpUtil.getSize(ecarMap.getOrElse(EcarPackageType.FULL.toString, "")).asInstanceOf[AnyRef])
+    val meta: Map[String, AnyRef] = Map("downloadUrl" -> ecarMap.getOrElse(EcarPackageType.FULL.toString, ""), "variants" -> variants, "size" -> httpUtil.getFileSize(getSignedURL(ecarMap.getOrElse(EcarPackageType.FULL.toString, ""), cloudStorageUtil)).asInstanceOf[AnyRef])
     new ObjectData(data.identifier, data.metadata ++ meta, data.extData, data.hierarchy)
   }
 

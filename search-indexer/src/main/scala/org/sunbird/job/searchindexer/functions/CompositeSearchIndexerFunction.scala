@@ -19,7 +19,7 @@ class CompositeSearchIndexerFunction(config: SearchIndexerConfig,
   extends BaseProcessFunction[Event, String](config) with CompositeSearchIndexerHelper with FailedEventHelper {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[CompositeSearchIndexerFunction])
-  lazy val defCache: DefinitionCache = new DefinitionCache()
+  lazy val defCache: DefinitionCache = new DefinitionCache(config)
 
   override def open(parameters: Configuration): Unit = {
     super.open(parameters)

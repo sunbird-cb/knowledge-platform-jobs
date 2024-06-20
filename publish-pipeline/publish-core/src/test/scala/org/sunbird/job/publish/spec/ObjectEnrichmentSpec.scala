@@ -28,7 +28,7 @@ class ObjectEnrichmentSpec extends FlatSpec with BeforeAndAfterAll with Matchers
   implicit val mockNeo4JUtil: Neo4JUtil = mock[Neo4JUtil](Mockito.withSettings().serializable())
   implicit val mockCassandraUtil: CassandraUtil = mock[CassandraUtil](Mockito.withSettings().serializable())
   implicit val readerConfig = ExtDataConfig("test", "test")
-  implicit lazy val defCache: DefinitionCache = new DefinitionCache()
+  implicit lazy val defCache: DefinitionCache = new DefinitionCache(publishConfig)
   implicit lazy val definitionConfig: DefinitionConfig = DefinitionConfig(Map("questionset" -> "1.0"), "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/schemas/local")
 
   "ObjectEnrichment enrichObject" should " enrich the object with Framework data and thumbnail " in {

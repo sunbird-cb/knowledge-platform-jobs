@@ -1,5 +1,6 @@
 package org.sunbird.job.publish.helpers
 
+import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.DefinitionCache
 import org.sunbird.job.publish.config.PublishConfig
@@ -7,6 +8,7 @@ import org.sunbird.job.publish.core.{DefinitionConfig, ObjectData}
 import org.sunbird.job.util.{CloudStorageUtil, Neo4JUtil}
 
 import java.io.File
+import java.net.URL
 import scala.concurrent.ExecutionContext
 
 trait EcarGenerator extends ObjectBundle {
@@ -40,4 +42,18 @@ trait EcarGenerator extends ObjectBundle {
 			case _ => None
 		}
 	}
+
+	def getSignedURL(url: String, cloudStorageUtil: CloudStorageUtil): String = {
+		if (url.startsWith("http")) {
+			val uri:String = StringUtils.substringAfter(new URL(url).getPath, "/")
+			val container = StringUtils.substringBefore(uri ,"/")
+			val relativePath = StringUtils.substringAfter(uri, "/")
+			logger.info("Got filePath with relative path: " + relativePath)
+			cloudStorageUtil.getSignedUrl(container, relativePath, 30)
+		} else {
+			url
+		}
+
+	}
+
 }

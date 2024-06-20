@@ -27,7 +27,7 @@ class QuestionPublishUtilSpec extends FlatSpec with BeforeAndAfterAll with Match
   val jobConfig: QuestionSetPublishConfig = new QuestionSetPublishConfig(config)
   implicit val readerConfig: ExtDataConfig = ExtDataConfig(jobConfig.questionKeyspaceName, jobConfig.questionTableName)
   implicit val cloudStorageUtil = new CloudStorageUtil(jobConfig)
-  implicit val defCache = new DefinitionCache()
+  implicit val defCache = new DefinitionCache(jobConfig)
   implicit val defConfig = DefinitionConfig(jobConfig.schemaSupportVersionMap, jobConfig.definitionBasePath)
   implicit val publishConfig: PublishConfig = new PublishConfig(config, "")
   implicit val httpUtil = new HttpUtil

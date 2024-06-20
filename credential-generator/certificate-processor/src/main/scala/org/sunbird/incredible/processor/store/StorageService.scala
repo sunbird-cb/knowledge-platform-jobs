@@ -20,12 +20,7 @@ class StorageService(storageParams: StorageParams) extends Serializable {
     if (null == storageService) {
       val storageKey = storageParams.storageKey
       val storageSecret = storageParams.storageSecret
-      if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.AZURE) || StringUtils.equalsIgnoreCase(storageType, JsonKeys.AWS)) {
-        storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret))
-      } else if (StringUtils.equalsIgnoreCase(storageType, JsonKeys.CEPHS3)) {
-        val storageEndPoint = storageParams.storageEndPoint.getOrElse("")
-        storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret,Option(storageEndPoint)))
-      } else throw new ServerException("ERR_INVALID_CLOUD_STORAGE", "Error while initialising cloud storage")
+      storageService = StorageServiceFactory.getStorageService(StorageConfig(storageType, storageKey, storageSecret, storageParams.storageEndPoint))
     }
     storageService
   }
@@ -41,5 +36,8 @@ class StorageService(storageParams: StorageParams) extends Serializable {
     UrlManager.getSharableUrl(url, containerName)
   }
 
+  def getSignedUrl(container: String, path: String, ttl: Int): String = {
+    return getService.getPutSignedURL(container, path, Option.apply(ttl), Option.apply("r"), Option.empty)
+  }
 
 }

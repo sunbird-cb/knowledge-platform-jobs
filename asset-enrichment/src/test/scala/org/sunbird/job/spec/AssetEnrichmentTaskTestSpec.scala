@@ -35,7 +35,7 @@ class AssetEnrichmentTaskTestSpec extends BaseTestSpec {
   val mockKafkaUtil: FlinkKafkaConnector = mock[FlinkKafkaConnector](Mockito.withSettings().serializable())
   val config: Config = ConfigFactory.load("test.conf").withFallback(ConfigFactory.systemEnvironment())
   val jobConfig = new AssetEnrichmentConfig(config)
-  val definitionUtil = new DefinitionCache
+  val definitionUtil = new DefinitionCache(jobConfig)
   implicit val mockNeo4JUtil: Neo4JUtil = mock[Neo4JUtil](Mockito.withSettings().serializable())
   implicit val cloudUtil: CloudStorageUtil = new CloudStorageUtil(jobConfig)
   implicit val youTubeUtil: YouTubeUtil = new YouTubeUtil(jobConfig)

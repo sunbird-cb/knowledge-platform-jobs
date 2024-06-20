@@ -21,7 +21,7 @@ class ImageEnrichmentFunction(config: AssetEnrichmentConfig,
     with ImageEnrichmentHelper with OptimizerHelper {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[ImageEnrichmentFunction])
-  lazy val definitionCache: DefinitionCache = new DefinitionCache
+  lazy val definitionCache: DefinitionCache = new DefinitionCache(config)
   lazy val cloudStorageUtil: CloudStorageUtil = new CloudStorageUtil(config)
 
   override def open(parameters: Configuration): Unit = {

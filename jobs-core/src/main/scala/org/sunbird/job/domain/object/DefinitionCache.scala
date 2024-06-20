@@ -2,15 +2,18 @@ package org.sunbird.job.domain.`object`
 
 import com.twitter.storehaus.cache.Cache
 import com.twitter.util.Duration
+import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
-import org.sunbird.job.util.ScalaJsonUtil
+import org.sunbird.job.BaseJobConfig
+import org.sunbird.job.util.{CloudStorageUtil, ScalaJsonUtil}
 
+import java.net.URL
 import scala.io.Source
 
-class DefinitionCache extends Serializable {
+class DefinitionCache(config: BaseJobConfig) extends Serializable {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[DefinitionCache])
-
+  private val storageUtil = new CloudStorageUtil(config)
   private var categoryDefinitionCache = Cache.ttl[String, ObjectDefinition](Duration.fromSeconds(600))
 
   def getDefinition(objectType: String, version: String, basePath: String): ObjectDefinition = {
@@ -46,7 +49,22 @@ class DefinitionCache extends Serializable {
   }
 
   private def fileToString(basePath: String, fileName: String): String = {
-    Source.fromURL(basePath + fileName).mkString
+    val filePath = basePath + fileName
+    logger.info("Got filePath: " + filePath)
+
+    val downloadableUrl: String = if (filePath.startsWith("http")) {
+      val uri:String = StringUtils.substringAfter(new URL(filePath).getPath, "/")
+      val container = StringUtils.substringBefore(uri ,"/")
+      val relativePath = StringUtils.substringAfter(uri, "/")
+      logger.info("Got filePath with relative path: " + relativePath)
+      storageUtil.getSignedUrl(container, relativePath, 30)
+    } else {
+      filePath
+    }
+
+    logger.info("Got downloadable final url: " + downloadableUrl)
+
+    Source.fromURL(downloadableUrl).mkString
   }
 
 }

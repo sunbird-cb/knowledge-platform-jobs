@@ -5,6 +5,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.scalatestplus.mockito.MockitoSugar
+import org.sunbird.job.BaseJobConfig
 import org.sunbird.job.domain.`object`.DefinitionCache
 import org.sunbird.job.publish.core.{DefinitionConfig, ExtDataConfig, ObjectData}
 import org.sunbird.job.publish.helpers.ObjectUpdater
@@ -17,7 +18,7 @@ class ObjectUpdaterSpec extends FlatSpec with BeforeAndAfterAll with Matchers wi
   implicit val mockNeo4JUtil: Neo4JUtil = mock[Neo4JUtil](Mockito.withSettings().serializable())
   implicit val mockCassandraUtil: CassandraUtil = mock[CassandraUtil](Mockito.withSettings().serializable())
   implicit val readerConfig = ExtDataConfig("test", "test")
-  implicit lazy val defCache: DefinitionCache = new DefinitionCache()
+  implicit lazy val defCache: DefinitionCache = new DefinitionCache(new BaseJobConfig(null, null))
   implicit val definitionConfig: DefinitionConfig = DefinitionConfig(Map("itemset" -> "2.0"), "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/schemas/local")
 
 
