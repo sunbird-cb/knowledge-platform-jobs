@@ -11,7 +11,6 @@ import org.sunbird.telemetry.TelemetryParams
 import org.sunbird.job.auditevent.domain.Event
 import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import com.google.gson.Gson
-import org.sunbird.job.domain.`object`
 import org.sunbird.job.exception.InvalidEventException
 
 import java.util
@@ -21,7 +20,7 @@ trait AuditEventGeneratorService {
   private[this] lazy val logger = LoggerFactory.getLogger(classOf[AuditEventGeneratorService])
   private val OBJECT_TYPE_IMAGE_SUFFIX = "Image"
   private val SKIP_AUDIT = """{"object": {"type":null}}"""
-  private var definitionCache: DefinitionCache = null
+  private lazy val definitionCache = new DefinitionCache
   private lazy val gson = new Gson
 
   private val systemPropsList = List("IL_SYS_NODE_TYPE", "IL_FUNC_OBJECT_TYPE", "IL_UNIQUE_ID", "IL_TAG_NAME", "IL_ATTRIBUTE_NAME", "IL_INDEXABLE_METADATA_KEY", "IL_NON_INDEXABLE_METADATA_KEY",
@@ -60,9 +59,6 @@ trait AuditEventGeneratorService {
 
   def getDefinition(objectType: String)(implicit config: AuditEventGeneratorConfig, metrics: Metrics): ObjectDefinition = {
     try {
-      if (definitionCache == null)
-        definitionCache = new DefinitionCache(config)
-
       definitionCache.getDefinition(objectType, config.configVersion, config.basePath)
     } catch {
       case ex: Exception => {

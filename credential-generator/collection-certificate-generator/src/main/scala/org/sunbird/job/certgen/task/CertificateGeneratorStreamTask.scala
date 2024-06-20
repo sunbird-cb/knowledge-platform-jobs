@@ -73,7 +73,13 @@ object CertificateGeneratorStreamTask {
     val httpUtil = new HttpUtil
     var storageParams: StorageParams = null
 
-    storageParams = StorageParams(ccgConfig.storageType, ccgConfig.storageKey, ccgConfig.storageSecret, ccgConfig.containerName, Some(ccgConfig.storageEndpoint))
+    if (ccgConfig.storageType.equalsIgnoreCase(ccgConfig.AZURE)) {
+      storageParams = StorageParams(ccgConfig.storageType, ccgConfig.azureStorageKey, ccgConfig.azureStorageSecret, ccgConfig.containerName)
+    } else if (ccgConfig.storageType.equalsIgnoreCase(ccgConfig.AWS)) {
+      storageParams = StorageParams(ccgConfig.storageType, ccgConfig.awsStorageKey, ccgConfig.awsStorageSecret, ccgConfig.containerName)
+    } else if (ccgConfig.storageType.equalsIgnoreCase(ccgConfig.CEPHS3)) {
+      storageParams = StorageParams(ccgConfig.storageType, ccgConfig.cephs3StorageKey, ccgConfig.cephs3StorageSecret, ccgConfig.containerName, Some(ccgConfig.cephs3StorageEndPoint))
+    } else throw new ServerException("ERR_INVALID_CLOUD_STORAGE", "Error while initialising cloud storage")
 
     //val storageParams: StorageParams = StorageParams(ccgConfig.storageType, ccgConfig.azureStorageKey, ccgConfig.azureStorageSecret, ccgConfig.containerName)
     val storageService: StorageService = new StorageService(storageParams)

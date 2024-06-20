@@ -49,7 +49,7 @@ class CollectionPublishFunction(config: ContentPublishConfig, httpUtil: HttpUtil
     esUtil = new ElasticSearchUtil(config.esConnectionInfo, config.compositeSearchIndexName, config.compositeSearchIndexType)
     cloudStorageUtil = new CloudStorageUtil(config)
     ec = ExecutionContexts.global
-    definitionCache = new DefinitionCache(config)
+    definitionCache = new DefinitionCache()
     definitionConfig = DefinitionConfig(config.schemaSupportVersionMap, config.definitionBasePath)
     cache = new DataCache(config, new RedisConnect(config), config.nodeStore, List())
     cache.init()

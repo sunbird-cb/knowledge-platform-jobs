@@ -46,7 +46,7 @@ class ContentPublishFunction(config: ContentPublishConfig, httpUtil: HttpUtil,
     neo4JUtil = new Neo4JUtil(config.graphRoutePath, config.graphName)
     cloudStorageUtil = new CloudStorageUtil(config)
     ec = ExecutionContexts.global
-    definitionCache = new DefinitionCache(config)
+    definitionCache = new DefinitionCache()
     definitionConfig = DefinitionConfig(config.schemaSupportVersionMap, config.definitionBasePath)
     cache = new DataCache(config, new RedisConnect(config), config.nodeStore, List())
     cache.init()

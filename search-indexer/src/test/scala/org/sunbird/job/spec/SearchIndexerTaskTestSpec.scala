@@ -40,7 +40,7 @@ class SearchIndexerTaskTestSpec extends BaseTestSpec {
   val jobConfig = new SearchIndexerConfig(config)
   val mockElasticUtil = mock[ElasticSearchUtil](Mockito.withSettings().serializable())
   var embeddedElastic: EmbeddedElastic = _
-  val defCache = new DefinitionCache(jobConfig)
+  val defCache = new DefinitionCache()
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
