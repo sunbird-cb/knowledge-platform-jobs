@@ -15,6 +15,7 @@
     <module>certificate-processor</module>
     <module>collection-certificate-generator</module>
     <module>program-cert-pre-processor</module>
+    <module>common-certificate-generator-utility</module>
   </modules>
 
   <build>
