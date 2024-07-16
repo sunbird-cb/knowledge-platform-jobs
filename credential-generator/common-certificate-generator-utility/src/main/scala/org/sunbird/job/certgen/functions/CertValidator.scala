@@ -181,7 +181,7 @@ class CertValidator() {
     val query = QueryBuilder.select( "issued_certificates").from(config.dbKeyspace, config.dbEnrollmentTable)
       .where(QueryBuilder.eq(config.dbUserId, event.eData.getOrElse("userId", "")))
       .and(QueryBuilder.eq(config.dbCourseId, event.related.getOrElse("courseId", "")))
-      .and(QueryBuilder.eq(config.dbBatchId, event.related.getOrElse("batchId", "")))
+      //.and(QueryBuilder.eq(config.dbBatchId, event.related.getOrElse("batchId", "")))
     val row = cassandraUtil.findOne(query.toString)
     metrics.incCounter(config.enrollmentDbReadCount)
     if (null != row) {

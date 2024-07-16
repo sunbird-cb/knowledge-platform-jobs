@@ -52,13 +52,12 @@ case class FailedEventMsg(jobName: String,
 }
 
 
-case class UserEnrollmentData(batchId: String,
-                              userId: String,
+case class UserEnrollmentData(userId: String,
                               courseId: String,
                               courseName: String,
                               templateId: String,
                               certificate: Certificate) {
-  def this() = this("", "", "", "", "", null)
+  def this() = this( "", "", "", "", null)
 }
 
 case class Recipient(id: String, name: String, `type`: String)

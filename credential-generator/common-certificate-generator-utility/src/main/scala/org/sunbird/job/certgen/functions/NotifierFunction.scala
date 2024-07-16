@@ -20,7 +20,7 @@ import org.sunbird.job.{BaseProcessFunction, Metrics}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-case class NotificationMetaData(userId: String, courseName: String, issuedOn: Date, courseId: String, batchId: String, templateId: String, partition: Int, offset: Long, courseProvider: String, coursePosterImage:String)
+case class NotificationMetaData(userId: String, courseName: String, issuedOn: Date, courseId: String, templateId: String, partition: Int, offset: Long, courseProvider: String, coursePosterImage:String)
 
 class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @transient var cassandraUtil: CassandraUtil = null)(implicit val stringTypeInfo: TypeInformation[String])
   extends BaseProcessFunction[NotificationMetaData, String](config) {
@@ -47,8 +47,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
   try {
     val userResponse: Map[String, AnyRef] = getUserDetails(metaData.userId)(metrics) // call user Service
     if (null != userResponse && userResponse.nonEmpty) {
-      val primaryFields = Map(config.courseId.toLowerCase() -> metaData.courseId,
-        config.batchId.toLowerCase -> metaData.batchId)
+      val primaryFields = Map(config.courseId.toLowerCase() -> metaData.courseId)
       val row = getNotificationTemplates(primaryFields, metrics)
       val certTemplate = row.getMap(config.cert_templates, com.google.common.reflect.TypeToken.of(classOf[String]),
         TypeTokens.mapOf(classOf[String], classOf[String]))
@@ -60,7 +59,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
           certTemplate.get(metaData.templateId).containsKey(config.notifyTemplate))
         logger.info("Sending notification email. URL: {}", url)
         val notifyTemplate = getNotifyTemplateFromRes(certTemplate.get(metaData.templateId))
-        val ratingUrl = config.domainUrl + config.ratingMidPoint + metaData.courseId + config.ratingEndPoint + metaData.batchId
+        val ratingUrl = config.domainUrl + config.ratingMidPoint + metaData.courseId + config.ratingEndPoint
         val request = mutable.Map[String, AnyRef]("request" -> (notifyTemplate ++ mutable.Map[String, AnyRef](
           config.firstName -> userResponse.getOrElse(config.firstName, "").asInstanceOf[String],
           config.trainingName -> metaData.courseName,
