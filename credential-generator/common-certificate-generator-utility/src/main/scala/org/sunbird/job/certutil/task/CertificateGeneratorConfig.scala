@@ -1,4 +1,4 @@
-package org.sunbird.job.certgen.task
+package org.sunbird.job.certutil.task
 
 import java.util
 
@@ -7,7 +7,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.TypeExtractor
 import org.apache.flink.streaming.api.scala.OutputTag
 import org.sunbird.job.BaseJobConfig
-import org.sunbird.job.certgen.functions.{NotificationMetaData, UserFeedMetaData}
+import org.sunbird.job.certutil.functions.{NotificationMetaData, UserFeedMetaData}
 
 class CertificateGeneratorConfig(override val config: Config) extends BaseJobConfig(config, "collection-certificate-generator") {
 

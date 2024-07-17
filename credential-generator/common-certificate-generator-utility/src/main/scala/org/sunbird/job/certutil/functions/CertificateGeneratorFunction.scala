@@ -1,4 +1,4 @@
-package org.sunbird.job.certgen.functions
+package org.sunbird.job.certutil.functions
 
 import com.datastax.driver.core.querybuilder.{QueryBuilder, Update}
 import com.datastax.driver.core.{Row, TypeTokens}
@@ -14,10 +14,10 @@ import org.sunbird.incredible.processor.CertModel
 import org.sunbird.incredible.processor.store.StorageService
 import org.sunbird.incredible.processor.views.SvgGenerator
 import org.sunbird.incredible.{CertificateConfig, CertificateGenerator, JsonKeys, ScalaModuleJsonUtils}
-import org.sunbird.job.certgen.domain.Issuer
-import org.sunbird.job.certgen.domain._
-import org.sunbird.job.certgen.exceptions.ServerException
-import org.sunbird.job.certgen.task.CertificateGeneratorConfig
+import org.sunbird.job.certutil.domain.Issuer
+import org.sunbird.job.certutil.domain._
+import org.sunbird.job.certutil.exceptions.ServerException
+import org.sunbird.job.certutil.task.CertificateGeneratorConfig
 import org.sunbird.job.exception.InvalidEventException
 import org.sunbird.job.util.{CassandraUtil, ElasticSearchUtil, HttpUtil, ScalaJsonUtil, JSONUtil}
 import org.sunbird.job.{BaseProcessKeyedFunction, Metrics}
@@ -29,7 +29,7 @@ import java.util
 import java.util.stream.Collectors
 import java.util.{Base64, Date, UUID}
 import scala.collection.JavaConverters._
-import org.sunbird.job.certgen.domain.{ BEJobRequestEvent, EventObjectCourseCertificate}
+import org.sunbird.job.certutil.domain.{ BEJobRequestEvent, EventObjectCourseCertificate}
 
 class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, storageService: StorageService, @transient var cassandraUtil: CassandraUtil = null)
   extends BaseProcessKeyedFunction[String, Event, String](config) {

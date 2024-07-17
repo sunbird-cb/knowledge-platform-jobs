@@ -1,4 +1,4 @@
-package org.sunbird.job.certgen.spec
+package org.sunbird.job.certutil.spec
 
 import com.datastax.driver.core.{ResultSet, Row}
 import com.datastax.driver.core.querybuilder.QueryBuilder
@@ -14,11 +14,11 @@ import org.sunbird.incredible.processor.CertModel
 import org.sunbird.incredible.{CertificateConfig, JsonKeys, ScalaModuleJsonUtils, StorageParams}
 import org.sunbird.incredible.processor.store.StorageService
 import org.sunbird.job.Metrics
-import org.sunbird.job.certgen.domain.{Certificate, Event, Issuer, Recipient, Training, UserEnrollmentData}
-import org.sunbird.job.certgen.exceptions.ServerException
-import org.sunbird.job.certgen.fixture.EventFixture
-import org.sunbird.job.certgen.functions.{CertMapper, CertValidator, CertificateGeneratorFunction}
-import org.sunbird.job.certgen.task.CertificateGeneratorConfig
+import org.sunbird.job.certutil.domain.{Certificate, Event, Issuer, Recipient, Training, UserEnrollmentData}
+import org.sunbird.job.certutil.exceptions.ServerException
+import org.sunbird.job.certutil.fixture.EventFixture
+import org.sunbird.job.certutil.functions.{CertMapper, CertValidator, CertificateGeneratorFunction}
+import org.sunbird.job.certutil.task.CertificateGeneratorConfig
 import org.sunbird.job.util.{CassandraUtil, ElasticSearchUtil, HTTPResponse, HttpUtil, JSONUtil}
 import org.sunbird.spec.BaseTestSpec
 

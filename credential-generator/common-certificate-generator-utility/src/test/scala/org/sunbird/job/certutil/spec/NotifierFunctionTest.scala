@@ -1,4 +1,4 @@
-package org.sunbird.job.certgen.spec
+package org.sunbird.job.certutil.spec
 
 import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
@@ -16,8 +16,8 @@ import org.sunbird.job.util.{CassandraUtil, HTTPResponse, HttpUtil}
 import org.sunbird.spec.{BaseMetricsReporter, BaseTestSpec}
 import org.mockito.ArgumentMatchers.{any, endsWith}
 import org.sunbird.job.Metrics
-import org.sunbird.job.certgen.functions.{NotificationMetaData, NotifierFunction}
-import org.sunbird.job.certgen.task.CertificateGeneratorConfig
+import org.sunbird.job.certutil.functions.{NotificationMetaData, NotifierFunction}
+import org.sunbird.job.certutil.task.CertificateGeneratorConfig
 
 
 class NotifierFunctionTest extends BaseTestSpec {

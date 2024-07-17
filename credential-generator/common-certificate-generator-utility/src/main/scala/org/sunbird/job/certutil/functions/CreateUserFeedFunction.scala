@@ -1,11 +1,11 @@
-package org.sunbird.job.certgen.functions
+package org.sunbird.job.certutil.functions
 
 import java.util.Date
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
-import org.sunbird.job.certgen.task.CertificateGeneratorConfig
+import org.sunbird.job.certutil.task.CertificateGeneratorConfig
 import org.sunbird.job.exception.InvalidEventException
 import org.sunbird.job.util.{HTTPResponse, HttpUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}

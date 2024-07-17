@@ -1,4 +1,4 @@
-package org.sunbird.job.certgen.functions
+package org.sunbird.job.certutil.functions
 
 import com.datastax.driver.core.TypeTokens
 import com.datastax.driver.core.querybuilder.QueryBuilder
@@ -10,9 +10,9 @@ import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.incredible.JsonKeys
 import org.sunbird.job.Metrics
-import org.sunbird.job.certgen.domain.Event
-import org.sunbird.job.certgen.exceptions.{ErrorCodes, ErrorMessages, ValidationException}
-import org.sunbird.job.certgen.task.CertificateGeneratorConfig
+import org.sunbird.job.certutil.domain.Event
+import org.sunbird.job.certutil.exceptions.{ErrorCodes, ErrorMessages, ValidationException}
+import org.sunbird.job.certutil.task.CertificateGeneratorConfig
 import org.sunbird.job.util.CassandraUtil
 
 import scala.collection.JavaConverters._

@@ -1,4 +1,4 @@
-package org.sunbird.job.certgen.exceptions
+package org.sunbird.job.certutil.exceptions
 
 object ErrorMessages {
 

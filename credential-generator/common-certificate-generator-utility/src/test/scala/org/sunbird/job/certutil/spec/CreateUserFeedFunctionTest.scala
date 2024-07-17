@@ -1,4 +1,4 @@
-package org.sunbird.job.certgen.spec
+package org.sunbird.job.certutil.spec
 
 import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
@@ -11,8 +11,8 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.sunbird.job.Metrics
-import org.sunbird.job.certgen.functions.{CreateUserFeedFunction, UserFeedMetaData}
-import org.sunbird.job.certgen.task.CertificateGeneratorConfig
+import org.sunbird.job.certutil.functions.{CreateUserFeedFunction, UserFeedMetaData}
+import org.sunbird.job.certutil.task.CertificateGeneratorConfig
 import org.sunbird.job.util.{HTTPResponse, HttpUtil}
 import org.sunbird.spec.{BaseMetricsReporter, BaseTestSpec}
 
