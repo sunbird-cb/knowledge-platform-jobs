@@ -64,7 +64,7 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
   override def processElement(event: Event,
                               context: KeyedProcessFunction[String, Event, String]#Context,
                               metrics: Metrics): Unit = {
-    println("Certificate data: " + event)
+    println("I am ****** NEW Common Collection Certificate Generator ***SAI-NEW***** Certificate data: " + event)
     metrics.incCounter(config.totalEventsCount)
     try {
       val certValidator = new CertValidator()
