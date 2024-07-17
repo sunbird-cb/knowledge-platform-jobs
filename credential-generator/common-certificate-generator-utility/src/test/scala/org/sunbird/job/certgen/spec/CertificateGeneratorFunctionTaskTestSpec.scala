@@ -22,7 +22,7 @@ import org.scalatest.DoNotDiscover
 import org.sunbird.incredible.processor.store.StorageService
 import org.sunbird.job.certgen.domain.Event
 import org.sunbird.job.certgen.fixture.EventFixture
-import org.sunbird.job.certgen.task.{CertificateGeneratorConfig, CertificateGeneratorStreamTask}
+import org.sunbird.job.certgen.task.{CertificateGeneratorConfig, CommonCertificateGeneratorStreamTask}
 import org.sunbird.job.connector.FlinkKafkaConnector
 import org.sunbird.job.util.{CassandraUtil, HTTPResponse, HttpUtil, JSONUtil}
 import org.sunbird.spec.{BaseMetricsReporter, BaseTestSpec}
@@ -85,7 +85,7 @@ class CertificateGeneratorFunctionTaskTestSpec extends BaseTestSpec {
   it should "generate certificate and add to the registry" in {
     when(mockKafkaUtil.kafkaStringSink(jobConfig.kafkaAuditEventTopic)).thenReturn(new auditEventSink)
     when(mockKafkaUtil.kafkaJobRequestSource[Event](jobConfig.kafkaInputTopic)).thenReturn(new CertificateGeneratorEventSource)
-    intercept[JobExecutionException](new CertificateGeneratorStreamTask(jobConfig, mockKafkaUtil, mockHttpUtil, storageService).process())
+    intercept[JobExecutionException](new CommonCertificateGeneratorStreamTask(jobConfig, mockKafkaUtil, mockHttpUtil, storageService).process())
     BaseMetricsReporter.gaugeMetrics(s"${jobConfig.jobName}.${jobConfig.totalEventsCount}").getValue() should be(3)
     BaseMetricsReporter.gaugeMetrics(s"${jobConfig.jobName}.${jobConfig.successEventCount}").getValue() should be(1)
     BaseMetricsReporter.gaugeMetrics(s"${jobConfig.jobName}.${jobConfig.failedEventCount}").getValue() should be(1)

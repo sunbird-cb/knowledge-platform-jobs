@@ -16,7 +16,7 @@ import org.sunbird.job.certgen.functions.{CertificateGeneratorFunction, CreateUs
 import org.sunbird.job.connector.FlinkKafkaConnector
 import org.sunbird.job.util.{FlinkUtil, HttpUtil}
 
-class CertificateGeneratorStreamTask(config: CertificateGeneratorConfig, kafkaConnector: FlinkKafkaConnector, httpUtil: HttpUtil, storageService: StorageService) {
+class CommonCertificateGeneratorStreamTask(config: CertificateGeneratorConfig, kafkaConnector: FlinkKafkaConnector, httpUtil: HttpUtil, storageService: StorageService) {
 
   def process(): Unit = {
     implicit val env: StreamExecutionEnvironment = FlinkUtil.getExecutionContext(config)
@@ -61,7 +61,7 @@ class CertificateGeneratorStreamTask(config: CertificateGeneratorConfig, kafkaCo
 }
 
 // $COVERAGE-OFF$ Disabling scoverage as the below code can only be invoked within flink cluster
-object CertificateGeneratorStreamTask {
+object CommonCertificateGeneratorStreamTask {
 
   def main(args: Array[String]): Unit = {
     val configFilePath = Option(ParameterTool.fromArgs(args).get("config.file.path"))
@@ -83,7 +83,7 @@ object CertificateGeneratorStreamTask {
 
     //val storageParams: StorageParams = StorageParams(ccgConfig.storageType, ccgConfig.azureStorageKey, ccgConfig.azureStorageSecret, ccgConfig.containerName)
     val storageService: StorageService = new StorageService(storageParams)
-    val task = new CertificateGeneratorStreamTask(ccgConfig, kafkaUtil, httpUtil, storageService)
+    val task = new CommonCertificateGeneratorStreamTask(ccgConfig, kafkaUtil, httpUtil, storageService)
     task.process()
   }
 }
