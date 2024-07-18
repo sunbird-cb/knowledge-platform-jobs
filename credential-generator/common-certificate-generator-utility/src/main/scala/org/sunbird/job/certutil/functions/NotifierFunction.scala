@@ -47,7 +47,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
   try {
     val userResponse: Map[String, AnyRef] = getUserDetails(metaData.userId)(metrics) // call user Service
     if (null != userResponse && userResponse.nonEmpty) {
-      val primaryFields = Map(config.courseId.toLowerCase() -> metaData.courseId)
+      val primaryFields = Map(config.courseId.toLowerCase() -> "DEFAULT")
       val row = getNotificationTemplates(primaryFields, metrics)
       val certTemplate = row.getMap(config.cert_templates, com.google.common.reflect.TypeToken.of(classOf[String]),
         TypeTokens.mapOf(classOf[String], classOf[String]))
