@@ -1,4 +1,4 @@
-package org.sunbird.job.certgen.functions
+package org.sunbird.job.certutil.functions
 
 import com.datastax.driver.core.querybuilder.{QueryBuilder, Update}
 import com.datastax.driver.core.{Row, TypeTokens}
@@ -14,10 +14,10 @@ import org.sunbird.incredible.processor.CertModel
 import org.sunbird.incredible.processor.store.StorageService
 import org.sunbird.incredible.processor.views.SvgGenerator
 import org.sunbird.incredible.{CertificateConfig, CertificateGenerator, JsonKeys, ScalaModuleJsonUtils}
-import org.sunbird.job.certgen.domain.Issuer
-import org.sunbird.job.certgen.domain._
-import org.sunbird.job.certgen.exceptions.ServerException
-import org.sunbird.job.certgen.task.CertificateGeneratorConfig
+import org.sunbird.job.certutil.domain.Issuer
+import org.sunbird.job.certutil.domain._
+import org.sunbird.job.certutil.exceptions.ServerException
+import org.sunbird.job.certutil.task.CertificateGeneratorConfig
 import org.sunbird.job.exception.InvalidEventException
 import org.sunbird.job.util.{CassandraUtil, ElasticSearchUtil, HttpUtil, ScalaJsonUtil, JSONUtil}
 import org.sunbird.job.{BaseProcessKeyedFunction, Metrics}
@@ -29,7 +29,7 @@ import java.util
 import java.util.stream.Collectors
 import java.util.{Base64, Date, UUID}
 import scala.collection.JavaConverters._
-import org.sunbird.job.certgen.domain.{ BEJobRequestEvent, EventObjectCourseCertificate}
+import org.sunbird.job.certutil.domain.{ BEJobRequestEvent, EventObjectCourseCertificate}
 
 class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, storageService: StorageService, @transient var cassandraUtil: CassandraUtil = null)
   extends BaseProcessKeyedFunction[String, Event, String](config) {
@@ -64,7 +64,7 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
   override def processElement(event: Event,
                               context: KeyedProcessFunction[String, Event, String]#Context,
                               metrics: Metrics): Unit = {
-    println("I am ****** OLD Collection Certificate Generator ****SAI-OLD**** Certificate data: " + event)
+    println("I am ****** NEW Common Collection Certificate Generator ***SAI-NEW***** Certificate data: " + event)
     metrics.incCounter(config.totalEventsCount)
     try {
       val certValidator = new CertValidator()
@@ -109,7 +109,7 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
         addCertToRegistry(event, addReq, context)(metrics)
         //cert-registry end
         val related = event.related
-        val userEnrollmentData = UserEnrollmentData(related.getOrElse(config.BATCH_ID, "").asInstanceOf[String], certModel.identifier,
+        val userEnrollmentData = UserEnrollmentData(certModel.identifier,
           related.getOrElse(config.COURSE_ID, "").asInstanceOf[String], event.courseName, event.templateId,
           Certificate(uuid, event.name, qrMap.accessCode, formatter.format(new Date()), "", ""))
         updateUserEnrollmentTable(event, userEnrollmentData, context)
@@ -143,7 +143,7 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
       val certReq = generateRequest(event, certModel, reIssue)
       //make api call to registry
       uuid = callCertificateRc(config.rcCreateApi, null, certReq)
-      val userEnrollmentData = UserEnrollmentData(related.getOrElse(config.BATCH_ID, "").asInstanceOf[String], certModel.identifier,
+      val userEnrollmentData = UserEnrollmentData(certModel.identifier,
         related.getOrElse(config.COURSE_ID, "").asInstanceOf[String], event.courseName, event.templateId,
         Certificate(uuid, event.name, "", formatter.format(new Date()), event.svgTemplate, config.rcEntity))
       updateUserEnrollmentTable(event, userEnrollmentData, context)
@@ -276,7 +276,7 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
 
   def updateUserEnrollmentTable(event: Event, certMetaData: UserEnrollmentData, context: KeyedProcessFunction[String, Event, String]#Context)(implicit metrics: Metrics): Unit = {
     logger.info("updating user enrollment table {}", certMetaData)
-    val primaryFields = Map(config.userId.toLowerCase() -> certMetaData.userId, config.batchId.toLowerCase -> certMetaData.batchId, config.courseId.toLowerCase -> certMetaData.courseId)
+    val primaryFields = Map(config.userId.toLowerCase() -> certMetaData.userId, config.courseId.toLowerCase -> certMetaData.courseId)
     val records = getIssuedCertificatesFromUserEnrollmentTable(primaryFields)
     if (records.nonEmpty) {
       records.foreach((row: Row) => {
@@ -296,7 +296,7 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
         else Map[String, String]()}
         ))
         
-        val query = getUpdateIssuedCertQuery(updatedCerts, certMetaData.userId, certMetaData.courseId, certMetaData.batchId, config)
+        val query = getUpdateIssuedCertQuery(updatedCerts, certMetaData.userId, certMetaData.courseId, config)
         logger.info("update query {}", query.toString)
         val result = cassandraUtil.update(query)
         logger.info("update result {}", result)
@@ -310,7 +310,7 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
           logger.info("pushAuditEvent: certificate audit event success {}", audit)
           if (config.enableUserNotification) {
             context.output(config.notifierOutputTag, NotificationMetaData(certMetaData.userId, certMetaData.courseName, issuedOn, certMetaData.courseId,
-              certMetaData.batchId, certMetaData.templateId, event.partition, event.offset, event.providerName, event.coursePosterImage))
+               certMetaData.templateId, event.partition, event.offset, event.providerName, event.coursePosterImage))
           }
           //context.output(config.userFeedOutputTag, UserFeedMetaData(certMetaData.userId, certMetaData.courseName, issuedOn, certMetaData.courseId, event.partition, event.offset))
         } else {
@@ -327,12 +327,12 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
   /**
     * returns query for updating issued_certificates in user_enrollment table
     */
-  def getUpdateIssuedCertQuery(updatedCerts: util.List[util.Map[String, String]], userId: String, courseId: String, batchId: String, config: CertificateGeneratorConfig):
+  def getUpdateIssuedCertQuery(updatedCerts: util.List[util.Map[String, String]], userId: String, courseId: String, config: CertificateGeneratorConfig):
   Update.Where = QueryBuilder.update(config.dbKeyspace, config.dbEnrollmentTable).where()
     .`with`(QueryBuilder.set(config.issued_certificates, updatedCerts))
     .where(QueryBuilder.eq(config.userId.toLowerCase, userId))
     .and(QueryBuilder.eq(config.courseId.toLowerCase, courseId))
-    .and(QueryBuilder.eq(config.batchId.toLowerCase, batchId))
+    //.and(QueryBuilder.eq(config.batchId.toLowerCase, batchId))
 
 
   private def getIssuedCertificatesFromUserEnrollmentTable(columns: Map[String, AnyRef])(implicit metrics: Metrics) = {
@@ -357,7 +357,7 @@ class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil:
   private def generateAuditEvent(data: UserEnrollmentData): CertificateAuditEvent = {
     CertificateAuditEvent(
       actor = Actor(id = data.userId),
-      context = EventContext(cdata = Array(Map("type" -> config.courseBatch, config.id -> data.batchId).asJava)),
+      context = EventContext(cdata = Array(Map("type" -> config.courseName, config.id -> data.courseId).asJava)),
       `object` = EventObject(id = data.certificate.id, `type` = "Certificate", rollup = Map(config.l1 -> data.courseId).asJava))
   }
 
