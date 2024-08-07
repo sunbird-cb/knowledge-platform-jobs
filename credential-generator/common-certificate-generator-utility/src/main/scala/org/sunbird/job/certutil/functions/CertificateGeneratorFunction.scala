@@ -19,7 +19,7 @@ import org.sunbird.job.certutil.domain._
 import org.sunbird.job.certutil.exceptions.ServerException
 import org.sunbird.job.certutil.task.CertificateGeneratorConfig
 import org.sunbird.job.exception.InvalidEventException
-import org.sunbird.job.util.{CassandraUtil, ElasticSearchUtil, HttpUtil, ScalaJsonUtil, JSONUtil}
+import org.sunbird.job.util.{CassandraUtil, ElasticSearchUtil, HttpUtil, JSONUtil, ScalaJsonUtil}
 import org.sunbird.job.{BaseProcessKeyedFunction, Metrics}
 
 import java.io.{File, IOException}
@@ -29,7 +29,7 @@ import java.util
 import java.util.stream.Collectors
 import java.util.{Base64, Date, UUID}
 import scala.collection.JavaConverters._
-import org.sunbird.job.certutil.domain.{ BEJobRequestEvent, EventObjectCourseCertificate}
+import org.sunbird.job.certutil.domain.{BEJobRequestEvent, EventObjectCourseCertificate}
 
 class CertificateGeneratorFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, storageService: StorageService, @transient var cassandraUtil: CassandraUtil = null)
   extends BaseProcessKeyedFunction[String, Event, String](config) {

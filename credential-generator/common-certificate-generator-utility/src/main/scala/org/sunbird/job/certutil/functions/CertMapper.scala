@@ -2,7 +2,6 @@ package org.sunbird.job.certutil.functions
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.incredible.pojos.ob.{Criteria, Issuer, SignatoryExtension}
 import org.sunbird.incredible.pojos.valuator.{ExpiryDateValuator, IssuedDateValuator}
@@ -28,6 +27,7 @@ class CertMapper(certConfig: CertificateConfig) {
         validFrom = Option.apply(data.getOrElse(JsonKeys.VALID_FROM, null).asInstanceOf[String]),
         issuer = getIssuer(certReq),
         courseName = certReq.courseName,
+        courseExtendedName = certReq.courseExtendedName,
         issuedDate = issuedDate,
         certificateLogo = Option.apply(certReq.logo),
         certificateDescription = Option.apply(certReq.certificateDescription),
