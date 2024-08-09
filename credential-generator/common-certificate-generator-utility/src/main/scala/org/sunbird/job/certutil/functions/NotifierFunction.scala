@@ -47,10 +47,10 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
   try {
     val userResponse: Map[String, AnyRef] = getUserDetails(metaData.userId)(metrics) // call user Service
     if (null != userResponse && userResponse.nonEmpty) {
-      val primaryFields = Map(config.courseId.toLowerCase() -> "DEFAULT")
+      val primaryFields = Map(config.id.toLowerCase() -> "common_cert_req")
       val row = getNotificationTemplates(primaryFields, metrics)
-      val certTemplate = row.getMap(config.cert_templates, com.google.common.reflect.TypeToken.of(classOf[String]),
-        TypeTokens.mapOf(classOf[String], classOf[String]))
+      val certTemplate = row.getMap(config.value, com.google.common.reflect.TypeToken.of(classOf[String]),
+      TypeTokens.mapOf(classOf[String], classOf[String]))
       val url = config.learnerServiceBaseUrl + config.newEmailTemplateNotificationEndPoint
       if (certTemplate != null && StringUtils.isNotBlank(metaData.templateId) &&
         certTemplate.containsKey(metaData.templateId) &&
@@ -126,7 +126,7 @@ class NotifierFunction(config: CertificateGeneratorConfig, httpUtil: HttpUtil, @
     */
   private def getNotificationTemplates(columns: Map[String, AnyRef], metrics: Metrics): Row = {
     val selectWhere: Select.Where = QueryBuilder.select().all()
-      .from(config.dbKeyspace, config.dbCourseBatchTable).
+      .from(config.dbKeyspace, config.extConfTable).
       where()
     columns.map(col => {
       col._2 match {

@@ -54,6 +54,7 @@ object JsonKeys {
   val CERTIFICATE: String = "certificate"
   val RECIPIENT_NAME: String = "recipientName"
   val COURSE_NAME: String = "courseName"
+  val COURSE_NAME_EXTENDED: String = "courseNameExtended"
   val NAME: String = "name"
   val HTML_TEMPLATE: String = "htmlTemplate"
   val ISSUER: String = "issuer"

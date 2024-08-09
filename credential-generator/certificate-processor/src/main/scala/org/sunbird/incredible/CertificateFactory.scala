@@ -53,7 +53,8 @@ object CertificateFactory {
     if (StringUtils.isNotEmpty(certModel.courseName)) {
       val trainingEvidence: TrainingEvidence = TrainingEvidence(certificateConfig.contextUrl,
         id = certificateConfig.evidenceUrl,
-        name = certModel.courseName)
+        name = certModel.courseName,
+        extendedName=certModel.courseExtendedName)
       certificateExtension.evidence = Option.apply(trainingEvidence)
     }
 

@@ -221,7 +221,7 @@ case class SignatoryExtension(@JsonProperty("@context") context: String, related
 case class TrainingEvidence(@JsonProperty("@context") context: String, related: Option[Array[String]] = None,
                             version: Option[String] = None, endorsement: Option[Endorsement] = None, id: String,
                             `type`: Array[String] = Array("Evidence", "Extension", "extensions:TrainingEvidence"),
-                            narrative: Option[String] = None, name: String, description: Option[String] = None,
+                            narrative: Option[String] = None, name: String,extendedName: String, description: Option[String] = None,
                             genre: Option[String] = None, audience: Option[String] = None, subject: Option[String] = None
                             , trainedBy: Option[String] = None, duration: Option[Duration] = None, session: Option[String] = None)
 

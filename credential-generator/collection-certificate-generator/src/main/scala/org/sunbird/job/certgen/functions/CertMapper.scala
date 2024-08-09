@@ -28,6 +28,7 @@ class CertMapper(certConfig: CertificateConfig) {
         validFrom = Option.apply(data.getOrElse(JsonKeys.VALID_FROM, null).asInstanceOf[String]),
         issuer = getIssuer(certReq),
         courseName = certReq.courseName,
+        courseExtendedName="",
         issuedDate = issuedDate,
         certificateLogo = Option.apply(certReq.logo),
         certificateDescription = Option.apply(certReq.certificateDescription),

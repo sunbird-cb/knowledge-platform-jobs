@@ -22,6 +22,9 @@ class VarResolver(certificateExtension: CertificateExtension) {
   def getCourseName: String = if (certificateExtension.evidence.nonEmpty && StringUtils.isNotBlank(certificateExtension.evidence.get.name)) certificateExtension.evidence.get.name
   else ""
 
+  def getCourseExtendedName: String = if (certificateExtension.evidence.nonEmpty && StringUtils.isNotBlank(certificateExtension.evidence.get.extendedName)) certificateExtension.evidence.get.extendedName
+  else ""
+
   def getQrCodeImage: String = try {
     val uri = new URI(certificateExtension.id)
     val path = uri.getPath
@@ -77,6 +80,7 @@ class VarResolver(certificateExtension: CertificateExtension) {
         put(JsonKeys.CERT_NAME, urlEncode(getCertificateName))
         put(JsonKeys.CERTIFICATE_DESCIPTION, urlEncode(getCertificateDescription))
         put(JsonKeys.COURSE_NAME, urlEncode(getCourseName))
+        put(JsonKeys.COURSE_NAME_EXTENDED, urlEncode(getCourseExtendedName))
         put(JsonKeys.ISSUE_DATE, urlEncode(getIssuedDate))
         put(JsonKeys.RECIPIENT_ID, urlEncode(getRecipientId))
         put(JsonKeys.RECIPIENT_NAME, urlEncode(getRecipientName))

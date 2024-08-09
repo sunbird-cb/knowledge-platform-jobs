@@ -178,7 +178,6 @@ class CertValidator() {
   }
   
   def isNotIssued(event: Event)(config: CertificateGeneratorConfig, metrics: Metrics, cassandraUtil: CassandraUtil):Boolean = {
-    logger.info("Troubleshooting log SAI : 1234")
     val query = QueryBuilder.select( "issued_certificates").from(config.dbKeyspace, config.dbEnrollmentTable)
       .where(QueryBuilder.eq(config.dbUserId, event.eData.getOrElse("userId", "")))
       .and(QueryBuilder.eq(config.dbCourseId, event.related.getOrElse("courseId", "")))

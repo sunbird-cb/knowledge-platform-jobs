@@ -28,6 +28,8 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def courseName: String = readOrDefault[String]("edata.courseName", "")
 
+  def courseExtendedName: String = readOrDefault[String]("edata.courseNameExtended", "")
+
   def name: String = readOrDefault[String]("edata.name", "")
 
   def issuedDate: String = readOrDefault[String]("edata.issuedDate", "")
