@@ -53,6 +53,7 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val issuedCertificates: String = "issued_certificates"
   val extConfTable: String = config.getString("lms-cassandra.ext_config.table")
 
+
   // Metric List
   val totalEventsCount = "total-events-count"
   val successEventCount = "success-events-count"
@@ -147,6 +148,7 @@ class CertificateGeneratorConfig(override val config: Config) extends BaseJobCon
   val templateId = "templateId"
   val cert_templates = "cert_templates"
   val value = "value"
+
   val courseBatch = "CourseBatch"
   val l1 = "l1"
   val id = "id"
